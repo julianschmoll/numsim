@@ -1,4 +1,4 @@
-#include "output_writer/write_paraview_output.h"
+#include "write_paraview_output.h"
 
 #include <iostream>
 #include <cstdlib>
