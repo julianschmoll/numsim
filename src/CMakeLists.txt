@@ -21,6 +21,6 @@ else()
     message(FATAL_ERROR "VTK not found. Please install VTK and set VTK_DIR if needed.")
 endif()
 
-install(TARGETS ${PROJECT_NAME} DESTINATION bin)
+install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${PROJECT_SOURCE_DIR}/../build)
 
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)
