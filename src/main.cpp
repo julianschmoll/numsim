@@ -1,13 +1,25 @@
-#include "write_paraview_output.h"
+// #include "outputWriter.h"
+#include "settings.h"
 
-#include <iostream>
-#include <cstdlib>
-#include <vector>
+//#include <iostream>
 
 int main(int argc, char *argv[]) {
-    // write 5 output files
-    for (int i = 0; i < 5; i++) {
-        writeParaviewOutput(i);
-    }
-    return EXIT_SUCCESS;
+  // we need an input file being specified
+  if (argc == 1) {
+    std::cout << "usage: " << argv[0] << " <filename>" << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  // read in the first argument
+  std::string filename = argv[1];
+
+  Settings settings;
+  settings.loadFromFile(filename);
+
+#ifndef NDEBUG
+  settings.printSettings();
+#endif
+
+  // then we call the solver here :)
+  return EXIT_SUCCESS;
 }
