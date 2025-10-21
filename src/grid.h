@@ -14,13 +14,16 @@ struct Grid {
 
     std::vector<Cell> grid;
 
-    std::shared_ptr<Settings> settings;
+    const Settings &settings;
 
-    //Cell& operator (i, j)
+    Grid(const Settings &settings);
 
+    Cell& operator()(int i, int j);
+
+    double uInterpolateAt(int i, int j);
+    double vInterpolateAt(int i, int j);
+    double pInterpolateAt(int i, int j);
 
     double uDerivative(int i, int j);
     double vDerivative(int i, int j);
-
-
 };
