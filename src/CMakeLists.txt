@@ -26,7 +26,7 @@ endif()
 
 
 # install numsim executable in build directory and get rid of annoying warnings
-cmake_policy(SET CMP0177 NEW)
+# make_policy(SET CMP0177 NEW # TODO: does not compile!! Added in version 3.31.
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${PROJECT_SOURCE_DIR}/../build)
 
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)
