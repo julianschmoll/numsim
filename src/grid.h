@@ -50,7 +50,7 @@ struct CellEnvironment {
 struct Grid {
 
     std::vector<Cell> grid;
-    std::vector<IntermediateCell> intermediateGrid;
+    std::vector<IntermediateCell> intermediateGrid; // TODO: like this or combine with cell?
 
     const Settings &settings;
 
