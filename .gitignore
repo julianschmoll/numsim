@@ -42,5 +42,6 @@
 
 build
 
-# IntelliJ stuff
+# IDE stuff
 .idea
+.vscode
