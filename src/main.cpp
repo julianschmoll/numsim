@@ -1,25 +1,32 @@
 // #include "outputWriter.h"
 #include "settings.h"
+#include "solver.h"
 
-//#include <iostream>
+#include <iostream>
 
 int main(int argc, char *argv[]) {
-  // we need an input file being specified
-  if (argc == 1) {
-    std::cout << "usage: " << argv[0] << " <filename>" << std::endl;
-    return EXIT_FAILURE;
-  }
+    // we need an input file being specified
+	if (argc == 1) {
+		std::cout << "usage: " << argv[0] << " <filename>" << std::endl;
+ 		return EXIT_FAILURE;
+ 	}
+	std::string filename = argv[1];
 
-  // read in the first argument
-  std::string filename = argv[1];
-
-  Settings settings;
-  settings.loadFromFile(filename);
+	Settings settings;
+ 	settings.loadFromFile(filename);
 
 #ifndef NDEBUG
-  settings.printSettings();
+	settings.printSettings();
 #endif
 
-  // then we call the solver here :)
-  return EXIT_SUCCESS;
+	Solver solver(settings);
+	//OutputWriterParaview outputWriter;
+
+	// Simulation loop
+	while (solver.time <= settings.endTime){
+		solver.AdvanceTimeStep();
+		//outputWriter.writeFile();
+	}
+
+	return EXIT_SUCCESS;
 }
