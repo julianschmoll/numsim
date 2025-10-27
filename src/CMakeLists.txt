@@ -5,14 +5,27 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(${PROJECT_NAME}
-        main.cpp
+        # main stuff
         settings.cpp
-        solver.cpp
+        main.cpp
+
+        #grid stuff
+        grid/array2d.cpp
+        grid/discretization.cpp
+
+        # solver stuff
+        solver/solver.cpp
+        solver/gaussSeidel.cpp
+        solver/sor.cpp
+
+        # outputWriter stuff
+        outputWriter/outputWriter.cpp
+        outputWriter/outputWriterParaview.cpp
+        outputWriter/outputWriterText.cpp
 )
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/output_writer)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-#[[
 find_package(VTK REQUIRED)
 
 if (VTK_FOUND)
@@ -22,7 +35,6 @@ if (VTK_FOUND)
 else()
     message(FATAL_ERROR "VTK not found. Please install VTK and set VTK_DIR if needed.")
 endif()
-]]
 
 
 # install numsim executable in build directory and get rid of annoying warnings

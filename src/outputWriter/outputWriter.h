@@ -1,0 +1,29 @@
+#pragma once
+
+#include "grid/discretization.h"
+
+#include <vtkSmartPointer.h>
+#include <vtkXMLImageDataWriter.h>
+#include <vtkDoubleArray.h>
+#include <vtkImageData.h>
+#include <vtkPointData.h>
+
+#include <memory>
+
+/** Inteface class for writing simulation data output.
+ */
+class outputWriter
+{
+public:
+  //! constructor
+  //! @param discretization shared pointer to the discretization object that will contain all the data to be written to the file
+  outputWriter(std::shared_ptr<discretization> discretization);
+
+  //! write current velocities to file, filename is output_<count>.vti
+  virtual void writeFile(double currentTime) = 0;
+
+protected:
+
+  std::shared_ptr<discretization> discretization_;  //< a shared pointer to the discretization which contains all data that will be written to the file
+  int fileNo_;   //< a counter that increments for every file, this number is part of the file name of output files
+};
