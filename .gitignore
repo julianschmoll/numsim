@@ -41,6 +41,7 @@
 *.dwo
 
 build
+cmake-build-debug
 
 # IDE stuff
 .idea

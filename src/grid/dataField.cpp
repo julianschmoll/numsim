@@ -25,22 +25,26 @@ double dataField::interpolateAt(double x, double y) const {
     assert(0 <= x && x < size_[0]);
     assert(0 <= y && y < size_[1]);
 
-    const size_t i1 = static_cast<size_t>(x);
-    const size_t i2 = static_cast<size_t>(x + 0.5);
-    const double alpha = x - i1;
+    const int iLower = static_cast<int>(std::floor(x));
+    const int iUpper = static_cast<int>(std::ceil(x));
+    const double alpha = x - iLower;
 
-    const size_t j1 = static_cast<size_t>(y);
-    const size_t j2 = static_cast<size_t>(y + 0.5);
-    const double beta = y - j1;
+    const int jLower = static_cast<int>(std::floor(y));
+    const int jUpper = static_cast<int>(std::ceil(y));
+    const double beta = y - jLower;
 
-    // TODO: Randwerte?
-    const double d11 = data_.at(j1 * size_[0] + i1);
-    const double d21 = data_.at(j1 * size_[0] + i2);
-    const double d12 = data_.at(j2 * size_[0] + i1);
-    const double d22 = data_.at(j2 * size_[0] + i2);
+    assert(0 <= iLower && iLower < size_[0]);
+    assert(0 <= iUpper && iUpper < size_[1]);
+    assert(0 <= jLower && jLower < size_[0]);
+    assert(0 <= jUpper && jUpper < size_[1]);
 
-    const double dj1 = (1 - alpha) * d11 + alpha * d21;
-    const double dj2 = (1 - alpha) * d12 + alpha * d22;
+    const double d11 = data_.at(jLower * size_[0] + iLower);
+    const double d21 = data_.at(jLower * size_[0] + iUpper);
+    const double d12 = data_.at(jUpper * size_[0] + iLower);
+    const double d22 = data_.at(jUpper * size_[0] + iUpper);
 
-    return (1 - beta) * dj1 + beta * dj2;
+    const double dx1 = (1 - alpha) * d11 + alpha * d21;
+    const double dx2 = (1 - alpha) * d12 + alpha * d22;
+
+    return (1 - beta) * dx1 + beta * dx2;
 }

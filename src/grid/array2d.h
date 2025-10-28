@@ -14,38 +14,38 @@ public:
      *
      * @param size Dimensions of the 2d array
      */
-    explicit array2d(std::array<unsigned int, 2> size);
+    explicit array2d(std::array<int, 2> size);
 
     /**
      * Gets the size of the 2D Array in x any y direction.
      *
      * @return Dimensions of the 2d Array.
      */
-    [[nodiscard]] std::array<unsigned int, 2> size() const;
+    [[nodiscard]] std::array<int, 2> size() const;
 
     /**
      * Returns the value of 2D Array at specified coordinates.
      *
      * Since this is not const, the value can be overridden.
      *
-     * @param x X-Coordinate of value to return.
-     * @param y Y-Coordinate of value to return.
+     * @param i X-Coordinate of value to return.
+     * @param j Y-Coordinate of value to return.
      * @return Value
      */
-    double& operator()(unsigned int x, unsigned int y);
+    double& operator()(int i, int j);
 
     /**
      * Returns the value of 2D Array at specified coordinates.
      *
      * Value is returned as const and cannot be overridden.
      *
-     * @param x X-Coordinate of the value.
-     * @param y Y-Coordinate of the value.
+     * @param i X-Coordinate of the value.
+     * @param j Y-Coordinate of the value.
      * @return The value.
      */
-    double operator()(unsigned int x, unsigned int y) const;
+    //double operator()(int i, int j) const;
 
 protected:
     std::vector<double> data_;
-    std::array<unsigned int, 2> size_;
+    std::array<int, 2> size_;
 };
