@@ -26,6 +26,7 @@ public:
     const std::array<double, 2> &meshWidth() const;
     const std::array<int, 2> &nCells() const;
 
+     /*
     //! compute the 1st derivative u^2 / x
     virtual double computeDu2Dx(int i, int j) const = 0;
 
@@ -55,6 +56,8 @@ public:
 
     //! compute 1st derivative p / y
     double computeDpDy(int i, int j);
+
+    */
 
     int pIBegin() const;
     int pJBegin() const;

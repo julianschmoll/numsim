@@ -10,6 +10,8 @@ discretization::discretization(std::array<int, 2> nCells, std::array<double, 2> 
     g_(nCells, meshWidth, {0.5, 1.0}),
     rhs_(nCells, meshWidth, {0.5, 0.5}) {
 
+
+
 }
 
 const std::array<double, 2> &discretization::meshWidth() const {
