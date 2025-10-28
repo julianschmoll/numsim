@@ -1,7 +1,10 @@
 #include "outputWriterText.h"
 
+#include <iostream>
+
 void outputWriterText::writeFile(double currentTime) {
   // Assemble the filename
+  std::cout << "writing text file" << std::endl;
   std::stringstream fileName;
   fileName << "out/output_" << std::setw(4) << std::setfill('0') << fileNo_
            << ".txt";

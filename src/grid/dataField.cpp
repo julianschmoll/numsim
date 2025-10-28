@@ -3,19 +3,20 @@
 #include <cassert>
 #include <cmath>
 
+#include <iostream>
+
 dataField::dataField(const std::array<int, 2> size, const std::array<double, 2> meshWidth, const std::array<double, 2> offset)
     : array2d(size), meshWidth_(meshWidth), offset_(offset) {}
 
 double dataField::interpolateAt(double x, double y) const {
 
-    assert(0 <= x && x < meshWidth_[0]);
-    assert(0 <= y && y < meshWidth_[1]);
+    std::cout << "interpolateAt: x,y = " << x << ", " << y << ", meshWidth = " << meshWidth_[0] << ", " << meshWidth_[1] << std::endl;
 
-    const double cellWidth = meshWidth_[0] / (size_[0] - 2);  // u, v, p brauchen gleiche größe
-    const double cellHeight = meshWidth_[1] / (size_[1] - 2);
+    assert(0 <= x && x < meshWidth_[0] * (size_[0] - 1));  // u, v, p brauchen gleiche größe
+    assert(0 <= y && y < meshWidth_[1] * (size_[1] - 1));
 
-    x /= cellWidth;
-    y /= cellHeight;
+    x /= meshWidth_[0];
+    y /= meshWidth_[1];
 
     // Als Test, Druck:
 

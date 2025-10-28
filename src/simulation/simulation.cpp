@@ -2,6 +2,9 @@
 #include "velocity/donorCell.h"
 #include "velocity/centralDifferences.h"
 
+#include "outputWriter/outputWriterParaview.h"
+#include "outputWriter/outputWriterText.h"
+
 #include <memory>
 
 
@@ -31,7 +34,7 @@ Simulation::Simulation(Settings settings) : settings_(settings) {
 	} else {
 		throw std::runtime_error("Unknown pressure solver.");
 	}
-	std::array<int, 2> a = {20, 20};
+	std::array<int, 2> a = {10, 10};
 	discretization_ = std::make_shared<discretization>(a, settings_.physicalSize);
 }
 
@@ -48,4 +51,10 @@ void Simulation::run() {
 	for (int i = discretization_->pIBegin(); i < std::min(discretization_->pIEnd(), discretization_->pJEnd()); i++) {
 		discretization_->p()(i, i) = 1;
 	}
+
+	outputWriterParaview outputWriterParaview(discretization_);
+	outputWriterText outputWriterText(discretization_);
+
+	outputWriterParaview.writeFile(1);
+	outputWriterText.writeFile(1);
 }

@@ -3,12 +3,12 @@
 discretization::discretization(std::array<int, 2> nCells, std::array<double, 2> meshWidth)
     : meshWidth_(meshWidth),
     nCells_(nCells),
-    u_(nCells, meshWidth, {1.0, 0.5}),
-    v_(nCells, meshWidth, {0.5, 1.0}),
-    p_(nCells, meshWidth, {0.5, 0.5}),
-    f_(nCells, meshWidth, {1.0, 0.5}),
-    g_(nCells, meshWidth, {0.5, 1.0}),
-    rhs_(nCells, meshWidth, {0.5, 0.5}) {
+    u_({nCells[0] + 2, nCells[0] + 2}, meshWidth, {0.0, 0.5}),
+    v_({nCells[0] + 2, nCells[0] + 2}, meshWidth, {0.5, 0.0}),
+    p_({nCells[0] + 2, nCells[0] + 2}, meshWidth, {0.5, 0.5}),
+    f_({nCells[0] + 2, nCells[0] + 2}, meshWidth, {0.0, 0.5}),
+    g_({nCells[0] + 2, nCells[0] + 2}, meshWidth, {0.5, 0.0}),
+    rhs_({nCells[0] + 2, nCells[0] + 2}, meshWidth, {0.5, 0.5}) {
 
 
 
