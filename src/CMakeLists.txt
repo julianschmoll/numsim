@@ -12,17 +12,15 @@ add_executable(${PROJECT_NAME}
         #grid stuff
         grid/array2d.cpp
         grid/discretization.cpp
-        grid/staggeredGrid.cpp
-        grid/staggeredGrid.h
+        grid/dataField.cpp
 
         # solver stuff
-        solver/solver.cpp
-        solver/gaussSeidel.cpp
-        solver/sor.cpp
-        solver/centralDifferences.cpp
-        solver/centralDifferences.h
-        solver/donorCell.cpp
-        solver/donorCell.h
+        simulation/simulation.cpp
+        simulation/pressure/gaussSeidel.cpp
+        simulation/pressure/sor.cpp
+        simulation/pressure/solver.cpp
+        simulation/velocity/centralDifferences.cpp
+        simulation/velocity/donorCell.cpp
 
         # outputWriter stuff
         outputWriter/outputWriter.cpp

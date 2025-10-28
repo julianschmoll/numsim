@@ -1,6 +1,6 @@
 // #include "outputWriter.h"
 #include "settings.h"
-#include "solver/solver.h"
+#include "simulation/simulation.h"
 
 #include <iostream>
 
@@ -19,24 +19,12 @@ int main(const int argc, char* argv[]) {
 	settings.printSettings();
 #endif
 
-	Solver solver(settings);
+	Simulation simulation(settings);
 
 	// outputWriter needs solver discretization
 	// outputWriterParaview outputWriter(solver.discretization());
 
-	double outputTime = solver.time;
-	double step = 0.1;
-
-	// Simulation loop
-	// might have to be do while so we get last output
-	while (solver.time <= settings.endTime) {
-		solver.AdvanceTimeStep();
-
-		if (solver.time >= outputTime) {
-			// outputWriter.writeFile(solver.time);
-			// outputTime += step;
-		}
-	}
+	simulation.run();
 
 
 	//cell.v.derivative();

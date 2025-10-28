@@ -1,4 +1,4 @@
-#include "array2d.h"
+#include "grid/array2d.h"
 
 #include <cassert>
 
