@@ -12,11 +12,17 @@ add_executable(${PROJECT_NAME}
         #grid stuff
         grid/array2d.cpp
         grid/discretization.cpp
+        grid/staggeredGrid.cpp
+        grid/staggeredGrid.h
 
         # solver stuff
         solver/solver.cpp
         solver/gaussSeidel.cpp
         solver/sor.cpp
+        solver/centralDifferences.cpp
+        solver/centralDifferences.h
+        solver/donorCell.cpp
+        solver/donorCell.h
 
         # outputWriter stuff
         outputWriter/outputWriter.cpp
@@ -32,9 +38,9 @@ if (VTK_FOUND)
     include_directories(${VTK_INCLUDE_DIRS})
     target_link_libraries(${PROJECT_NAME} ${VTK_LIBRARIES})
     message(STATUS "Found VTK ${VTK_VERSION} in \"${VTK_DIR}\"")
-else()
+else ()
     message(FATAL_ERROR "VTK not found. Please install VTK and set VTK_DIR if needed.")
-endif()
+endif ()
 
 
 # install numsim executable in build directory and get rid of annoying warnings

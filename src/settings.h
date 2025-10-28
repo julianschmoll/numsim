@@ -65,10 +65,10 @@ struct Settings {
   *
   * @param filename The name of the file to parse
   */
-  void loadFromFile(std::string filename);
+  void loadFromFile(const std::string& filename);
 
   /**
   * Outputs Settings to console.
   */
-  void printSettings();
+  void printSettings() const;
 };

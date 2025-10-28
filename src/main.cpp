@@ -4,16 +4,16 @@
 
 #include <iostream>
 
-int main(int argc, char *argv[]) {
-    // we need an input file being specified
+int main(const int argc, char* argv[]) {
+	// we need an input file being specified
 	if (argc == 1) {
 		std::cout << "usage: " << argv[0] << " <filename>" << std::endl;
- 		return EXIT_FAILURE;
- 	}
-	std::string filename = argv[1];
+		return EXIT_FAILURE;
+	}
+	const std::string filename = argv[1];
 
 	Settings settings;
- 	settings.loadFromFile(filename);
+	settings.loadFromFile(filename);
 
 #ifndef NDEBUG
 	settings.printSettings();
@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
 
 	// Simulation loop
 	// might have to be do while so we get last output
-	while (solver.time <= settings.endTime){
+	while (solver.time <= settings.endTime) {
 		solver.AdvanceTimeStep();
 
 		if (solver.time >= outputTime) {

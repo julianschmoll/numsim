@@ -15,9 +15,10 @@
 class outputWriter
 {
 public:
+  virtual ~outputWriter() = default;
   //! constructor
   //! @param discretization shared pointer to the discretization object that will contain all the data to be written to the file
-  outputWriter(std::shared_ptr<discretization> discretization);
+  explicit outputWriter(const std::shared_ptr<discretization>& discretization);
 
   //! write current velocities to file, filename is output_<count>.vti
   virtual void writeFile(double currentTime) = 0;

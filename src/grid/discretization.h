@@ -2,12 +2,14 @@
 
 #include <array>
 
-class discretization
-{
+#include "staggeredGrid.h"
+
+class discretization : public staggeredGrid {
 public:
+    virtual ~discretization() = default;
 
     //! construct the object with given numbers of cells in x and y direction
-    discretization(std::array<int,2> nCells, std::array<double,2> meshWidth);
+    discretization(std::array<int, 2> nCells, std::array<double, 2> meshWidth);
 
     //! compute 1st derivative p / x
     virtual double computeDpDx(int i, int j) const = 0;
@@ -29,7 +31,6 @@ public:
 
     //! compute the 1st derivative v / y
     virtual double computeDvDy(int i, int j) const = 0;
-
 
 
     //! compute the 1st derivative v^2 / x

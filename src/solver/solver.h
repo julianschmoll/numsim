@@ -3,12 +3,11 @@
 #include "settings.h"
 
 class Solver {
-
 public:
     double time = 0.0;
     Settings settings_;
 
-    Solver(const Settings &settings);
+    Solver(Settings settings);
     ~Solver() = default;
 
     double CalculateTimeStepWidth();
@@ -16,5 +15,4 @@ public:
     void setBoundaryValues();
 
     int AdvanceTimeStep();
-
 };

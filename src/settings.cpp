@@ -6,12 +6,10 @@
 #include <string>
 #include <unordered_map>
 
-void Settings::loadFromFile(std::string filename) {
+void Settings::loadFromFile(const std::string& filename) {
   std::cout << "loading settings from " << filename << std::endl;
   std::ifstream file(filename);
-  if (!file.is_open()) {
-    throw std::runtime_error("Could not open: " + filename);
-  }
+  if (!file.is_open()) { throw std::runtime_error("Could not open: " + filename); }
 
   std::string line;
   std::unordered_map<std::string, std::string> settings;
@@ -21,12 +19,12 @@ void Settings::loadFromFile(std::string filename) {
     if (line.find('#') == 0)
       continue;
 
-    // srtip inline comments
+    // strip inline comments
     line = line.substr(0, line.find('#'));
 
     // strip whitespace
     line.erase(std::remove_if(line.begin(), line.end(), ::isspace),
-               line.end()); 
+               line.end());
 
     if (line.empty())
       continue;
@@ -41,9 +39,9 @@ void Settings::loadFromFile(std::string filename) {
     settings[key] = value;
   }
 
-  // this is somewhat nasty but i figured it would be the quickest
-  // idk, which cpp standard we use, std::unordered_map only exists
-  // in cpp 20 or above, that's why i used count...
+  // this is somewhat nasty but I figured it would be the quickest
+  // IDK, which cpp standard we use, std::unordered_map only exists
+  // in cpp 20 or above, that's why I used count...
   if (settings.count("nCellsX"))
     nCells[0] = std::stoi(settings["nCellsX"]);
   if (settings.count("nCellsY"))
@@ -102,35 +100,35 @@ void Settings::loadFromFile(std::string filename) {
     epsilon = std::stod(settings["epsilon"]);
   if (settings.count("maximumNumberOfIterations"))
     maximumNumberOfIterations =
-        std::stoi(settings["maximumNumberOfIterations"]);
+      std::stoi(settings["maximumNumberOfIterations"]);
 }
 
-void Settings::printSettings() {
+void Settings::printSettings() const {
   std::cout << "Settings: " << std::endl
-            << "  physicalSize: " << physicalSize[0] << " x " << physicalSize[1]
-            << ", nCells: " << nCells[0] << " x " << nCells[1] << std::endl
+    << "  physicalSize: " << physicalSize[0] << " x " << physicalSize[1]
+    << ", nCells: " << nCells[0] << " x " << nCells[1] << std::endl
 
-            << "  endTime: " << endTime << " s, re: " << re << ", g: (" << g[0]
-            << "," << g[1] << "), tau: " << tau << ", maximum dt: " << maximumDt
-            << std::endl
+    << "  endTime: " << endTime << " s, re: " << re << ", g: (" << g[0]
+    << "," << g[1] << "), tau: " << tau << ", maximum dt: " << maximumDt
+    << std::endl
 
-            << "  dirichletBC: bottom: (" << dirichletBcBottom[0] << ","
-            << dirichletBcBottom[1] << ")"
+    << "  dirichletBC: bottom: (" << dirichletBcBottom[0] << ","
+    << dirichletBcBottom[1] << ")"
 
-            << ", top: (" << dirichletBcTop[0] << "," << dirichletBcTop[1]
-            << ")"
+    << ", top: (" << dirichletBcTop[0] << "," << dirichletBcTop[1]
+    << ")"
 
-            << ", left: (" << dirichletBcLeft[0] << "," << dirichletBcLeft[1]
-            << ")"
+    << ", left: (" << dirichletBcLeft[0] << "," << dirichletBcLeft[1]
+    << ")"
 
-            << ", right: (" << dirichletBcRight[0] << "," << dirichletBcRight[1]
-            << ")" << std::endl
+    << ", right: (" << dirichletBcRight[0] << "," << dirichletBcRight[1]
+    << ")" << std::endl
 
-            << "  useDonorCell: " << std::boolalpha << useDonorCell
-            << ", alpha: " << alpha << std::endl
+    << "  useDonorCell: " << std::boolalpha << useDonorCell
+    << ", alpha: " << alpha << std::endl
 
-            << "  pressureSolver: " << pressureSolver << ", omega: " << omega
-            << ", epsilon: " << epsilon
-            << ", maximumNumberOfIterations: " << maximumNumberOfIterations
-            << std::endl;
+    << "  pressureSolver: " << pressureSolver << ", omega: " << omega
+    << ", epsilon: " << epsilon
+    << ", maximumNumberOfIterations: " << maximumNumberOfIterations
+    << std::endl;
 }

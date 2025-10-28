@@ -2,8 +2,8 @@
 
 
 outputWriterParaview::outputWriterParaview(
-    std::shared_ptr<discretization> discretization)
-    : outputWriter(discretization) {
+  const std::shared_ptr<discretization>& discretization)
+  : outputWriter(discretization) {
   // Create a vtkWriter_
   vtkWriter_ = vtkSmartPointer<vtkXMLImageDataWriter>::New();
 }
@@ -12,7 +12,7 @@ void outputWriterParaview::writeFile(double currentTime) {
   // Assemble the filename
   std::stringstream fileName;
   fileName << "out/output_" << std::setw(4) << setfill('0') << fileNo_ << "."
-           << vtkWriter_->GetDefaultFileExtension();
+    << vtkWriter_->GetDefaultFileExtension();
 
   // increment file no.
   fileNo_++;
@@ -33,8 +33,8 @@ void outputWriterParaview::writeFile(double currentTime) {
   // set number of points in each dimension, 1 cell in z direction
   std::array<int, 2> nCells = discretization_->nCells();
   dataSet->SetDimensions(
-      nCells[0] + 1, nCells[1] + 1,
-      1); // we want to have points at each corner of each cell
+    nCells[0] + 1, nCells[1] + 1,
+    1); // we want to have points at each corner of each cell
 
   // add pressure field variable
   // ---------------------------
@@ -54,7 +54,7 @@ void outputWriterParaview::writeFile(double currentTime) {
   // computational domain, not the helper values in the "halo"
 
   int index = 0; // index for the vtk data structure, will be incremented in the
-                 // inner loop
+  // inner loop
   for (int j = 0; j < nCells[1] + 1; j++) {
     for (int i = 0; i < nCells[0] + 1; i++, index++) {
       const double x = i * dx;
@@ -125,7 +125,7 @@ void outputWriterParaview::writeFile(double currentTime) {
   // vtkWriter_->SetDataModeToAscii();     // comment this in to get ascii text
   // files: those can be checked in an editor
   vtkWriter_->SetDataModeToBinary(); // set file mode to binary files: smaller
-                                     // file sizes
+  // file sizes
 
   // finally write out the data
   vtkWriter_->Write();
