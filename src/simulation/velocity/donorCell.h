@@ -4,7 +4,7 @@
 
 class donorCell final : public discretization {
 public:
-/*
+
     donorCell(std::array<int, 2> nCells, std::array<double, 2> meshWidth, double alpha);
 
     double computeDu2Dx(int i, int j) const override;
@@ -14,7 +14,6 @@ public:
     double computeDuvDx(int i, int j) const override;
 
     double computeDuvDy(int i, int j) const override;
-*/
 private:
     double alpha_;
 };
