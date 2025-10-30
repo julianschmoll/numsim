@@ -43,7 +43,17 @@ public:
      * @param j Y-Coordinate of the value.
      * @return The value.
      */
-    //double operator()(int i, int j) const;
+    double operator()(int i, int j) const;
+
+    /**
+     * Returns the max value in the 2D Array using c++ standard library.
+     *
+     * Convenience method, so that iteration over both dimensions is not
+     * necessary to retrieve max value.
+     *
+     * @return Max value.
+     */
+    [[nodiscard]] double max() const;
 
 protected:
     std::vector<double> data_;
