@@ -42,12 +42,12 @@ int Simulation::run() {
 
 		setPreliminaryVelocities();
 
-		computeRightHandSide();
+		setRightHandSide();
 
 		// computes the pressure
 		pressureSolver_->solve();
 
-		computeVelocities();
+		setVelocities();
 
 		outputWriterParaview_->writeFile(currentTime);
 		outputWriterText_->writeFile(currentTime);
@@ -166,14 +166,38 @@ void Simulation::setPreliminaryVelocities() {
 	}
 }
 
-void Simulation::computeRightHandSide() {
+void Simulation::setRightHandSide() {
 #ifndef NDEBUG
 	std::cout << "Computing right hand side" << std::endl;
 #endif
+	const auto& pJBegin = discretization_->pJBegin();
+	const auto& pJEnd = discretization_->pJEnd();
+	const auto& pIBegin = discretization_->pIBegin();
+	const auto& pIEnd = discretization_->pIEnd();
+
+	const auto& dx = discretization_->dx();
+	const auto& dy = discretization_->dy();
+
+	const auto& f = discretization_->f();
+	const auto& g = discretization_->g();
+	auto& rhs = discretization_->rhs();
+
+	const double invTimeStep = 1.0 / timeStepWidth_;
+	const double invDx = 1.0 / dx;
+	const double invDy = 1.0 / dy;
+
+	for (int j = pJBegin; j < pJEnd - 1; j++) {
+		for (int i = pIBegin; i < pIEnd - 1; i++) {
+			const double diffF = (f(i, j) - f(i - 1, j)) * invDx;
+			const double diffG = (g(i, j) - g(i, j - 1)) * invDy;
+			rhs(i, j) = invTimeStep * (diffF + diffG);
+		}
+	}
 }
 
-void Simulation::computeVelocities() {
+void Simulation::setVelocities() {
 #ifndef NDEBUG
 	std::cout << "Computing velocities" << std::endl;
 #endif
+	// ToDo: Also calls discretization methods, understand them and implement here
 }

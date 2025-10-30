@@ -38,7 +38,7 @@ private:
     /**
      * Computes the right hand side of the Poisson equation.
      */
-    void computeRightHandSide();
+    void setRightHandSide();
 
     /**
      * Computes the time step width dt from maximum velocities.
@@ -48,7 +48,7 @@ private:
     /**
      * computes the new velocities, u,v, from the preliminary velocities, F,G and the pressure, p.
      */
-    void computeVelocities();
+    void setVelocities();
 
     double meshWidth_ = 0.0;
     std::shared_ptr<discretization> discretization_;
