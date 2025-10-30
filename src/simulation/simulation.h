@@ -33,7 +33,7 @@ private:
     /**
      * Computes the preliminary velocities, F and G.
      */
-    void computePreliminaryVelocities();
+    void setPreliminaryVelocities();
 
     /**
      * Computes the right hand side of the Poisson equation.
@@ -42,10 +42,8 @@ private:
 
     /**
      * Computes the time step width dt from maximum velocities.
-     *
-     * @return Time step width.
      */
-    [[nodiscard]] double computeTimeStepWidth() const;
+    void computeTimeStepWidth();
 
     /**
      * computes the new velocities, u,v, from the preliminary velocities, F,G and the pressure, p.
@@ -58,4 +56,5 @@ private:
     std::unique_ptr<outputWriterText> outputWriterText_;
     std::unique_ptr<solver> pressureSolver_;
     Settings settings_;
+    double timeStepWidth_ = 0.1;
 };

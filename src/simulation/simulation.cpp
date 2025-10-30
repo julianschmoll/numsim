@@ -18,7 +18,7 @@ Simulation::Simulation(const Settings& settings) : settings_(settings) {
 	if (settings_.pressureSolver == "SOR") {
 		std::cout << "Using SOR solver." << std::endl;
 		pressureSolver_ = std::make_unique<sor>(discretization_, settings_.epsilon, settings_.maximumNumberOfIterations,
-		                                settings_.omega);
+		                                        settings_.omega);
 	}
 	else if (settings_.pressureSolver == "GaussSeidel") {
 		pressureSolver_ = std::make_unique<
@@ -37,9 +37,10 @@ int Simulation::run() {
 	do {
 		setBoundaryValues();
 
-		currentTime += computeTimeStepWidth();
+		computeTimeStepWidth();
+		currentTime += timeStepWidth_;
 
-		computePreliminaryVelocities();
+		setPreliminaryVelocities();
 
 		computeRightHandSide();
 
@@ -50,8 +51,8 @@ int Simulation::run() {
 
 		outputWriterParaview_->writeFile(currentTime);
 		outputWriterText_->writeFile(currentTime);
-
-	} while (currentTime < settings_.endTime);
+	}
+	while (currentTime < settings_.endTime);
 	return 0;
 }
 
@@ -86,7 +87,7 @@ void Simulation::setBoundaryValues() {
 	auto& v = discretization_->v();
 
 	for (int i = uIBegin; i < uIEnd; ++i) {
-		u(i, uJBegin) =  uBottom;
+		u(i, uJBegin) = uBottom;
 		u(i, uJEnd - 1) = uTop;
 	}
 
@@ -106,11 +107,11 @@ void Simulation::setBoundaryValues() {
 	}
 }
 
-double Simulation::computeTimeStepWidth() const {
+void Simulation::computeTimeStepWidth() {
 #ifndef NDEBUG
 	std::cout << "Computing time step width" << std::endl;
 #endif
-	const double uMax  = discretization_->u().max();
+	const double uMax = discretization_->u().max();
 	const double vMax = discretization_->v().max();
 
 	const double hx = settings_.physicalSize[0] / settings_.nCells[0];
@@ -128,13 +129,41 @@ double Simulation::computeTimeStepWidth() const {
 	std::cout << "Computed time step width: " << dt << std::endl;
 #endif
 
-	return std::min(dt, settings_.maximumDt);
+	timeStepWidth_ = std::min(dt, settings_.maximumDt);
 }
 
-void Simulation::computePreliminaryVelocities() {
+void Simulation::setPreliminaryVelocities() {
 #ifndef NDEBUG
 	std::cout << "Computing preliminary velocities" << std::endl;
 #endif
+	const double invRe = 1.0 / settings_.re;
+
+	auto& u = discretization_->u();
+	auto& v = discretization_->v();
+	auto& f = discretization_->f();
+	auto& g = discretization_->g();
+
+	const auto& uJBegin = discretization_->uJBegin();
+	const auto& uJEnd = discretization_->uJEnd();
+	const auto& uIBegin = discretization_->uIBegin();
+	const auto& uIEnd = discretization_->uIEnd();
+
+	const auto& vJBegin = discretization_->vJBegin();
+	const auto& vJEnd = discretization_->vJEnd();
+	const auto& vIBegin = discretization_->vIBegin();
+	const auto& vIEnd = discretization_->vIEnd();
+
+	for (int j = uJBegin + 1; j < uJEnd - 1; j++) {
+		for (int i = uIBegin + 1; i < uIEnd - 1; i++) {
+			// ToDo: Do Computation here (understand derivative methods)
+		}
+	}
+
+	for (int j = vJBegin + 1; j < vJEnd - 1; j++) {
+		for (int i = vIBegin + 1; i < vIEnd - 1; i++) {
+			// ToDo: Do Computation here (understand derivative methods)
+		}
+	}
 }
 
 void Simulation::computeRightHandSide() {
