@@ -119,3 +119,30 @@ double discretization::dx() const {
 double discretization::dy() const {
     return meshWidth_[1];
 }
+
+// discretization.cpp
+
+double discretization::computeD2uDx2(int i, int j) {
+    return 0.0;
+}
+
+double discretization::computeDpDx(int i, int j) {
+    return 0.0;
+}
+
+double discretization::compute2DuDy2(int i, int j) {
+    return 0.0;
+}
+
+double discretization::computeDuDx(int i, int j) {
+    return 0.0;
+}
+
+double discretization::computeDvDy(int i, int j) {
+    return 0.0;
+}
+
+double discretization::computeDpDy(int i, int j) {
+    return 0.0;
+}
+

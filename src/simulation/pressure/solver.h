@@ -1,6 +1,7 @@
 #pragma once
 
 #include "grid/discretization.h"
+#include <memory>
 
 class solver {
     /**
