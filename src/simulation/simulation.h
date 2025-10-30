@@ -36,11 +36,6 @@ private:
     void computePreliminaryVelocities();
 
     /**
-     * Solves the Poisson equation for the pressure.
-     */
-    void computePressure();
-
-    /**
      * Computes the right hand side of the Poisson equation.
      */
     void computeRightHandSide();
@@ -50,17 +45,17 @@ private:
      *
      * @return Time step width.
      */
-    double computeTimeStepWidth() const;
+    [[nodiscard]] double computeTimeStepWidth() const;
 
     /**
      * computes the new velocities, u,v, from the preliminary velocities, F,G and the pressure, p.
      */
     void computeVelocities();
 
-    std::shared_ptr<discretization> discretization_;
     double meshWidth_ = 0.0;
+    std::shared_ptr<discretization> discretization_;
     std::unique_ptr<outputWriterParaview> outputWriterParaview_;
     std::unique_ptr<outputWriterText> outputWriterText_;
-    std::unique_ptr<solver> solver_;
+    std::unique_ptr<solver> pressureSolver_;
     Settings settings_;
 };

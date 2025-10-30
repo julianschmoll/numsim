@@ -17,11 +17,11 @@ Simulation::Simulation(const Settings& settings) : settings_(settings) {
 
 	if (settings_.pressureSolver == "SOR") {
 		std::cout << "Using SOR solver." << std::endl;
-		solver_ = std::make_unique<sor>(discretization_, settings_.epsilon, settings_.maximumNumberOfIterations,
+		pressureSolver_ = std::make_unique<sor>(discretization_, settings_.epsilon, settings_.maximumNumberOfIterations,
 		                                settings_.omega);
 	}
 	else if (settings_.pressureSolver == "GaussSeidel") {
-		solver_ = std::make_unique<
+		pressureSolver_ = std::make_unique<
 			gaussSeidel>(discretization_, settings_.epsilon, settings_.maximumNumberOfIterations);
 	}
 	else { throw std::runtime_error("Unknown pressure solver."); }
@@ -43,7 +43,8 @@ int Simulation::run() {
 
 		computeRightHandSide();
 
-		computePressure();
+		// computes the pressure
+		pressureSolver_->solve();
 
 		computeVelocities();
 
@@ -133,12 +134,6 @@ double Simulation::computeTimeStepWidth() const {
 void Simulation::computePreliminaryVelocities() {
 #ifndef NDEBUG
 	std::cout << "Computing preliminary velocities" << std::endl;
-#endif
-}
-
-void Simulation::computePressure() {
-#ifndef NDEBUG
-	std::cout << "Computing pressure" << std::endl;
 #endif
 }
 
