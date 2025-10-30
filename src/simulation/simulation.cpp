@@ -25,6 +25,9 @@ Simulation::Simulation(const Settings& settings) : settings_(settings) {
 			gaussSeidel>(discretization_, settings_.epsilon, settings_.maximumNumberOfIterations);
 	}
 	else { throw std::runtime_error("Unknown pressure solver."); }
+
+	outputWriterParaview_ = std::make_unique<outputWriterParaview>(outputWriterParaview(discretization_));
+	outputWriterText_ = std::make_unique<outputWriterText>(outputWriterText(discretization_));
 }
 
 int Simulation::run() {
@@ -49,8 +52,76 @@ int Simulation::run() {
 
 		outputWriterParaview_->writeFile(currentTime);
 		outputWriterText_->writeFile(currentTime);
+
+		return 0;
 	}
 	return 0;
+}
+
+void Simulation::setBoundaryValues() {
+#ifndef NDEBUG
+	std::cout << "Setting boundary values" << std::endl;
+#endif
+	const auto uIBegin = discretization_->uIBegin();
+	const auto uIEnd = discretization_->uIEnd();
+	const auto uJBegin = discretization_->uJBegin();
+	const auto uJEnd = discretization_->uJEnd();
+
+	const auto vIBegin = discretization_->vIBegin();
+	const auto vIEnd = discretization_->vIEnd();
+	const auto vJBegin = discretization_->vJBegin();
+	const auto vJEnd = discretization_->vJEnd();
+
+	const auto uBottom = settings_.dirichletBcBottom[0];
+	const auto uTop = settings_.dirichletBcTop[0];
+	const auto uLeft = settings_.dirichletBcLeft[0];
+	const auto uRight = settings_.dirichletBcRight[0];
+
+	const auto vBottom = settings_.dirichletBcBottom[1];
+	const auto vTop = settings_.dirichletBcTop[1];
+	const auto vLeft = settings_.dirichletBcLeft[1];
+	const auto vRight = settings_.dirichletBcRight[1];
+
+	// storing references here is probably faster than
+	// always accessing through vtable
+	auto& u = discretization_->u();
+	auto& v = discretization_->v();
+	auto& f = discretization_->f();
+	auto& g = discretization_->g();
+
+	for (int i = uIBegin; i < uIEnd; ++i) {
+		u(i, uJBegin) = 2. * uBottom - u(i, uJBegin + 1);
+		u(i, uJEnd - 1) = 2. * uTop - u(i, uJEnd - 2);
+		f(i, uJBegin) = u(i, uJBegin);
+		f(i, uJEnd - 1) = u(i, uJEnd - 1);
+	}
+
+	for (int j = uJBegin; j < uJEnd; ++j) {
+		u(uIBegin, j) = uLeft;
+		u(uIEnd - 1, j) = uRight;
+		f(uIBegin, j) = u(uIBegin, j);
+		f(uIEnd - 1, j) = u(uIEnd - 1, j);
+	}
+
+	for (int i = vIBegin; i < vIEnd; ++i) {
+		v(i, vJBegin) = vBottom;
+		v(i, vJEnd - 1) = vTop;
+		g(i, vJBegin) = v(i, vJBegin);
+		g(i, vJEnd - 1) = v(i, vJEnd - 1);
+	}
+
+	for (int j = vJBegin; j < vJEnd; ++j) {
+		v(vIBegin, j) = 2. * vLeft - v(vIBegin + 1, j);
+		v(vIEnd - 1, j) = 2. * vRight - v(vIEnd - 2, j);
+		g(vIBegin, j) = v(vIBegin, j);
+		g(vIEnd - 1, j) = v(vIEnd - 1, j);
+	}
+}
+
+void Simulation::computeTimeStepWidth() {
+#ifndef NDEBUG
+	std::cout << "Computing time step width" << std::endl;
+#endif
 }
 
 void Simulation::computePreliminaryVelocities() {
@@ -71,20 +142,8 @@ void Simulation::computeRightHandSide() {
 #endif
 }
 
-void Simulation::computeTimeStepWidth() {
-#ifndef NDEBUG
-	std::cout << "Computing time step width" << std::endl;
-#endif
-}
-
 void Simulation::computeVelocities() {
 #ifndef NDEBUG
 	std::cout << "Computing velocities" << std::endl;
-#endif
-}
-
-void Simulation::setBoundaryValues() {
-#ifndef NDEBUG
-	std::cout << "Computing boundary values" << std::endl;
 #endif
 }
