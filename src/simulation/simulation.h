@@ -47,8 +47,10 @@ private:
 
     /**
      * Computes the time step width dt from maximum velocities.
+     *
+     * @return Time step width.
      */
-    void computeTimeStepWidth();
+    double computeTimeStepWidth() const;
 
     /**
      * computes the new velocities, u,v, from the preliminary velocities, F,G and the pressure, p.
@@ -56,7 +58,6 @@ private:
     void computeVelocities();
 
     std::shared_ptr<discretization> discretization_;
-    double timeStepWidth_ = 0.0;
     double meshWidth_ = 0.0;
     std::unique_ptr<outputWriterParaview> outputWriterParaview_;
     std::unique_ptr<outputWriterText> outputWriterText_;

@@ -33,14 +33,11 @@ Simulation::Simulation(const Settings& settings) : settings_(settings) {
 int Simulation::run() {
 	double currentTime = 0.0;
 
-	// simulation loop
-	// ToDo: what if we reach more than the end time?
-	while (currentTime < settings_.endTime) {
+	// simulation loop, do while so we definitely reach end time
+	do {
 		setBoundaryValues();
 
-		computeTimeStepWidth();
-
-		currentTime += timeStepWidth_;
+		currentTime += computeTimeStepWidth();
 
 		computePreliminaryVelocities();
 
@@ -53,11 +50,11 @@ int Simulation::run() {
 		outputWriterParaview_->writeFile(currentTime);
 		outputWriterText_->writeFile(currentTime);
 
-		return 0;
-	}
+	} while (currentTime < settings_.endTime);
 	return 0;
 }
 
+// ToDo: Do we need to set F and G?
 void Simulation::setBoundaryValues() {
 #ifndef NDEBUG
 	std::cout << "Setting boundary values" << std::endl;
@@ -86,42 +83,51 @@ void Simulation::setBoundaryValues() {
 	// always accessing through vtable
 	auto& u = discretization_->u();
 	auto& v = discretization_->v();
-	auto& f = discretization_->f();
-	auto& g = discretization_->g();
 
 	for (int i = uIBegin; i < uIEnd; ++i) {
-		u(i, uJBegin) = 2. * uBottom - u(i, uJBegin + 1);
-		u(i, uJEnd - 1) = 2. * uTop - u(i, uJEnd - 2);
-		f(i, uJBegin) = u(i, uJBegin);
-		f(i, uJEnd - 1) = u(i, uJEnd - 1);
+		u(i, uJBegin) =  uBottom;
+		u(i, uJEnd - 1) = uTop;
 	}
 
 	for (int j = uJBegin; j < uJEnd; ++j) {
 		u(uIBegin, j) = uLeft;
 		u(uIEnd - 1, j) = uRight;
-		f(uIBegin, j) = u(uIBegin, j);
-		f(uIEnd - 1, j) = u(uIEnd - 1, j);
 	}
 
 	for (int i = vIBegin; i < vIEnd; ++i) {
 		v(i, vJBegin) = vBottom;
 		v(i, vJEnd - 1) = vTop;
-		g(i, vJBegin) = v(i, vJBegin);
-		g(i, vJEnd - 1) = v(i, vJEnd - 1);
 	}
 
 	for (int j = vJBegin; j < vJEnd; ++j) {
-		v(vIBegin, j) = 2. * vLeft - v(vIBegin + 1, j);
-		v(vIEnd - 1, j) = 2. * vRight - v(vIEnd - 2, j);
-		g(vIBegin, j) = v(vIBegin, j);
-		g(vIEnd - 1, j) = v(vIEnd - 1, j);
+		v(vIBegin, j) = vLeft;
+		v(vIEnd - 1, j) = vRight;
 	}
 }
 
-void Simulation::computeTimeStepWidth() {
+double Simulation::computeTimeStepWidth() const {
 #ifndef NDEBUG
 	std::cout << "Computing time step width" << std::endl;
 #endif
+	const double uMax  = discretization_->u().max();
+	const double vMax = discretization_->v().max();
+
+	const double hx = settings_.physicalSize[0] / settings_.nCells[0];
+	const double hy = settings_.physicalSize[1] / settings_.nCells[1];
+
+	const double diffusive = (((hx * hx) + (hy * hy)) / 2.0) * (settings_.re / 2.0);
+
+	// we need to handle velocities being 0
+	const double convectiveU = (uMax > 0) ? hx / uMax : std::numeric_limits<double>::max();
+	const double convectiveV = (vMax > 0) ? hy / vMax : std::numeric_limits<double>::max();
+
+	const double dt = std::min({diffusive, convectiveU, convectiveV}) * settings_.tau;
+
+#ifndef NDEBUG
+	std::cout << "Computed time step width: " << dt << std::endl;
+#endif
+
+	return std::min(dt, settings_.maximumDt);
 }
 
 void Simulation::computePreliminaryVelocities() {
