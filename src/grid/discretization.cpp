@@ -117,8 +117,6 @@ double discretization::dy() const {
     return meshWidth_[1];
 }
 
-
-
 double discretization::computeD2uDx2(int i, int j) const {
     const double du2 = u_(i + 1, j) - 2 * u_(i, j) + u_(i - 1, j);
     return du2 / (dx() * dx());

@@ -45,6 +45,16 @@ public:
      */
     double operator()(int i, int j) const;
 
+    /**
+     * Returns the max value in the 2D Array using c++ standard library.
+     *
+     * Convenience method, so that iteration over both dimensions is not
+     * necessary to retrieve max value.
+     *
+     * @return Max value.
+     */
+    [[nodiscard]] double max() const;
+
 protected:
     std::vector<double> data_;
     std::array<int, 2> size_;

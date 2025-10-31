@@ -28,7 +28,7 @@ struct Settings {
   // external forces
   std::array<double, 2> g{0., 0.};
 
-  // if the donor cell scheme schould be used
+  // if the donor cell scheme should be used
   bool useDonorCell = false;
 
   // factor for donor-cell scheme

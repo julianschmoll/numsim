@@ -10,8 +10,6 @@ dataField::dataField(const std::array<int, 2> size, const std::array<double, 2> 
 
 double dataField::interpolateAt(double x, double y) const {
 
-    std::cout << "interpolateAt: x,y = " << x << ", " << y << ", meshWidth = " << meshWidth_[0] << ", " << meshWidth_[1] << std::endl;
-
     assert(0 <= x && x < meshWidth_[0] * (size_[0] - 1));  // u, v, p brauchen gleiche größe
     assert(0 <= y && y < meshWidth_[1] * (size_[1] - 1));
 
@@ -35,8 +33,8 @@ double dataField::interpolateAt(double x, double y) const {
     const double beta = y - jLower;
 
     assert(0 <= iLower && iLower < size_[0]);
-    assert(0 <= iUpper && iUpper < size_[1]);
-    assert(0 <= jLower && jLower < size_[0]);
+    assert(0 <= iUpper && iUpper < size_[0]);
+    assert(0 <= jLower && jLower < size_[1]);
     assert(0 <= jUpper && jUpper < size_[1]);
 
     const double d11 = data_.at(jLower * size_[0] + iLower);

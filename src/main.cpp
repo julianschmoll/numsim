@@ -21,17 +21,7 @@ int main(const int argc, char* argv[]) {
 
 	Simulation simulation(settings);
 
-	// outputWriter needs solver discretization
-	// outputWriterParaview outputWriter(solver.discretization());
-
-	simulation.run();
-
-
-	//cell.v.derivative();
-	//cell.u.derivative();
-
-	//cell.p.xDerivative();
-	//cell.p.yDerivative();
+	return simulation.run();
 
 	return EXIT_SUCCESS;
 }
