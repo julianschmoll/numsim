@@ -35,7 +35,7 @@ Simulation::Simulation(Settings settings) : settings_(settings) {
 		throw std::runtime_error("Unknown pressure solver.");
 	}
 	std::array<int, 2> a = {10, 10};
-	discretization_ = std::make_shared<discretization>(a, settings_.physicalSize);
+	discretization_ = std::make_shared<centralDifferences>(a, settings_.physicalSize);
 }
 
 void Simulation::run() {

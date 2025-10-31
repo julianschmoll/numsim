@@ -12,9 +12,9 @@ double& array2d::operator()(const int i, const int j) {
     return data_[index];
 }
 
-/*
+
 double array2d::operator()(const int i, const int j) const {
     const int index = j * size_[0] + i;
     assert(index < static_cast<int>(data_.size()));
     return data_[index];
-}*/
+}

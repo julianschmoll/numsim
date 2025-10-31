@@ -43,7 +43,7 @@ public:
      * @param j Y-Coordinate of the value.
      * @return The value.
      */
-    //double operator()(int i, int j) const;
+    double operator()(int i, int j) const;
 
 protected:
     std::vector<double> data_;

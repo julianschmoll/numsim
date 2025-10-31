@@ -1,17 +1,14 @@
 #include "grid/discretization.h"
 
-discretization::discretization(std::array<int, 2> nCells, std::array<double, 2> meshWidth)
+discretization::discretization(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth)
     : meshWidth_(meshWidth),
     nCells_(nCells),
-    u_({nCells[0] + 2, nCells[0] + 2}, meshWidth, {0.0, 0.5}),
-    v_({nCells[0] + 2, nCells[0] + 2}, meshWidth, {0.5, 0.0}),
-    p_({nCells[0] + 2, nCells[0] + 2}, meshWidth, {0.5, 0.5}),
-    f_({nCells[0] + 2, nCells[0] + 2}, meshWidth, {0.0, 0.5}),
-    g_({nCells[0] + 2, nCells[0] + 2}, meshWidth, {0.5, 0.0}),
-    rhs_({nCells[0] + 2, nCells[0] + 2}, meshWidth, {0.5, 0.5}) {
-
-
-
+    u_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.0, 0.5}),
+    v_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.0}),
+    p_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.5}),
+    f_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.0, 0.5}),
+    g_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.0}),
+    rhs_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.5}) {
 }
 
 const std::array<double, 2> &discretization::meshWidth() const {
@@ -118,4 +115,36 @@ double discretization::dx() const {
 
 double discretization::dy() const {
     return meshWidth_[1];
+}
+
+
+
+double discretization::computeD2uDx2(int i, int j) const {
+    const double du2 = u_(i + 1, j) - 2 * u_(i, j) + u_(i - 1, j);
+    return du2 / (dx() * dx());
+}
+
+double discretization::compute2DuDy2(int i, int j) const {
+    const double du2 = u_(i, j + 1) - 2 * u_(i, j) + u_(i, j - 1);
+    return du2 / (dy() * dy());
+}
+
+double discretization::computeDuDx(int i, int j) const {
+    const double du = u_(i, j) - u_(i - 1, j);
+    return du / dx();
+}
+
+double discretization::computeDvDy(int i, int j) const {
+    const double dv = v_(i, j) - v_(i, j - 1);
+    return dv / dy();
+}
+
+double discretization::computeDpDx(int i, int j) const {
+    const double dp = p_(i + 1, j) - p_(i, j);
+    return dp / dx();
+}
+
+double discretization::computeDpDy(int i, int j) const {
+    const double dp = p_(i, j + 1) - p_(i, j);
+    return dp / dy();
 }
