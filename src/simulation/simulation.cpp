@@ -111,8 +111,8 @@ void Simulation::computeTimeStepWidth() {
 #ifndef NDEBUG
 	std::cout << "Computing time step width" << std::endl;
 #endif
-	const double uMax = discretization_->u().max();
-	const double vMax = discretization_->v().max();
+	const double uMax = discretization_->u().absMax();
+	const double vMax = discretization_->v().absMax();
 
 	const double hx = settings_.physicalSize[0] / settings_.nCells[0];
 	const double hy = settings_.physicalSize[1] / settings_.nCells[1];

@@ -53,7 +53,7 @@ public:
      *
      * @return Max value.
      */
-    [[nodiscard]] double max() const;
+    [[nodiscard]] double absMax() const;
 
 protected:
     std::vector<double> data_;
