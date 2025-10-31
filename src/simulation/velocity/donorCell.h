@@ -14,7 +14,7 @@ public:
     double computeDuvDx(int i, int j) const override;
 
     double computeDuvDy(int i, int j) const override;
-    
+
 private:
     double alpha_;
 };
