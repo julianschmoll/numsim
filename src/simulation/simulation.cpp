@@ -17,12 +17,10 @@ Simulation::Simulation(const Settings& settings) : settings_(settings) {
 
 	if (settings_.pressureSolver == "SOR") {
 		std::cout << "Using SOR solver." << std::endl;
-		pressureSolver_ = std::make_unique<sor>(discretization_, settings_.epsilon, settings_.maximumNumberOfIterations,
-		                                        settings_.omega);
+		pressureSolver_ = std::make_unique<PressureSolver>(discretization_, settings_.epsilon, settings_.maximumNumberOfIterations, settings_.omega);
 	}
 	else if (settings_.pressureSolver == "GaussSeidel") {
-		pressureSolver_ = std::make_unique<
-			gaussSeidel>(discretization_, settings_.epsilon, settings_.maximumNumberOfIterations);
+		pressureSolver_ = std::make_unique<PressureSolver>(discretization_, settings_.epsilon, settings_.maximumNumberOfIterations, 1);
 	}
 	else { throw std::runtime_error("Unknown pressure solver."); }
 
