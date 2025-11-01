@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-void outputWriterText::writeFile(double currentTime) {
+void OutputWriterText::writeFile(double currentTime) {
   // Assemble the filename
   std::cout << "writing text file" << std::endl;
   std::stringstream fileName;
@@ -194,7 +194,7 @@ void outputWriterText::writeFile(double currentTime) {
   file << std::endl;
 }
 
-void outputWriterText::writePressureFile() {
+void OutputWriterText::writePressureFile() {
   // counter for files, counter value is part of the file name
   static int pressurefileNo = 0;
 

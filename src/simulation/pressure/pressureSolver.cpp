@@ -1,14 +1,14 @@
-#include "simulation/pressure/PressureSolver.h"
+#include "simulation/pressure/pressureSolver.h"
 
-PressureSolver::PressureSolver(std::shared_ptr<discretization> discretization, double epsilon, double maxNumberOfIterations, double omega)
+PressureSolver::PressureSolver(std::shared_ptr<Discretization> discretization, double epsilon, double maxNumberOfIterations, double omega)
     : discretization_(discretization), epsilon_(epsilon), maxNumberOfIterations_(maxNumberOfIterations), omega_(omega) 
 { }
 
 double PressureSolver::calculateSquareResidual() const {
     double squareResidual = 0;
 
-    dataField &p = discretization_->p();
-    dataField &rhs = discretization_->rhs();
+    DataField &p = discretization_->p();
+    DataField &rhs = discretization_->rhs();
 
     double dx2 = discretization_->dx() * discretization_->dx();
     double dy2 = discretization_->dy() * discretization_->dy();
@@ -28,8 +28,8 @@ void PressureSolver::solve() {
     int it = 0;
     double squareResidual = 0;
 
-    dataField &p = discretization_->p();
-    dataField &rhs = discretization_->rhs();
+    DataField &p = discretization_->p();
+    DataField &rhs = discretization_->rhs();
 
     double dx2 = discretization_->dx() * discretization_->dx();
     double dy2 = discretization_->dy() * discretization_->dy();
@@ -65,7 +65,7 @@ void PressureSolver::solve() {
 }
 
 void PressureSolver::setBoundaryValues() {
-    dataField &p = discretization_->p();
+    DataField &p = discretization_->p();
     // bottom
     for (int i = p.beginI(); i < p.endI(); i++) {
         p(i, 0) = p(i, 1);

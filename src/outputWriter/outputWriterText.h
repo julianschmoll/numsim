@@ -2,10 +2,10 @@
 
 #include "outputWriter.h"
 
-class outputWriterText final : public outputWriter {
+class OutputWriterText final : public OutputWriter {
 public:
     //! use constructor of base class
-    using outputWriter::outputWriter;
+    using OutputWriter::OutputWriter;
 
     //! write current velocities to file, filename is output_<count>.txt
     void writeFile(double currentTime) override;

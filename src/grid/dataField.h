@@ -7,9 +7,9 @@
 #include "grid/array2d.h"
 
 
-class dataField : public array2d {
+class DataField : public array2d {
 public:
-    dataField(std::array<int, 2> size, std::array<double, 2> meshWidth, std::array<double, 2> offset, std::array<int, 2> iIndexRange, std::array<int, 2> jIndexRange);
+    DataField(std::array<int, 2> size, std::array<double, 2> meshWidth, std::array<double, 2> offset, std::array<int, 2> iIndexRange, std::array<int, 2> jIndexRange);
 
     double interpolateAt(double x, double y) const;
 

@@ -1,10 +1,10 @@
 #include "simulation/velocity/donorCell.h"
 
-donorCell::donorCell(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, double alpha)
-    : discretization(nCells, meshWidth), alpha_(alpha)
+DonorCell::DonorCell(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, double alpha)
+    : Discretization(nCells, meshWidth), alpha_(alpha)
 { }
 
-double donorCell::computeDu2Dx(int i, int j) const {
+double DonorCell::computeDu2Dx(int i, int j) const {
     const double uHalfRight = (u_(i + 1, j) + u_(i, j)) / 2;
     const double uHalfLeft  = (u_(i - 1, j) + u_(i, j)) / 2;
 
@@ -18,7 +18,7 @@ double donorCell::computeDu2Dx(int i, int j) const {
     return centralDifferenceDerivative + alpha_ * donorCellContribution;
 }
 
-double donorCell::computeDv2Dy(int i, int j) const {
+double DonorCell::computeDv2Dy(int i, int j) const {
     const double vHalfUp   = (v_(i, j + 1) + v_(i, j)) / 2;
     const double vHalfDown = (v_(i, j - 1) + v_(i, j)) / 2;
 
@@ -32,7 +32,7 @@ double donorCell::computeDv2Dy(int i, int j) const {
     return centralDifferenceDerivative + alpha_ * donorCellContribution;
 }
 
-double donorCell::computeDuvDx(int i, int j) const {
+double DonorCell::computeDuvDx(int i, int j) const {
     const double uHalfUp     = (u_(i, j + 1) + u_(i, j)) / 2;
     const double uHalfUpLeft = (u_(i - 1, j + 1) + u_(i - 1, j)) / 2;
 
@@ -49,7 +49,7 @@ double donorCell::computeDuvDx(int i, int j) const {
     return centralDifferenceDerivative + alpha_ * donorCellContribution;
 }
 
-double donorCell::computeDuvDy(int i, int j) const {
+double DonorCell::computeDuvDy(int i, int j) const {
     const double vHalfRight     = (v_(i + 1, j) + v_(i, j)) / 2;
     const double vHalfRightDown = (v_(i, j - 1) + v_(i + 1, j - 1)) / 2;
 

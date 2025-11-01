@@ -4,28 +4,25 @@
 #include <stdlib.h>
 #include "grid/dataField.h"
 
-enum class Axis {
-    i = 0, j = 1
-};
 
-class discretization {
+class Discretization {
     const std::array<double, 2> meshWidth_;
     /// number of cells in x, y direction not including boundary
     const std::array<int, 2> nCells_;
 
 protected:
-    dataField u_;
-    dataField v_;
-    dataField p_;
-    dataField f_;
-    dataField g_;
-    dataField rhs_;
+    DataField u_;
+    DataField v_;
+    DataField p_;
+    DataField f_;
+    DataField g_;
+    DataField rhs_;
 
 public:
-    virtual ~discretization() = default;
+    virtual ~Discretization() = default;
 
     //! construct the object with given numbers of cells in x and y direction
-    discretization(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth);
+    Discretization(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth);
 
     const std::array<double, 2> &meshWidth() const;
     const std::array<int, 2> &nCells() const;
@@ -75,12 +72,12 @@ public:
     double g(int i, int j);
     double rhs(int i, int j);
 
-    dataField& u();
-    dataField& v();
-    dataField& p();
-    dataField& f();
-    dataField& g();
-    dataField& rhs();
+    DataField& u();
+    DataField& v();
+    DataField& p();
+    DataField& f();
+    DataField& g();
+    DataField& rhs();
 
     double dx() const;
     double dy() const;

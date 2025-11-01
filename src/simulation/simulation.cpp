@@ -8,11 +8,11 @@ Simulation::Simulation(const Settings& settings) : settings_(settings) {
 
 	if (settings_.useDonorCell) {
 		std::cout << "Using Donor Cell." << std::endl;
-		discretization_ = std::make_unique<donorCell>(settings_.nCells, settings_.physicalSize, settings_.alpha);
+		discretization_ = std::make_unique<DonorCell>(settings_.nCells, settings_.physicalSize, settings_.alpha);
 	}
 	else {
 		std::cout << "Using Central Differences." << std::endl;
-		discretization_ = std::make_unique<centralDifferences>(settings_.nCells, settings_.physicalSize);
+		discretization_ = std::make_unique<CentralDifferences>(settings_.nCells, settings_.physicalSize);
 	}
 
 	if (settings_.pressureSolver == "SOR") {
@@ -24,8 +24,8 @@ Simulation::Simulation(const Settings& settings) : settings_(settings) {
 	}
 	else { throw std::runtime_error("Unknown pressure solver."); }
 
-	outputWriterParaview_ = std::make_unique<outputWriterParaview>(outputWriterParaview(discretization_));
-	outputWriterText_ = std::make_unique<outputWriterText>(outputWriterText(discretization_));
+	outputWriterParaview_ = std::make_unique<OutputWriterParaview>(discretization_);
+	outputWriterText_ = std::make_unique<OutputWriterText>(discretization_);
 }
 
 int Simulation::run() {
@@ -131,13 +131,13 @@ void Simulation::setPreliminaryVelocities() {
 
 	for (int j = u.beginJ(); j < u.endJ(); j++) {
 		for (int i = u.beginI(); i < u.endI(); i++) {
-			double d2udx2 = discretization_->computeD2uDx2(i, j);
-			double du2dx = discretization_->computeDu2Dx(i, j);
-			double d2udy2 = discretization_->computeD2uDy2(i, j);
-			double duvdy = discretization_->computeDuvDy(i, j);
+			double uDxx = discretization_->computeD2uDx2(i, j);
+			double u2Dx = discretization_->computeDu2Dx(i, j);
+			double uDyy = discretization_->computeD2uDy2(i, j);
+			double uvDy = discretization_->computeDuvDy(i, j);
 
-			double convection = du2dx + duvdy;
-			double diffusion = d2udx2 + d2udy2;
+			double convection = u2Dx + uvDy;
+			double diffusion = uDxx + uDyy;
 
 			f(i, j) = u(i, j) + timeStepWidth_ * (invRe * diffusion - convection + 0); // TODO external forces
 		}
@@ -145,13 +145,13 @@ void Simulation::setPreliminaryVelocities() {
 
 	for (int j = v.beginJ(); j < v.endJ(); j++) {
 		for (int i = v.beginI(); i < v.endI(); i++) {
-			double d2vdx2 = discretization_->computeD2vDx2(i, j);
-			double dv2dy = discretization_->computeDv2Dy(i, j);
-			double d2vdy2 = discretization_->computeD2vDy2(i, j);
-			double duvdx = discretization_->computeDuvDx(i, j);
+			double vDxx = discretization_->computeD2vDx2(i, j);
+			double v2Dy = discretization_->computeDv2Dy(i, j);
+			double vDyy = discretization_->computeD2vDy2(i, j);
+			double uvDx = discretization_->computeDuvDx(i, j);
 
-			double convection = dv2dy + duvdx;
-			double diffusion = d2vdx2 + d2vdy2;
+			double convection = v2Dy + uvDx;
+			double diffusion = vDxx + vDyy;
 
 			g(i, j) = v(i, j) + timeStepWidth_ * (invRe * diffusion - convection + 0); // TODO external forces
 		}
@@ -183,15 +183,16 @@ void Simulation::setRightHandSide() {
 void Simulation::setVelocities() {
 	
 	auto& u = discretization_->u();
-	auto& v = discretization_->v();
 	auto& f = discretization_->f();
-	auto& g = discretization_->g();
-
+	
 	for (int j = u.beginJ(); j < u.endJ(); j++) {
 		for (int i = u.beginI(); i < u.endI(); i++) {
 			u(i, j) = f(i, j) - timeStepWidth_ * discretization_->computeDpDx(i, j);
 		}
 	}
+	
+	auto& v = discretization_->v();
+	auto& g = discretization_->g();
 
 	for (int j = v.beginJ(); j < v.endJ(); j++) {
 		for (int i = v.beginI(); i < v.endI(); i++) {

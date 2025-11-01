@@ -4,7 +4,7 @@
 #include "grid/discretization.h"
 #include "outputWriter/outputWriterText.h"
 #include "outputWriter/outputWriterParaview.h"
-#include "simulation/pressure/PressureSolver.h"
+#include "simulation/pressure/pressureSolver.h"
 #include "simulation/velocity/centralDifferences.h"
 #include "simulation/velocity/donorCell.h"
 #include <memory>
@@ -48,9 +48,9 @@ private:
     void setVelocities();
 
     double meshWidth_ = 0.0;
-    std::shared_ptr<discretization> discretization_;
-    std::unique_ptr<outputWriterParaview> outputWriterParaview_;
-    std::unique_ptr<outputWriterText> outputWriterText_;
+    std::shared_ptr<Discretization> discretization_;
+    std::unique_ptr<OutputWriterParaview> outputWriterParaview_;
+    std::unique_ptr<OutputWriterText> outputWriterText_;
     std::unique_ptr<PressureSolver> pressureSolver_;
     Settings settings_;
     double timeStepWidth_ = 0.1;

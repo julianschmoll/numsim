@@ -8,7 +8,7 @@
 class PressureSolver {
 public:
     virtual ~PressureSolver() = default;
-    PressureSolver(std::shared_ptr<discretization> discretization, double epsilon, double maxNumberOfIterations, double omega);
+    PressureSolver(std::shared_ptr<Discretization> discretization, double epsilon, double maxNumberOfIterations, double omega);
 
     /**
      * Solves the Poisson problem for the pressure.
@@ -28,7 +28,7 @@ public:
 
 protected:
     // object holding the needed field variables for rhs and p
-    std::shared_ptr<discretization> discretization_;
+    std::shared_ptr<Discretization> discretization_;
     double epsilon_;
     double maxNumberOfIterations_;
     double omega_;

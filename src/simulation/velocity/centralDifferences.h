@@ -2,10 +2,10 @@
 
 #include "grid/discretization.h"
 
-class centralDifferences final : public discretization {
+class CentralDifferences final : public Discretization {
 
 public:
-    centralDifferences(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth);
+    CentralDifferences(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth);
 
     double computeDv2Dy(int i, int j) const override;
 

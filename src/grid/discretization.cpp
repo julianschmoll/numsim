@@ -1,6 +1,6 @@
 #include "grid/discretization.h"
 
-discretization::discretization(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth)
+Discretization::Discretization(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth)
     : meshWidth_(meshWidth),
     nCells_(nCells),
     u_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.0, 0.5}, {1, nCells_[0]}, {1, nCells_[1] + 1}),
@@ -11,107 +11,107 @@ discretization::discretization(const std::array<int, 2> &nCells, const std::arra
     rhs_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.5}, {1, nCells_[0] + 1}, {1, nCells_[1] + 1}) {
 }
 
-const std::array<double, 2> &discretization::meshWidth() const {
+const std::array<double, 2> &Discretization::meshWidth() const {
     return meshWidth_;
 }
 
-const std::array<int, 2> &discretization::nCells() const {
+const std::array<int, 2> &Discretization::nCells() const {
     return nCells_;
 }
 
-double discretization::u(int i, int j) {
+double Discretization::u(int i, int j) {
     return u_(i,j);
 }
 
-double discretization::v(int i, int j) {
+double Discretization::v(int i, int j) {
     return v_(i,j);
 }
 
-double discretization::p(int i, int j) {
+double Discretization::p(int i, int j) {
     return p_(i,j);
 }
 
-double discretization::f(int i, int j) {
+double Discretization::f(int i, int j) {
     return f_(i,j);
 }
 
-double discretization::g(int i, int j) {
+double Discretization::g(int i, int j) {
     return g_(i,j);
 }
 
-double discretization::rhs(int i, int j) {
+double Discretization::rhs(int i, int j) {
     return rhs_(i,j);
 }
 
-dataField &discretization::u() {
+DataField &Discretization::u() {
     return u_;
 }
 
-dataField& discretization::v() {
+DataField& Discretization::v() {
     return v_;
 }
 
-dataField& discretization::p() {
+DataField& Discretization::p() {
     return p_;
 }
 
-dataField& discretization::f() {
+DataField& Discretization::f() {
     return f_;
 }
 
-dataField& discretization::g() {
+DataField& Discretization::g() {
     return g_;
 }
 
-dataField& discretization::rhs() {
+DataField& Discretization::rhs() {
     return rhs_;
 }
 
 
-double discretization::dx() const {
+double Discretization::dx() const {
     return meshWidth_[0];
 }
 
-double discretization::dy() const {
+double Discretization::dy() const {
     return meshWidth_[1];
 }
 
-double discretization::computeD2uDx2(int i, int j) const {
+double Discretization::computeD2uDx2(int i, int j) const {
     const double du2 = u_(i + 1, j) - 2 * u_(i, j) + u_(i - 1, j);
     return du2 / (dx() * dx());
 }
 
-double discretization::computeD2uDy2(int i, int j) const {
+double Discretization::computeD2uDy2(int i, int j) const {
     const double du2 = u_(i, j + 1) - 2 * u_(i, j) + u_(i, j - 1);
     return du2 / (dy() * dy());
 }
 
-double discretization::computeD2vDx2(int i, int j) const {
+double Discretization::computeD2vDx2(int i, int j) const {
     const double dv2 = v_(i + 1, j) - 2 * v_(i, j) + v_(i - 1, j);
     return dv2 / (dx() * dx());
 }
 
-double discretization::computeD2vDy2(int i, int j) const {
+double Discretization::computeD2vDy2(int i, int j) const {
     const double dv2 = v_(i, j + 1) - 2 * v_(i, j) + v_(i, j - 1);
     return dv2 / (dy() * dy());
 }
 
-double discretization::computeDuDx(int i, int j) const {
+double Discretization::computeDuDx(int i, int j) const {
     const double du = u_(i, j) - u_(i - 1, j);
     return du / dx();
 }
 
-double discretization::computeDvDy(int i, int j) const {
+double Discretization::computeDvDy(int i, int j) const {
     const double dv = v_(i, j) - v_(i, j - 1);
     return dv / dy();
 }
 
-double discretization::computeDpDx(int i, int j) const {
+double Discretization::computeDpDx(int i, int j) const {
     const double dp = p_(i + 1, j) - p_(i, j);
     return dp / dx();
 }
 
-double discretization::computeDpDy(int i, int j) const {
+double Discretization::computeDpDy(int i, int j) const {
     const double dp = p_(i, j + 1) - p_(i, j);
     return dp / dy();
 }

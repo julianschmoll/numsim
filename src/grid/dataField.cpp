@@ -6,27 +6,27 @@
 
 #include <iostream>
 
-dataField::dataField(const std::array<int, 2> size, const std::array<double, 2> meshWidth, const std::array<double, 2> offset, std::array<int, 2> iIndexRange, std::array<int, 2> jIndexRange)
+DataField::DataField(const std::array<int, 2> size, const std::array<double, 2> meshWidth, const std::array<double, 2> offset, std::array<int, 2> iIndexRange, std::array<int, 2> jIndexRange)
     : array2d(size), meshWidth_(meshWidth), offset_(offset), iIndexRange_(iIndexRange), jIndexRange_(jIndexRange)
 {}
 
-int dataField::beginJ() const {
+int DataField::beginJ() const {
     return jIndexRange_[0];
 }
 
-int dataField::endJ() const {
+int DataField::endJ() const {
     return jIndexRange_[1];
 }
 
-int dataField::beginI() const {
+int DataField::beginI() const {
     return iIndexRange_[0];
 }
 
-int dataField::endI() const {
+int DataField::endI() const {
     return iIndexRange_[1];
 }
 
-double dataField::interpolateAt(double x, double y) const {
+double DataField::interpolateAt(double x, double y) const {
 
     assert(0 <= x && x < meshWidth_[0] * (size_[0] - 1));  // u, v, p brauchen gleiche größe
     assert(0 <= y && y < meshWidth_[1] * (size_[1] - 1));
