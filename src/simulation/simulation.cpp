@@ -56,21 +56,11 @@ int Simulation::run() {
 	return 0;
 }
 
-// ToDo: Do we need to set F and G?
+// TODO: Do we need to set F and G?
 void Simulation::setBoundaryValues() {
 #ifndef NDEBUG
 	std::cout << "Setting boundary values" << std::endl;
 #endif
-	const auto uIBegin = discretization_->uIBegin();
-	const auto uIEnd = discretization_->uIEnd();
-	const auto uJBegin = discretization_->uJBegin();
-	const auto uJEnd = discretization_->uJEnd();
-
-	const auto vIBegin = discretization_->vIBegin();
-	const auto vIEnd = discretization_->vIEnd();
-	const auto vJBegin = discretization_->vJBegin();
-	const auto vJEnd = discretization_->vJEnd();
-
 	const auto uBottom = settings_.dirichletBcBottom[0];
 	const auto uTop = settings_.dirichletBcTop[0];
 	const auto uLeft = settings_.dirichletBcLeft[0];
@@ -86,24 +76,24 @@ void Simulation::setBoundaryValues() {
 	auto& u = discretization_->u();
 	auto& v = discretization_->v();
 
-	for (int i = uIBegin; i < uIEnd; ++i) {
-		u(i, uJBegin) = uBottom;
-		u(i, uJEnd - 1) = uTop;
+	for (int i = u.beginI(); i < u.endI(); ++i) {
+		u(i, u.beginJ()) = uBottom;
+		u(i, u.endJ() - 1) = uTop;
 	}
 
-	for (int j = uJBegin; j < uJEnd; ++j) {
-		u(uIBegin, j) = uLeft;
-		u(uIEnd - 1, j) = uRight;
+	for (int j = u.beginJ(); j < u.endJ(); ++j) {
+		u(u.beginI(), j) = uLeft;
+		u(u.endI() - 1, j) = uRight;
 	}
 
-	for (int i = vIBegin; i < vIEnd; ++i) {
-		v(i, vJBegin) = vBottom;
-		v(i, vJEnd - 1) = vTop;
+	for (int i = v.beginI(); i < v.endI(); ++i) {
+		v(i, v.beginJ()) = vBottom;
+		v(i, v.endJ() - 1) = vTop;
 	}
 
-	for (int j = vJBegin; j < vJEnd; ++j) {
-		v(vIBegin, j) = vLeft;
-		v(vIEnd - 1, j) = vRight;
+	for (int j = v.beginJ(); j < v.endJ(); ++j) {
+		v(v.beginI(), j) = vLeft;
+		v(v.endI() - 1, j) = vRight;
 	}
 }
 
@@ -141,18 +131,8 @@ void Simulation::setPreliminaryVelocities() {
 	auto& f = discretization_->f();
 	auto& g = discretization_->g();
 
-	const auto& uJBegin = discretization_->uJBegin();
-	const auto& uJEnd = discretization_->uJEnd();
-	const auto& uIBegin = discretization_->uIBegin();
-	const auto& uIEnd = discretization_->uIEnd();
-
-	const auto& vJBegin = discretization_->vJBegin();
-	const auto& vJEnd = discretization_->vJEnd();
-	const auto& vIBegin = discretization_->vIBegin();
-	const auto& vIEnd = discretization_->vIEnd();
-
-	for (int j = uJBegin; j < uJEnd; j++) {
-		for (int i = uIBegin; i < uIEnd; i++) {
+	for (int j = u.beginJ(); j < u.endJ(); j++) {
+		for (int i = u.beginI(); i < u.endI(); i++) {
 			double d2udx2 = discretization_->computeD2uDx2(i, j);
 			double du2dx = discretization_->computeDu2Dx(i, j);
 			double d2udy2 = discretization_->computeD2uDy2(i, j);
@@ -165,8 +145,8 @@ void Simulation::setPreliminaryVelocities() {
 		}
 	}
 
-	for (int j = vJBegin; j < vJEnd; j++) {
-		for (int i = vIBegin; i < vIEnd; i++) {
+	for (int j = v.beginJ(); j < v.endJ(); j++) {
+		for (int i = v.beginI(); i < v.endI(); i++) {
 			double d2vdx2 = discretization_->computeD2vDx2(i, j);
 			double dv2dy = discretization_->computeDv2Dy(i, j);
 			double d2vdy2 = discretization_->computeD2vDy2(i, j);
@@ -182,11 +162,6 @@ void Simulation::setPreliminaryVelocities() {
 
 void Simulation::setRightHandSide() {
 
-	const auto& pJBegin = discretization_->pJBegin();
-	const auto& pJEnd = discretization_->pJEnd();
-	const auto& pIBegin = discretization_->pIBegin();
-	const auto& pIEnd = discretization_->pIEnd();
-
 	const auto& dx = discretization_->dx();
 	const auto& dy = discretization_->dy();
 
@@ -198,8 +173,8 @@ void Simulation::setRightHandSide() {
 	const double invDx = 1.0 / dx;
 	const double invDy = 1.0 / dy;
 
-	for (int j = pJBegin; j < pJEnd; j++) {
-		for (int i = pIBegin; i < pIEnd; i++) {
+	for (int j = rhs.beginJ(); j < rhs.endJ(); j++) {
+		for (int i = rhs.beginI(); i < rhs.endI(); i++) {
 			const double diffF = (f(i, j) - f(i - 1, j)) * invDx;
 			const double diffG = (g(i, j) - g(i, j - 1)) * invDy;
 			rhs(i, j) = invTimeStep * (diffF + diffG);
@@ -208,30 +183,20 @@ void Simulation::setRightHandSide() {
 }
 
 void Simulation::setVelocities() {
-
-	const auto& uJBegin = discretization_->uJBegin();
-	const auto& uJEnd = discretization_->uJEnd();
-	const auto& uIBegin = discretization_->uIBegin();
-	const auto& uIEnd = discretization_->uIEnd();
-
-	const auto& vJBegin = discretization_->vJBegin();
-	const auto& vJEnd = discretization_->vJEnd();
-	const auto& vIBegin = discretization_->vIBegin();
-	const auto& vIEnd = discretization_->vIEnd();
-
+	
 	auto& u = discretization_->u();
 	auto& v = discretization_->v();
 	auto& f = discretization_->f();
 	auto& g = discretization_->g();
 
-	for (int j = uJBegin; j < uJEnd; j++) {
-		for (int i = uIBegin; i < uIEnd; i++) {
+	for (int j = u.beginJ(); j < u.endJ(); j++) {
+		for (int i = u.beginI(); i < u.endI(); i++) {
 			u(i, j) = f(i, j) - timeStepWidth_ * discretization_->computeDpDx(i, j);
 		}
 	}
 
-	for (int j = vJBegin; j < vJEnd; j++) {
-		for (int i = vIBegin; i < vIEnd; i++) {
+	for (int j = v.beginJ(); j < v.endJ(); j++) {
+		for (int i = v.beginI(); i < v.endI(); i++) {
 			v(i, j) = g(i, j) - timeStepWidth_ * discretization_->computeDpDy(i, j);
 		}
 	}

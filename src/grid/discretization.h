@@ -4,6 +4,10 @@
 #include <stdlib.h>
 #include "grid/dataField.h"
 
+enum class Axis {
+    i = 0, j = 1
+};
+
 class discretization {
     const std::array<double, 2> meshWidth_;
     /// number of cells in x, y direction not including boundary
@@ -63,21 +67,6 @@ public:
 
     /// compute dp/y
     double computeDpDy(int i, int j) const;
-
-    int pIBegin() const;
-    int pJBegin() const;
-    int pIEnd() const;
-    int pJEnd() const;
-
-    int vIBegin() const;
-    int vJBegin() const;
-    int vIEnd() const;
-    int vJEnd() const;
-
-    int uIBegin() const;
-    int uJBegin() const;
-    int uIEnd() const;
-    int uJEnd() const;
 
     double u(int i, int j);
     double v(int i, int j);

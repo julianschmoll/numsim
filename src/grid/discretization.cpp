@@ -3,12 +3,12 @@
 discretization::discretization(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth)
     : meshWidth_(meshWidth),
     nCells_(nCells),
-    u_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.0, 0.5}),
-    v_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.0}),
-    p_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.5}),
-    f_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.0, 0.5}),
-    g_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.0}),
-    rhs_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.5}) {
+    u_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.0, 0.5}, {1, nCells_[0]}, {1, nCells_[1] + 1}),
+    v_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.0}, {1, nCells_[0] + 1}, {1, nCells_[1]}),
+    p_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.5}, {1, nCells_[0] + 1}, {1, nCells_[1] + 1}),
+    f_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.0, 0.5}, {1, nCells_[0]}, {1, nCells_[1] + 1}),
+    g_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.0}, {1, nCells_[0] + 1}, {1, nCells_[1]}),
+    rhs_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.5}, {1, nCells_[0] + 1}, {1, nCells_[1] + 1}) {
 }
 
 const std::array<double, 2> &discretization::meshWidth() const {
@@ -17,47 +17,6 @@ const std::array<double, 2> &discretization::meshWidth() const {
 
 const std::array<int, 2> &discretization::nCells() const {
     return nCells_;
-}
-
-int discretization::pIBegin() const {
-    return 1;
-}
-
-int discretization::pJBegin() const {
-    return 1;
-}
-
-int discretization::pIEnd() const {
-    return nCells_[0] + 1;
-}
-int discretization::pJEnd() const {
-    return nCells_[1] + 1;
-}
-
-int discretization::vIBegin() const {
-    return 1;
-}
-int discretization::vJBegin() const {
-    return 1;
-}
-int discretization::vIEnd() const {
-    return nCells_[0] + 1;
-}
-int discretization::vJEnd() const {
-    return nCells_[1];
-};
-
-int discretization::uIBegin() const {
-    return 1;
-}
-int discretization::uJBegin() const {
-    return 1;
-}
-int discretization::uIEnd() const {
-    return nCells_[0];
-}
-int discretization::uJEnd() const {
-    return nCells_[1] + 1;
 }
 
 double discretization::u(int i, int j) {

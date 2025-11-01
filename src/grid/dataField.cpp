@@ -1,12 +1,30 @@
 #include "grid/dataField.h"
+#include "grid/discretization.h"
 
 #include <cassert>
 #include <cmath>
 
 #include <iostream>
 
-dataField::dataField(const std::array<int, 2> size, const std::array<double, 2> meshWidth, const std::array<double, 2> offset)
-    : array2d(size), meshWidth_(meshWidth), offset_(offset) {}
+dataField::dataField(const std::array<int, 2> size, const std::array<double, 2> meshWidth, const std::array<double, 2> offset, std::array<int, 2> iIndexRange, std::array<int, 2> jIndexRange)
+    : array2d(size), meshWidth_(meshWidth), offset_(offset), iIndexRange_(iIndexRange), jIndexRange_(jIndexRange)
+{}
+
+int dataField::beginJ() const {
+    return jIndexRange_[0];
+}
+
+int dataField::endJ() const {
+    return jIndexRange_[1];
+}
+
+int dataField::beginI() const {
+    return iIndexRange_[0];
+}
+
+int dataField::endI() const {
+    return iIndexRange_[1];
+}
 
 double dataField::interpolateAt(double x, double y) const {
 
