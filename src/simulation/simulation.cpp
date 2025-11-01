@@ -133,9 +133,7 @@ void Simulation::computeTimeStepWidth() {
 }
 
 void Simulation::setPreliminaryVelocities() {
-#ifndef NDEBUG
-	std::cout << "Computing preliminary velocities" << std::endl;
-#endif
+
 	const double invRe = 1.0 / settings_.re;
 
 	auto& u = discretization_->u();
@@ -153,23 +151,37 @@ void Simulation::setPreliminaryVelocities() {
 	const auto& vIBegin = discretization_->vIBegin();
 	const auto& vIEnd = discretization_->vIEnd();
 
-	for (int j = uJBegin + 1; j < uJEnd - 1; j++) {
-		for (int i = uIBegin + 1; i < uIEnd - 1; i++) {
-			// ToDo: Do Computation here (understand derivative methods)
+	for (int j = uJBegin; j < uJEnd; j++) {
+		for (int i = uIBegin; i < uIEnd; i++) {
+			double d2udx2 = discretization_->computeD2uDx2(i, j);
+			double du2dx = discretization_->computeDu2Dx(i, j);
+			double d2udy2 = discretization_->computeD2uDy2(i, j);
+			double duvdy = discretization_->computeDuvDy(i, j);
+
+			double convection = du2dx + duvdy;
+			double diffusion = d2udx2 + d2udy2;
+
+			f(i, j) = u(i, j) + timeStepWidth_ * (invRe * diffusion - convection + 0); // TODO external forces
 		}
 	}
 
-	for (int j = vJBegin + 1; j < vJEnd - 1; j++) {
-		for (int i = vIBegin + 1; i < vIEnd - 1; i++) {
-			// ToDo: Do Computation here (understand derivative methods)
+	for (int j = vJBegin; j < vJEnd; j++) {
+		for (int i = vIBegin; i < vIEnd; i++) {
+			double d2vdx2 = discretization_->computeD2vDx2(i, j);
+			double dv2dy = discretization_->computeDv2Dy(i, j);
+			double d2vdy2 = discretization_->computeD2vDy2(i, j);
+			double duvdx = discretization_->computeDuvDx(i, j);
+
+			double convection = dv2dy + duvdx;
+			double diffusion = d2vdx2 + d2vdy2;
+
+			g(i, j) = v(i, j) + timeStepWidth_ * (invRe * diffusion - convection + 0); // TODO external forces
 		}
 	}
 }
 
 void Simulation::setRightHandSide() {
-#ifndef NDEBUG
-	std::cout << "Computing right hand side" << std::endl;
-#endif
+
 	const auto& pJBegin = discretization_->pJBegin();
 	const auto& pJEnd = discretization_->pJEnd();
 	const auto& pIBegin = discretization_->pIBegin();
@@ -186,8 +198,8 @@ void Simulation::setRightHandSide() {
 	const double invDx = 1.0 / dx;
 	const double invDy = 1.0 / dy;
 
-	for (int j = pJBegin; j < pJEnd - 1; j++) {
-		for (int i = pIBegin; i < pIEnd - 1; i++) {
+	for (int j = pJBegin; j < pJEnd; j++) {
+		for (int i = pIBegin; i < pIEnd; i++) {
 			const double diffF = (f(i, j) - f(i - 1, j)) * invDx;
 			const double diffG = (g(i, j) - g(i, j - 1)) * invDy;
 			rhs(i, j) = invTimeStep * (diffF + diffG);
@@ -196,8 +208,31 @@ void Simulation::setRightHandSide() {
 }
 
 void Simulation::setVelocities() {
-#ifndef NDEBUG
-	std::cout << "Computing velocities" << std::endl;
-#endif
-	// ToDo: Also calls discretization methods, understand them and implement here
+
+	const auto& uJBegin = discretization_->uJBegin();
+	const auto& uJEnd = discretization_->uJEnd();
+	const auto& uIBegin = discretization_->uIBegin();
+	const auto& uIEnd = discretization_->uIEnd();
+
+	const auto& vJBegin = discretization_->vJBegin();
+	const auto& vJEnd = discretization_->vJEnd();
+	const auto& vIBegin = discretization_->vIBegin();
+	const auto& vIEnd = discretization_->vIEnd();
+
+	auto& u = discretization_->u();
+	auto& v = discretization_->v();
+	auto& f = discretization_->f();
+	auto& g = discretization_->g();
+
+	for (int j = uJBegin; j < uJEnd; j++) {
+		for (int i = uIBegin; i < uIEnd; i++) {
+			u(i, j) = f(i, j) - timeStepWidth_ * discretization_->computeDpDx(i, j);
+		}
+	}
+
+	for (int j = vJBegin; j < vJEnd; j++) {
+		for (int i = vIBegin; i < vIEnd; i++) {
+			v(i, j) = g(i, j) - timeStepWidth_ * discretization_->computeDpDy(i, j);
+		}
+	}
 }

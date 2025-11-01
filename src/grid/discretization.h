@@ -43,11 +43,17 @@ public:
     /// compute d²u/dx²
     double computeD2uDx2(int i, int j) const;
 
+    /// compute d²u/y²
+    double computeD2uDy2(int i, int j) const;
+
+    /// compute d²v/dx²
+    double computeD2vDx2(int i, int j) const;
+
+    /// compute d²v/y²
+    double computeD2vDy2(int i, int j) const;
+
     /// compute dp/x
     double computeDpDx(int i, int j) const;
-
-    /// compute d²u/y²
-    double compute2DuDy2(int i, int j) const;
 
     /// compute du/x
     double computeDuDx(int i, int j) const;

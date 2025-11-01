@@ -122,9 +122,19 @@ double discretization::computeD2uDx2(int i, int j) const {
     return du2 / (dx() * dx());
 }
 
-double discretization::compute2DuDy2(int i, int j) const {
+double discretization::computeD2uDy2(int i, int j) const {
     const double du2 = u_(i, j + 1) - 2 * u_(i, j) + u_(i, j - 1);
     return du2 / (dy() * dy());
+}
+
+double discretization::computeD2vDx2(int i, int j) const {
+    const double dv2 = v_(i + 1, j) - 2 * v_(i, j) + v_(i - 1, j);
+    return dv2 / (dx() * dx());
+}
+
+double discretization::computeD2vDy2(int i, int j) const {
+    const double dv2 = v_(i, j + 1) - 2 * v_(i, j) + v_(i, j - 1);
+    return dv2 / (dy() * dy());
 }
 
 double discretization::computeDuDx(int i, int j) const {
