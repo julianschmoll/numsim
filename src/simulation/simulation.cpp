@@ -35,11 +35,12 @@ Simulation::Simulation(const Settings& settings) : settings_(settings) {
 int Simulation::run() {
 	double currentTime = 0.0;
 
-	// simulation loop, do while so we definitely reach end time
-	do {
+	while (currentTime < settings_.endTime) {
 		setBoundaryValues();
 
 		computeTimeStepWidth();
+
+		if (currentTime + timeStepWidth_ > settings_.endTime) { timeStepWidth_ = settings_.endTime - currentTime; }
 		currentTime += timeStepWidth_;
 
 		setPreliminaryVelocities();
@@ -54,7 +55,6 @@ int Simulation::run() {
 		outputWriterParaview_->writeFile(currentTime);
 		outputWriterText_->writeFile(currentTime);
 	}
-	while (currentTime < settings_.endTime);
 	return 0;
 }
 
@@ -135,7 +135,6 @@ void Simulation::computeTimeStepWidth() {
 #ifndef NDEBUG
 	std::cout << "Computed time step width: " << dt << std::endl;
 #endif
-
 	timeStepWidth_ = std::min(dt, settings_.maximumDt);
 }
 
