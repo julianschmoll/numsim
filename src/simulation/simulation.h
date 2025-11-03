@@ -5,8 +5,7 @@
 #include "outputWriter/outputWriterText.h"
 #include "outputWriter/outputWriterParaview.h"
 #include "simulation/pressure/pressureSolver.h"
-#include "simulation/velocity/centralDifferences.h"
-#include "simulation/velocity/donorCell.h"
+#include "simulation/velocity/velocitySolver.h"
 #include <memory>
 
 class Simulation {

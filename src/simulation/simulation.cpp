@@ -1,6 +1,6 @@
 #include "simulation.h"
 
-#include "velocity/donorCell.h"
+#include "velocity/velocitySolver.h"
 
 
 Simulation::Simulation(const Settings& settings) : settings_(settings) {
@@ -10,11 +10,11 @@ Simulation::Simulation(const Settings& settings) : settings_(settings) {
 
 	if (settings_.useDonorCell) {
 		std::cout << "Using Donor Cell." << std::endl;
-		discretization_ = std::make_unique<DonorCell>(settings_.nCells, meshWidth_, settings_.alpha);
+		discretization_ = std::make_unique<velocitySolver>(settings_.nCells, meshWidth_, settings_.alpha);
 	}
 	else {
 		std::cout << "Using Central Differences." << std::endl;
-		discretization_ = std::make_unique<CentralDifferences>(settings_.nCells, meshWidth_);
+		discretization_ = std::make_unique<velocitySolver>(settings_.nCells, meshWidth_, 0.0);
 	}
 
 	if (settings_.pressureSolver == "SOR") {
