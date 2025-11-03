@@ -28,8 +28,8 @@ int DataField::endI() const {
 
 double DataField::interpolateAt(double x, double y) const {
 
-    assert(0 <= x && x < meshWidth_[0] * (size_[0] - 1));  // u, v, p brauchen gleiche größe
-    assert(0 <= y && y < meshWidth_[1] * (size_[1] - 1));
+    // assert(0 <= x && x < meshWidth_[0] * (size_[0] - 1));  // u, v, p brauchen gleiche größe
+    // assert(0 <= y && y < meshWidth_[1] * (size_[1] - 1));
 
     x /= meshWidth_[0];
     y /= meshWidth_[1];

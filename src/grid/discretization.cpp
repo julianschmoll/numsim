@@ -2,13 +2,13 @@
 
 Discretization::Discretization(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth)
     : meshWidth_(meshWidth),
-    nCells_(nCells),
-    u_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.0, 0.5}, {1, nCells_[0]}, {1, nCells_[1] + 1}),
-    v_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.0}, {1, nCells_[0] + 1}, {1, nCells_[1]}),
-    p_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.5}, {1, nCells_[0] + 1}, {1, nCells_[1] + 1}),
-    f_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.0, 0.5}, {1, nCells_[0]}, {1, nCells_[1] + 1}),
-    g_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.0}, {1, nCells_[0] + 1}, {1, nCells_[1]}),
-    rhs_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.5}, {1, nCells_[0] + 1}, {1, nCells_[1] + 1}) {
+      nCells_(nCells),
+      u_({nCells[0] + 1, nCells[1] + 2}, meshWidth, {0.0, 0.5}, {-1, nCells_[0]}, {-1, nCells_[1] +1}),
+      v_({nCells[0] + 2, nCells[1] + 1}, meshWidth, {0.5, 0.0}, {-1, nCells_[0] +1}, {-1, nCells_[1]}),
+      p_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.5}, {-1, nCells_[0] +1}, {-1, nCells_[1]+1}),
+      f_({nCells[0] + 1, nCells[1] + 2}, meshWidth, {0.0, 0.5}, {-1, nCells_[0]}, {-1, nCells_[1] +1}),
+      g_({nCells[0] + 2, nCells[1] + 1}, meshWidth, {0.5, 0.0}, {-1, nCells_[0] +1}, {-1, nCells_[1]}),
+      rhs_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.5}, {-1, nCells_[0] +1}, {-1, nCells_[1]+1}) {
 }
 
 const std::array<double, 2> &Discretization::meshWidth() const {
