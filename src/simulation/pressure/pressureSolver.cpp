@@ -22,7 +22,12 @@ double PressureSolver::calculateSquareResidual() const {
             squareResidual += difference * difference;
         }
     }
-    return squareResidual;
+
+    const int nCellsx = p.endI() - p.beginI() - 2;
+    const int nCellsy = p.endJ() - p.beginJ() - 2;
+    const auto nCellsTotal = static_cast<double>(nCellsx * nCellsy);
+
+    return squareResidual / nCellsTotal;
 }
 
 void PressureSolver::solve() {
@@ -58,11 +63,11 @@ void PressureSolver::solve() {
                 p(i, j) = pNew;
             }
         }
+
+        setBoundaryValues();
 #ifdef RESIDUAL_METHOD
         squareResidual = calculateSquareResidual();
 #endif
-        // TODO: Here correct?
-        setBoundaryValues();
         it++;
     }
 }
