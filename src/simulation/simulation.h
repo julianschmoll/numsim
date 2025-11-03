@@ -47,7 +47,7 @@ private:
      */
     void setVelocities();
 
-    double meshWidth_ = 0.0;
+    std::array<double, 2> meshWidth_;
     std::shared_ptr<Discretization> discretization_;
     std::unique_ptr<OutputWriterParaview> outputWriterParaview_;
     std::unique_ptr<OutputWriterText> outputWriterText_;
