@@ -99,8 +99,7 @@ void Settings::loadFromFile(const std::string& filename) {
   if (settings.count("epsilon"))
     epsilon = std::stod(settings["epsilon"]);
   if (settings.count("maximumNumberOfIterations"))
-    maximumNumberOfIterations =
-      std::stoi(settings["maximumNumberOfIterations"]);
+    maximumNumberOfIterations = static_cast<int>(std::stod(settings["maximumNumberOfIterations"]));
 }
 
 void Settings::printSettings() const {
