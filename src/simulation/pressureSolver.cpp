@@ -1,4 +1,4 @@
-#include "simulation/pressure/pressureSolver.h"
+#include "simulation/pressureSolver.h"
 
 PressureSolver::PressureSolver(std::shared_ptr<Discretization> discretization, double epsilon,
                                double maxNumberOfIterations, double omega)

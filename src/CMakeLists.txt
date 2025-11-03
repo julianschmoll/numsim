@@ -16,8 +16,8 @@ add_executable(${PROJECT_NAME}
 
         # solver stuff
         simulation/simulation.cpp
-        simulation/pressure/pressureSolver.cpp
-        simulation/velocity/velocitySolver.cpp
+        simulation/pressureSolver.cpp
+        simulation/velocitySolver.cpp
 
         # outputWriter stuff
         outputWriter/outputWriter.cpp

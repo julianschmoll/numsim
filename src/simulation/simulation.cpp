@@ -1,8 +1,5 @@
 #include "simulation.h"
 
-#include "velocity/velocitySolver.h"
-
-
 Simulation::Simulation(const Settings& settings) : settings_(settings) {
 	std::cout << "Initializing Simulation..." << std::endl;
 
@@ -47,7 +44,6 @@ int Simulation::run() {
 
 		setRightHandSide();
 
-		// computes the pressure
 		pressureSolver_->solve();
 
 		setVelocities();
@@ -55,6 +51,9 @@ int Simulation::run() {
 		outputWriterParaview_->writeFile(currentTime);
 		outputWriterText_->writeFile(currentTime);
 	}
+
+	std::cout << "Simulation finished." << std::endl;
+
 	return 0;
 }
 

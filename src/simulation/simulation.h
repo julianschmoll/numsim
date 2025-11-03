@@ -4,8 +4,8 @@
 #include "grid/discretization.h"
 #include "outputWriter/outputWriterText.h"
 #include "outputWriter/outputWriterParaview.h"
-#include "simulation/pressure/pressureSolver.h"
-#include "simulation/velocity/velocitySolver.h"
+#include "simulation/pressureSolver.h"
+#include "simulation/velocitySolver.h"
 #include <memory>
 
 class Simulation {
@@ -47,7 +47,7 @@ private:
     void setVelocities();
 
     std::array<double, 2> meshWidth_;
-    std::shared_ptr<Discretization> discretization_;
+    std::shared_ptr<velocitySolver> discretization_;
     std::unique_ptr<OutputWriterParaview> outputWriterParaview_;
     std::unique_ptr<OutputWriterText> outputWriterText_;
     std::unique_ptr<PressureSolver> pressureSolver_;
