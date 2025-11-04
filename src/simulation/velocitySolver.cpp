@@ -22,12 +22,12 @@ double velocitySolver::computeDv2Dy(int i, int j) const {
     const double vHalfUp   = (v_(i, j + 1) + v_(i, j)) / 2;
     const double vHalfDown = (v_(i, j - 1) + v_(i, j)) / 2;
 
-    const double centralDifferenceDerivative = (vHalfUp * vHalfUp - vHalfDown * vHalfDown) / dx();
+    const double centralDifferenceDerivative = (vHalfUp * vHalfUp - vHalfDown * vHalfDown) / dy();
 
     const double vDiffUp   = (v_(i, j) - v_(i, j + 1)) / 2;
     const double vDiffDown = (v_(i, j - 1) - v_(i, j)) / 2;
 
-    const double donorCellContribution = (std::abs(vHalfUp) * vDiffUp - std::abs(vHalfDown) * vDiffDown) / dx();
+    const double donorCellContribution = (std::abs(vHalfUp) * vDiffUp - std::abs(vHalfDown) * vDiffDown) / dy();
 
     return centralDifferenceDerivative + alpha_ * donorCellContribution;
 }
