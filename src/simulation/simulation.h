@@ -46,8 +46,8 @@ private:
      */
     void setVelocities();
 
-    std::array<double, 2> meshWidth_;
-    std::shared_ptr<velocitySolver> discretization_;
+    std::array<double, 2> meshWidth_{};
+    std::shared_ptr<velocitySolver> velocitySolver_;
     std::unique_ptr<OutputWriterParaview> outputWriterParaview_;
     std::unique_ptr<OutputWriterText> outputWriterText_;
     std::unique_ptr<PressureSolver> pressureSolver_;

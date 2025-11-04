@@ -7,26 +7,26 @@ Simulation::Simulation(const Settings& settings) : settings_(settings) {
 
 	if (settings_.useDonorCell) {
 		std::cout << "Using Donor Cell." << std::endl;
-		discretization_ = std::make_unique<velocitySolver>(settings_.nCells, meshWidth_, settings_.alpha);
+		velocitySolver_ = std::make_unique<velocitySolver>(settings_.nCells, meshWidth_, settings_.alpha);
 	}
 	else {
 		std::cout << "Using Central Differences." << std::endl;
-		discretization_ = std::make_unique<velocitySolver>(settings_.nCells, meshWidth_, 0.0);
+		velocitySolver_ = std::make_unique<velocitySolver>(settings_.nCells, meshWidth_, 0.0);
 	}
 
 	if (settings_.pressureSolver == "SOR") {
 		std::cout << "Using SOR solver." << std::endl;
-		pressureSolver_ = std::make_unique<PressureSolver>(discretization_, settings_.epsilon,
+		pressureSolver_ = std::make_unique<PressureSolver>(velocitySolver_, settings_.epsilon,
 		                                                   settings_.maximumNumberOfIterations, settings_.omega);
 	}
 	else if (settings_.pressureSolver == "GaussSeidel") {
-		pressureSolver_ = std::make_unique<PressureSolver>(discretization_, settings_.epsilon,
+		pressureSolver_ = std::make_unique<PressureSolver>(velocitySolver_, settings_.epsilon,
 		                                                   settings_.maximumNumberOfIterations, 1);
 	}
 	else { throw std::runtime_error("Unknown pressure solver."); }
 
-	outputWriterParaview_ = std::make_unique<OutputWriterParaview>(discretization_);
-	outputWriterText_ = std::make_unique<OutputWriterText>(discretization_);
+	outputWriterParaview_ = std::make_unique<OutputWriterParaview>(velocitySolver_);
+	outputWriterText_ = std::make_unique<OutputWriterText>(velocitySolver_);
 }
 
 int Simulation::run() {
@@ -71,10 +71,10 @@ void Simulation::setBoundaryValues() {
 	const auto vLeft = settings_.dirichletBcLeft[1];
 	const auto vRight = settings_.dirichletBcRight[1];
 
-	auto& u = discretization_->u();
-	auto& v = discretization_->v();
-	auto& f = discretization_->f();
-	auto& g = discretization_->g();
+	auto& u = velocitySolver_->u();
+	auto& v = velocitySolver_->v();
+	auto& f = velocitySolver_->f();
+	auto& g = velocitySolver_->g();
 
 	for (int i = u.beginI(); i < u.endI(); ++i) {
 		u(i, u.beginJ()) = 2.0 * uBottom - u(i, u.beginJ() + 1);
@@ -117,11 +117,11 @@ void Simulation::computeTimeStepWidth() {
 #ifndef NDEBUG
 	std::cout << "Computing time step width" << std::endl;
 #endif
-	const double uMax = discretization_->u().absMax();
-	const double vMax = discretization_->v().absMax();
+	const double uMax = velocitySolver_->u().absMax();
+	const double vMax = velocitySolver_->v().absMax();
 
-	const double hx = discretization_->dx();
-	const double hy = discretization_->dy();
+	const double hx = velocitySolver_->dx();
+	const double hy = velocitySolver_->dy();
 
 	const double diffusive = (((hx * hx) + (hy * hy)) / 2.0) * (settings_.re / 2.0);
 
@@ -140,17 +140,17 @@ void Simulation::computeTimeStepWidth() {
 void Simulation::setPreliminaryVelocities() {
 	const double invRe = 1.0 / settings_.re;
 
-	auto& u = discretization_->u();
-	auto& v = discretization_->v();
-	auto& f = discretization_->f();
-	auto& g = discretization_->g();
+	auto& u = velocitySolver_->u();
+	auto& v = velocitySolver_->v();
+	auto& f = velocitySolver_->f();
+	auto& g = velocitySolver_->g();
 
 	for (int j = u.beginJ() + 1; j < u.endJ() - 1; j++) {
 		for (int i = u.beginI() + 1; i < u.endI() - 1; i++) {
-			double uDxx = discretization_->computeD2uDx2(i, j);
-			double u2Dx = discretization_->computeDu2Dx(i, j);
-			double uDyy = discretization_->computeD2uDy2(i, j);
-			double uvDy = discretization_->computeDuvDy(i, j);
+			double uDxx = velocitySolver_->computeD2uDx2(i, j);
+			double u2Dx = velocitySolver_->computeDu2Dx(i, j);
+			double uDyy = velocitySolver_->computeD2uDy2(i, j);
+			double uvDy = velocitySolver_->computeDuvDy(i, j);
 
 			double convection = u2Dx + uvDy;
 			double diffusion = uDxx + uDyy;
@@ -161,10 +161,10 @@ void Simulation::setPreliminaryVelocities() {
 
 	for (int j = v.beginJ() + 1; j < v.endJ() - 1; j++) {
 		for (int i = v.beginI() + 1; i < v.endI() - 1; i++) {
-			double vDxx = discretization_->computeD2vDx2(i, j);
-			double v2Dy = discretization_->computeDv2Dy(i, j);
-			double vDyy = discretization_->computeD2vDy2(i, j);
-			double uvDx = discretization_->computeDuvDx(i, j);
+			double vDxx = velocitySolver_->computeD2vDx2(i, j);
+			double v2Dy = velocitySolver_->computeDv2Dy(i, j);
+			double vDyy = velocitySolver_->computeD2vDy2(i, j);
+			double uvDx = velocitySolver_->computeDuvDx(i, j);
 
 			double convection = v2Dy + uvDx;
 			double diffusion = vDxx + vDyy;
@@ -175,12 +175,12 @@ void Simulation::setPreliminaryVelocities() {
 }
 
 void Simulation::setRightHandSide() {
-	const auto& dx = discretization_->dx();
-	const auto& dy = discretization_->dy();
+	const auto& dx = velocitySolver_->dx();
+	const auto& dy = velocitySolver_->dy();
 
-	const auto& f = discretization_->f();
-	const auto& g = discretization_->g();
-	auto& rhs = discretization_->rhs();
+	const auto& f = velocitySolver_->f();
+	const auto& g = velocitySolver_->g();
+	auto& rhs = velocitySolver_->rhs();
 
 	const double invTimeStep = 1.0 / timeStepWidth_;
 	const double invDx = 1.0 / dx;
@@ -196,21 +196,21 @@ void Simulation::setRightHandSide() {
 }
 
 void Simulation::setVelocities() {
-	auto& u = discretization_->u();
-	auto& f = discretization_->f();
+	auto& u = velocitySolver_->u();
+	auto& f = velocitySolver_->f();
 
 	for (int j = u.beginJ() + 1; j < u.endJ() - 1; j++) {
 		for (int i = u.beginI() + 1; i < u.endI() - 1; i++) {
-			u(i, j) = f(i, j) - timeStepWidth_ * discretization_->computeDpDx(i, j);
+			u(i, j) = f(i, j) - timeStepWidth_ * velocitySolver_->computeDpDx(i, j);
 		}
 	}
 
-	auto& v = discretization_->v();
-	auto& g = discretization_->g();
+	auto& v = velocitySolver_->v();
+	auto& g = velocitySolver_->g();
 
 	for (int j = v.beginJ() + 1; j < v.endJ() - 1; j++) {
 		for (int i = v.beginI() + 1; i < v.endI() - 1; i++) {
-			v(i, j) = g(i, j) - timeStepWidth_ * discretization_->computeDpDy(i, j);
+			v(i, j) = g(i, j) - timeStepWidth_ * velocitySolver_->computeDpDy(i, j);
 		}
 	}
 }

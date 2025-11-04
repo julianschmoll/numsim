@@ -1,8 +1,10 @@
 #include "simulation/pressureSolver.h"
 
+#include <utility>
+
 PressureSolver::PressureSolver(std::shared_ptr<Discretization> discretization, double epsilon,
-                               double maxNumberOfIterations, double omega)
-    : discretization_(discretization), epsilon_(epsilon), maxNumberOfIterations_(maxNumberOfIterations),
+                               const double maxNumberOfIterations, const double omega)
+    : discretization_(std::move(discretization)), epsilon_(epsilon), maxNumberOfIterations_(maxNumberOfIterations),
       omega_(omega) {}
 
 double PressureSolver::calculateSquareResidual() const {
@@ -23,9 +25,9 @@ double PressureSolver::calculateSquareResidual() const {
         }
     }
 
-    const int nCellsx = p.endI() - p.beginI() - 2;
-    const int nCellsy = p.endJ() - p.beginJ() - 2;
-    const auto nCellsTotal = static_cast<double>(nCellsx * nCellsy);
+    const int nCellsX = p.endI() - p.beginI() - 2;
+    const int nCellsY = p.endJ() - p.beginJ() - 2;
+    const auto nCellsTotal = static_cast<double>(nCellsX * nCellsY);
 
     return squareResidual / nCellsTotal;
 }
@@ -37,10 +39,10 @@ void PressureSolver::solve() {
     DataField& p = discretization_->p();
     DataField& rhs = discretization_->rhs();
 
-    double dx2 = discretization_->dx() * discretization_->dx();
-    double dy2 = discretization_->dy() * discretization_->dy();
+    const double dx2 = discretization_->dx() * discretization_->dx();
+    const double dy2 = discretization_->dy() * discretization_->dy();
 
-    double scalingFactor = 0.5 * dx2 * dy2 / (dx2 + dy2);
+    const double scalingFactor = 0.5 * dx2 * dy2 / (dx2 + dy2);
 
     setBoundaryValues();
 
@@ -51,7 +53,6 @@ void PressureSolver::solve() {
 #endif
 
     while (it < maxNumberOfIterations_ && squareResidual > epsilon_ * epsilon_) {
-        squareResidual = 0;
         for (int j = p.beginJ() + 1; j < p.endJ() - 1; j++) {
             for (int i = p.beginI() + 1; i < p.endI() - 1; i++) {
                 const double pDxx = (p(i - 1, j) + p(i + 1, j)) / dx2;
