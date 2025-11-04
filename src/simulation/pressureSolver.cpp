@@ -25,8 +25,8 @@ double PressureSolver::calculateSquareResidual() const {
         }
     }
 
-    const int nCellsX = p.endI() - p.beginI() - 2;
-    const int nCellsY = p.endJ() - p.beginJ() - 2;
+    const int nCellsX = discretization_->nCells()[0] - 2;
+    const int nCellsY = discretization_->nCells()[1] - 2;
     const auto nCellsTotal = static_cast<double>(nCellsX * nCellsY);
 
     return squareResidual / nCellsTotal;
@@ -43,8 +43,6 @@ void PressureSolver::solve() {
     const double dy2 = discretization_->dy() * discretization_->dy();
 
     const double scalingFactor = 0.5 * dx2 * dy2 / (dx2 + dy2);
-
-    setBoundaryValues();
 
 #ifdef RESIDUAL_METHOD
     squareResidual = calculateSquareResidual();
