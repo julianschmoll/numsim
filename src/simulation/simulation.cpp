@@ -155,7 +155,7 @@ void Simulation::setPreliminaryVelocities() {
 			double convection = u2Dx + uvDy;
 			double diffusion = uDxx + uDyy;
 
-			f(i, j) = u(i, j) + timeStepWidth_ * (invRe * diffusion - convection + 0); // TODO external forces
+			f(i, j) = u(i, j) + timeStepWidth_ * (invRe * diffusion - convection + settings_.g[0]);
 		}
 	}
 

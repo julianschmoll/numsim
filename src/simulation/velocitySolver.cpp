@@ -61,7 +61,7 @@ double velocitySolver::computeDuvDy(const int i, const int j) const {
 
     const double centralDifferenceDerivative = (vHalfRight * uHalfUp - vHalfRightDown * uHalfDown) / dy();
 
-    const double donorCellContribution = (fabs(vHalfRight) * uDiffUp - fabs(vHalfRightDown) * uDiffDown)/ dy();
+    const double donorCellContribution = (std::abs(vHalfRight) * uDiffUp - std::abs(vHalfRightDown) * uDiffDown)/ dy();
 
     return centralDifferenceDerivative + alpha_ * donorCellContribution;
 }
