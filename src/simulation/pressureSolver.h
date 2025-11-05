@@ -16,9 +16,21 @@
  */
 class PressureSolver {
 public:
-    ~PressureSolver() = default;
+    /**
+     * Constructs a PressureSolver with the given discretization and solver parameters.
+     *
+     * @param discretization Shared pointer to the grid discretization.
+     * @param epsilon Convergence threshold for the residual.
+     * @param maxNumberOfIterations Maximum number of iterations.
+     * @param omega Relaxation factor (1.0 for Gauss-Seidel, otherwise SOR).
+     */
     PressureSolver(std::shared_ptr<Discretization> discretization, double epsilon, double maxNumberOfIterations,
                    double omega);
+
+    /**
+     * Destructs PressureSolver object.
+     */
+    ~PressureSolver() = default;
 
     /**
      * Solves the Poisson problem for the pressure.
@@ -40,7 +52,7 @@ private:
      *
      * @return Squared residual value.
      */
-    double calculateSquareResidual() const;
+    [[nodiscard]] double calculateSquareResidual() const;
 
 protected:
     // object holding the needed field variables for rhs and p

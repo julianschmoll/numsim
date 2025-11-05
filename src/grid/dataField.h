@@ -8,8 +8,22 @@
  */
 class DataField : public array2d {
 public:
+    /**
+     * Constructs DataField with grid size, offset, and index ranges.
+     *
+     * @param size Dimensions of the data field (number of cells in x and y).
+     * @param meshWidth Physical size of the grid.
+     * @param offset Offset from the lower-left cell corner to the data point location.
+     * @param iIndexRange Valid index range in the i-direction.
+     * @param jIndexRange Valid index range in the j-direction.
+     */
     DataField(std::array<int, 2> size, std::array<double, 2> meshWidth, std::array<double, 2> offset,
               std::array<int, 2> iIndexRange, std::array<int, 2> jIndexRange);
+
+    /**
+     * Destructor for DataField.
+     */
+    ~DataField() override = default;
 
     /**
      * Interpolates the value at a given coordinate (x, y).

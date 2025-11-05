@@ -18,7 +18,16 @@
  */
 class Simulation {
 public:
+    /**
+     * Constructs a Simulation object with given Settings.
+     *
+     * @param settings Configuration parameters for simulation.
+     */
     explicit Simulation(Settings  settings);
+
+    /**
+     * Destructs Simulation object.
+     */
     ~Simulation() = default;
 
     /**

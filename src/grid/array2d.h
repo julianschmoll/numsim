@@ -21,6 +21,12 @@ public:
     explicit array2d(std::array<int, 2> size);
 
     /**
+     * Destructor for array2d.
+     */
+    virtual ~array2d() = default;
+
+
+    /**
      * Gets the size of the 2D Array in x any y direction.
      *
      * @return Dimensions of the 2d Array.
