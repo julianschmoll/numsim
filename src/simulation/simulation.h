@@ -5,7 +5,7 @@
 #include "outputWriter/outputWriterText.h"
 #include "outputWriter/outputWriterParaview.h"
 #include "simulation/pressureSolver.h"
-#include "simulation/velocitySolver.h"
+#include "simulation/discreteOperators.h"
 #include <memory>
 
 class Simulation {
@@ -47,7 +47,7 @@ private:
     void setVelocities();
 
     std::array<double, 2> meshWidth_{};
-    std::shared_ptr<velocitySolver> velocitySolver_;
+    std::shared_ptr<discreteOperators> discOps_;
     std::unique_ptr<OutputWriterParaview> outputWriterParaview_;
     std::unique_ptr<OutputWriterText> outputWriterText_;
     std::unique_ptr<PressureSolver> pressureSolver_;
