@@ -5,7 +5,7 @@
 #include "outputWriter/outputWriterText.h"
 #include "outputWriter/outputWriterParaview.h"
 #include "simulation/pressureSolver.h"
-#include "simulation/velocitySolver.h"
+#include "simulation/discreteOperators.h"
 #include <memory>
 
 /**
@@ -39,8 +39,8 @@ private:
     // Grid width in x and y directions
     std::array<double, 2> meshWidth_{};
 
-    // Solver for velocities
-    std::shared_ptr<velocitySolver> velocitySolver_;
+    // Discrete operators for grid data
+    std::shared_ptr<discreteOperators> discOps_;
 
     // Writer for exporting simulation results for Paraview
     std::unique_ptr<OutputWriterParaview> outputWriterParaview_;

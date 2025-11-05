@@ -1,11 +1,11 @@
-#include "simulation/velocitySolver.h"
+#include "simulation/discreteOperators.h"
 #include <cstdlib>
 
-velocitySolver::velocitySolver(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, double alpha)
+discreteOperators::discreteOperators(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, double alpha)
     : Discretization(nCells, meshWidth), alpha_(alpha)
 { }
 
-double velocitySolver::computeDu2Dx(const int i, const int j) const {
+double discreteOperators::computeDu2Dx(const int i, const int j) const {
     const double uHalfRight = (u_(i + 1, j) + u_(i, j)) / 2;
     const double uHalfLeft  = (u_(i - 1, j) + u_(i, j)) / 2;
 
@@ -19,7 +19,7 @@ double velocitySolver::computeDu2Dx(const int i, const int j) const {
     return centralDifferenceDerivative + alpha_ * donorCellContribution;
 }
 
-double velocitySolver::computeDv2Dy(const int i, const int j) const {
+double discreteOperators::computeDv2Dy(const int i, const int j) const {
     const double vHalfUp   = (v_(i, j + 1) + v_(i, j)) / 2;
     const double vHalfDown = (v_(i, j - 1) + v_(i, j)) / 2;
 
@@ -33,7 +33,7 @@ double velocitySolver::computeDv2Dy(const int i, const int j) const {
     return centralDifferenceDerivative + alpha_ * donorCellContribution;
 }
 
-double velocitySolver::computeDuvDx(const int i, const int j) const {
+double discreteOperators::computeDuvDx(const int i, const int j) const {
     const double uHalfUp     = (u_(i, j + 1) + u_(i, j)) / 2;
     const double uHalfUpLeft = (u_(i - 1, j + 1) + u_(i - 1, j)) / 2;
 
@@ -50,7 +50,7 @@ double velocitySolver::computeDuvDx(const int i, const int j) const {
     return centralDifferenceDerivative + alpha_ * donorCellContribution;
 }
 
-double velocitySolver::computeDuvDy(const int i, const int j) const {
+double discreteOperators::computeDuvDy(const int i, const int j) const {
     const double vHalfRight     = (v_(i + 1, j) + v_(i, j)) / 2;
     const double vHalfRightDown = (v_(i, j - 1) + v_(i + 1, j - 1)) / 2;
 
@@ -68,42 +68,42 @@ double velocitySolver::computeDuvDy(const int i, const int j) const {
 }
 
 
-double velocitySolver::computeD2uDx2(const int i, const int j) const {
+double discreteOperators::computeD2uDx2(const int i, const int j) const {
     const double du2 = u_(i + 1, j) - 2 * u_(i, j) + u_(i - 1, j);
     return du2 / (dx() * dx());
 }
 
-double velocitySolver::computeD2uDy2(const int i, const int j) const {
+double discreteOperators::computeD2uDy2(const int i, const int j) const {
     const double du2 = u_(i, j + 1) - 2 * u_(i, j) + u_(i, j - 1);
     return du2 / (dy() * dy());
 }
 
-double velocitySolver::computeD2vDx2(const int i, const int j) const {
+double discreteOperators::computeD2vDx2(const int i, const int j) const {
     const double dv2 = v_(i + 1, j) - 2 * v_(i, j) + v_(i - 1, j);
     return dv2 / (dx() * dx());
 }
 
-double velocitySolver::computeD2vDy2(const int i, const int j) const {
+double discreteOperators::computeD2vDy2(const int i, const int j) const {
     const double dv2 = v_(i, j + 1) - 2 * v_(i, j) + v_(i, j - 1);
     return dv2 / (dy() * dy());
 }
 
-double velocitySolver::computeDuDx(const int i, const int j) const {
+double discreteOperators::computeDuDx(const int i, const int j) const {
     const double du = u_(i, j) - u_(i - 1, j);
     return du / dx();
 }
 
-double velocitySolver::computeDvDy(const int i, const int j) const {
+double discreteOperators::computeDvDy(const int i, const int j) const {
     const double dv = v_(i, j) - v_(i, j - 1);
     return dv / dy();
 }
 
-double velocitySolver::computeDpDx(const int i, const int j) const {
+double discreteOperators::computeDpDx(const int i, const int j) const {
     const double dp = p_(i + 1, j) - p_(i, j);
     return dp / dx();
 }
 
-double velocitySolver::computeDpDy(const int i, const int j) const {
+double discreteOperators::computeDpDy(const int i, const int j) const {
     const double dp = p_(i, j + 1) - p_(i, j);
     return dp / dy();
 }
