@@ -26,3 +26,7 @@ if ./numsim ../lid_driven_cavity.txt > /dev/null 2>&1; then
 else
     echo "submission.zip failed the test."
 fi
+
+# clear tmp dir
+cd ..
+rm -rf "$tmp_dir"
