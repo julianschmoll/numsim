@@ -87,6 +87,3 @@ void PressureSolver::setBoundaryValues() {
         p(p.endI() - 1, j) = p(p.endI() - 2, j);
     }
 }
-
-
-
