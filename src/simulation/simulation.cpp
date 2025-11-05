@@ -2,7 +2,7 @@
 
 #include <utility>
 
-Simulation::Simulation(Settings  settings) : settings_(std::move(settings)) {
+Simulation::Simulation(Settings settings) : settings_(std::move(settings)) {
 	std::cout << "Initializing Simulation..." << std::endl;
 
 	for (int i = 0; i < 2; ++i) { meshWidth_[i] = settings_.physicalSize[i] / settings_.nCells[i]; }
@@ -19,11 +19,11 @@ Simulation::Simulation(Settings  settings) : settings_(std::move(settings)) {
 	if (settings_.pressureSolver == "SOR") {
 		std::cout << "Using SOR solver." << std::endl;
 		pressureSolver_ = std::make_unique<PressureSolver>(discOps_, settings_.epsilon,
-														   settings_.maximumNumberOfIterations, settings_.omega);
+		                                                   settings_.maximumNumberOfIterations, settings_.omega);
 	}
 	else if (settings_.pressureSolver == "GaussSeidel") {
 		pressureSolver_ = std::make_unique<PressureSolver>(discOps_, settings_.epsilon,
-														   settings_.maximumNumberOfIterations, 1);
+		                                                   settings_.maximumNumberOfIterations, 1);
 	}
 	else { throw std::runtime_error("Unknown pressure solver."); }
 
@@ -76,40 +76,40 @@ void Simulation::setBoundaryValues() {
 	auto& f = discOps_->f();
 	auto& g = discOps_->g();
 
+	// We expect u and f having the same size
 	for (int i = u.beginI(); i < u.endI(); ++i) {
-		u(i, u.beginJ()) = 2.0 * uBottom - u(i, u.beginJ() + 1);
-		u(i, u.endJ() - 1) = 2.0 * uTop - u(i, u.endJ() - 2);
+		const double valBeginJ = 2.0 * uBottom - u(i, u.beginJ() + 1);
+		u(i, u.beginJ()) = valBeginJ;
+		f(i, f.beginJ()) = valBeginJ;
+
+		const double valEndJ = 2.0 * uTop - u(i, u.endJ() - 2);
+		u(i, u.endJ() - 1) = valEndJ;
+		f(i, f.endJ() - 1) = valEndJ;
 	}
+
+	// We expect v and g having the same size
 	for (int i = v.beginI(); i < v.endI(); ++i) {
 		v(i, v.beginJ()) = vBottom;
+		g(i, g.beginJ()) = vBottom;
 		v(i, v.endJ() - 1) = vTop;
+		g(i, g.endJ() - 1) = vTop;
 	}
 
 	for (int j = u.beginJ(); j < u.endJ(); ++j) {
 		u(u.beginI(), j) = uLeft;
+		f(f.beginI(), j) = uLeft;
 		u(u.endI() - 1, j) = uRight;
+		f(f.endI() - 1, j) = uRight;
 	}
+
 	for (int j = v.beginJ(); j < v.endJ(); ++j) {
-		v(v.beginI(), j) = 2.0 * vLeft - v(v.beginI() + 1, j);
-		v(v.endI() - 1, j) = 2.0 * vRight - v(v.endI() - 2, j);
-	}
+		const double valBeginI = 2.0 * vLeft - v(v.beginI() + 1, j);
+		v(v.beginI(), j) = valBeginI;
+		g(g.beginI(), j) = valBeginI;
 
-	for (int i = f.beginI(); i < f.endI(); ++i) {
-		f(i, f.beginJ()) = u(i, u.beginJ());
-		f(i, f.endJ() - 1) = u(i, u.endJ() - 1);
-	}
-	for (int i = g.beginI(); i < g.endI(); ++i) {
-		g(i, g.beginJ()) = v(i, v.beginJ());
-		g(i, g.endJ() - 1) = v(i, v.endJ() - 1);
-	}
-
-	for (int j = f.beginJ(); j < f.endJ(); ++j) {
-		f(f.beginI(), j) = u(u.beginI(), j);
-		f(f.endI() - 1, j) = u(u.endI() - 1, j);
-	}
-	for (int j = g.beginJ(); j < g.endJ(); ++j) {
-		g(g.beginI(), j) = v(v.beginI(), j);
-		g(g.endI() - 1, j) = v(v.endI() - 1, j);
+		const double valEndI = 2.0 * vRight - v(v.endI() - 2, j);
+		v(v.endI() - 1, j) = valEndI;
+		g(g.endI() - 1, j) = valEndI;
 	}
 }
 
