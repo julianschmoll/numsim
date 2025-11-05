@@ -1,6 +1,8 @@
 #include "simulation.h"
 
-Simulation::Simulation(const Settings& settings) : settings_(settings) {
+#include <utility>
+
+Simulation::Simulation(Settings  settings) : settings_(std::move(settings)) {
 	std::cout << "Initializing Simulation..." << std::endl;
 
 	for (int i = 0; i < 2; ++i) { meshWidth_[i] = settings_.physicalSize[i] / settings_.nCells[i]; }
@@ -29,7 +31,7 @@ Simulation::Simulation(const Settings& settings) : settings_(settings) {
 	outputWriterText_ = std::make_unique<OutputWriterText>(velocitySolver_);
 }
 
-int Simulation::run() {
+void Simulation::run() {
 	double currentTime = 0.0;
 
 	while (currentTime < settings_.endTime) {
@@ -53,8 +55,6 @@ int Simulation::run() {
 	}
 
 	std::cout << "Simulation finished." << std::endl;
-
-	return 0;
 }
 
 void Simulation::setBoundaryValues() {

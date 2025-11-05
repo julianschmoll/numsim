@@ -8,19 +8,46 @@
 #include "simulation/velocitySolver.h"
 #include <memory>
 
+/**
+ * @class Simulation
+ * @brief Class responsible for running the simulation.
+ *
+ * This class contains the simulation loop and calls all the necessary
+ * functions to compute velocities and pressure.
+ *
+ */
 class Simulation {
 public:
-    explicit Simulation(const Settings& settings);
+    explicit Simulation(Settings  settings);
     ~Simulation() = default;
 
     /**
      * Runs the simulation.
-     *
-     * @returns Status code whether simulation was successful
      */
-    int run();
+    void run();
 
 private:
+    // Grid width in x and y directions
+    std::array<double, 2> meshWidth_{};
+
+    // Solver for velocities
+    std::shared_ptr<velocitySolver> velocitySolver_;
+
+    // Writer for exporting simulation results for Paraview
+    std::unique_ptr<OutputWriterParaview> outputWriterParaview_;
+
+    // Writer for exporting simulation results in plain text
+    std::unique_ptr<OutputWriterText> outputWriterText_;
+
+    // Solver for the pressure
+    std::unique_ptr<PressureSolver> pressureSolver_;
+
+    // Configuration settings for the simulation
+    Settings settings_;
+
+    // Time step size used in the simulation loop
+    double timeStepWidth_ = 0.1;
+
     /**
      * Sets boundary values of u and v.
      */
@@ -45,12 +72,4 @@ private:
      * computes the new velocities, u,v, from the preliminary velocities, F,G and the pressure, p.
      */
     void setVelocities();
-
-    std::array<double, 2> meshWidth_{};
-    std::shared_ptr<velocitySolver> velocitySolver_;
-    std::unique_ptr<OutputWriterParaview> outputWriterParaview_;
-    std::unique_ptr<OutputWriterText> outputWriterText_;
-    std::unique_ptr<PressureSolver> pressureSolver_;
-    Settings settings_;
-    double timeStepWidth_ = 0.1;
 };

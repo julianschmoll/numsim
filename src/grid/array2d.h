@@ -4,6 +4,10 @@
 #include <array>
 
 
+/**
+ * @class array2d
+ * @brief Stores Data in 2D array, while internally storing values in a flat std::vector.
+ */
 class array2d {
 public:
     /**
@@ -56,6 +60,9 @@ public:
     [[nodiscard]] double absMax() const;
 
 protected:
+    // Flat storage for 2D array values
     std::vector<double> data_;
+
+    // Dimensions: width, height
     std::array<int, 2> size_;
 };

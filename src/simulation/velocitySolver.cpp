@@ -1,4 +1,5 @@
 #include "simulation/velocitySolver.h"
+#include <cstdlib>
 
 velocitySolver::velocitySolver(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, double alpha)
     : Discretization(nCells, meshWidth), alpha_(alpha)

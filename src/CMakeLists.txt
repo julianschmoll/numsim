@@ -37,7 +37,6 @@ else ()
     message(FATAL_ERROR "VTK not found. Please install VTK and set VTK_DIR if needed.")
 endif ()
 
-
 # install numsim executable in build directory and get rid of annoying warnings
 # make_policy(SET CMP0177 NEW # TODO: does not compile!! Added in version 3.31.
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${PROJECT_SOURCE_DIR}/../build)

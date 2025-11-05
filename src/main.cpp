@@ -1,4 +1,3 @@
-// #include "outputWriter.h"
 #include "settings.h"
 #include "simulation/simulation.h"
 
@@ -21,7 +20,7 @@ int main(const int argc, char* argv[]) {
 
 	Simulation simulation(settings);
 
-	return simulation.run();
+	simulation.run();
 
 	return EXIT_SUCCESS;
 }
