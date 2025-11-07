@@ -45,7 +45,7 @@ void Simulation::run() {
 #ifndef NDEBUG
 		std::cout << "**************************************" << std::endl;
 		std::cout << "Computing Timestep " << counter++;
-		const unsigned int expectedTimesteps = static_cast<int>(settings_.endTime/timeStepWidth_+1);
+		const auto expectedTimesteps = static_cast<unsigned int>(settings_.endTime/timeStepWidth_+1);
 		std::cout << " of " << expectedTimesteps << " estimated Timesteps." << std::endl;
 #endif
 
