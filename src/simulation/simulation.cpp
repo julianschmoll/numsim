@@ -32,6 +32,9 @@ Simulation::Simulation(Settings settings) : settings_(std::move(settings)) {
 }
 
 void Simulation::run() {
+#ifndef NDEBUG
+	unsigned int counter = 0;
+#endif
 	double currentTime = 0.0;
 
 	while (currentTime < settings_.endTime) {
@@ -39,8 +42,22 @@ void Simulation::run() {
 
 		computeTimeStepWidth();
 
+#ifndef NDEBUG
+		std::cout << "**************************************" << std::endl;
+		std::cout << "Computing Timestep " << counter++;
+		const unsigned int expectedTimesteps = static_cast<int>(settings_.endTime/timeStepWidth_+1);
+		std::cout << " of " << expectedTimesteps << " estimated Timesteps." << std::endl;
+#endif
+
 		if (currentTime + timeStepWidth_ > settings_.endTime) { timeStepWidth_ = settings_.endTime - currentTime; }
 		currentTime += timeStepWidth_;
+
+#ifndef NDEBUG
+		std::cout << "Current Time: " << currentTime << "s";
+		std::cout << "/" << settings_.endTime << "s";
+		const double progress = (currentTime / settings_.endTime) * 100.0;
+		std::cout << " (" << std::fixed << std::setprecision(2) << progress << "%)" << std::endl;
+#endif
 
 		setPreliminaryVelocities();
 
@@ -58,9 +75,6 @@ void Simulation::run() {
 }
 
 void Simulation::setBoundaryValues() {
-#ifndef NDEBUG
-	std::cout << "Setting boundary values" << std::endl;
-#endif
 	const auto uBottom = settings_.dirichletBcBottom[0];
 	const auto uTop = settings_.dirichletBcTop[0];
 	const auto uLeft = settings_.dirichletBcLeft[0];
@@ -114,9 +128,6 @@ void Simulation::setBoundaryValues() {
 }
 
 void Simulation::computeTimeStepWidth() {
-#ifndef NDEBUG
-	std::cout << "Computing time step width" << std::endl;
-#endif
 	const double uMax = discOps_->u().absMax();
 	const double vMax = discOps_->v().absMax();
 
@@ -131,9 +142,6 @@ void Simulation::computeTimeStepWidth() {
 
 	const double dt = std::min({diffusive, convectiveU, convectiveV}) * settings_.tau;
 
-#ifndef NDEBUG
-	std::cout << "Computed time step width: " << dt << std::endl;
-#endif
 	timeStepWidth_ = std::min(dt, settings_.maximumDt);
 }
 
@@ -147,13 +155,13 @@ void Simulation::setPreliminaryVelocities() {
 
 	for (int j = u.beginJ() + 1; j < u.endJ() - 1; j++) {
 		for (int i = u.beginI() + 1; i < u.endI() - 1; i++) {
-			double uDxx = discOps_->computeD2uDx2(i, j);
-			double u2Dx = discOps_->computeDu2Dx(i, j);
-			double uDyy = discOps_->computeD2uDy2(i, j);
-			double uvDy = discOps_->computeDuvDy(i, j);
+			const double uDxx = discOps_->computeD2uDx2(i, j);
+			const double u2Dx = discOps_->computeDu2Dx(i, j);
+			const double uDyy = discOps_->computeD2uDy2(i, j);
+			const double uvDy = discOps_->computeDuvDy(i, j);
 
-			double convection = u2Dx + uvDy;
-			double diffusion = uDxx + uDyy;
+			const double convection = u2Dx + uvDy;
+			const double diffusion = uDxx + uDyy;
 
 			f(i, j) = u(i, j) + timeStepWidth_ * (invRe * diffusion - convection + settings_.g[0]);
 		}
@@ -161,13 +169,13 @@ void Simulation::setPreliminaryVelocities() {
 
 	for (int j = v.beginJ() + 1; j < v.endJ() - 1; j++) {
 		for (int i = v.beginI() + 1; i < v.endI() - 1; i++) {
-			double vDxx = discOps_->computeD2vDx2(i, j);
-			double v2Dy = discOps_->computeDv2Dy(i, j);
-			double vDyy = discOps_->computeD2vDy2(i, j);
-			double uvDx = discOps_->computeDuvDx(i, j);
+			const double vDxx = discOps_->computeD2vDx2(i, j);
+			const double v2Dy = discOps_->computeDv2Dy(i, j);
+			const double vDyy = discOps_->computeD2vDy2(i, j);
+			const double uvDx = discOps_->computeDuvDx(i, j);
 
-			double convection = v2Dy + uvDx;
-			double diffusion = vDxx + vDyy;
+			const double convection = v2Dy + uvDx;
+			const double diffusion = vDxx + vDyy;
 
 			g(i, j) = v(i, j) + timeStepWidth_ * (invRe * diffusion - convection + settings_.g[1]);
 		}
