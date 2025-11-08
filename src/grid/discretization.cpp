@@ -16,27 +16,27 @@ const std::array<int, 2> &Discretization::nCells() const {
     return nCells_;
 }
 
-double Discretization::u(int i, int j) {
+double Discretization::u(const int i, const int j) {
     return u_(i, j);
 }
 
-double Discretization::v(int i, int j) {
+double Discretization::v(const int i, const int j) {
     return v_(i, j);
 }
 
-double Discretization::p(int i, int j) {
+double Discretization::p(const int i, const int j) {
     return p_(i, j);
 }
 
-double Discretization::f(int i, int j) {
+double Discretization::f(const int i, const int j) {
     return f_(i, j);
 }
 
-double Discretization::g(int i, int j) {
+double Discretization::g(const int i, const int j) {
     return g_(i, j);
 }
 
-double Discretization::rhs(int i, int j) {
+double Discretization::rhs(const int i, const int j) {
     return rhs_(i, j);
 }
 

@@ -5,7 +5,7 @@ OutputWriterParaview::OutputWriterParaview(const std::shared_ptr<Discretization>
     vtkWriter_ = vtkSmartPointer<vtkXMLImageDataWriter>::New();
 }
 
-void OutputWriterParaview::writeFile(double currentTime) {
+void OutputWriterParaview::writeFile(const double currentTime) {
     // Assemble the filename
     std::stringstream fileName;
     fileName << "out/output_" << std::setw(4) << setfill('0') << fileNo_ << "." << vtkWriter_->GetDefaultFileExtension();
@@ -23,7 +23,7 @@ void OutputWriterParaview::writeFile(double currentTime) {
     // set spacing of mesh
     const double dx = discretization_->meshWidth()[0];
     const double dy = discretization_->meshWidth()[1];
-    const double dz = 1;
+    constexpr double dz = 1;
     dataSet->SetSpacing(dx, dy, dz);
 
     // set number of points in each dimension, 1 cell in z direction
@@ -33,7 +33,7 @@ void OutputWriterParaview::writeFile(double currentTime) {
 
     // add pressure field variable
     // ---------------------------
-    vtkSmartPointer<vtkDoubleArray> arrayPressure = vtkDoubleArray::New();
+    const vtkSmartPointer<vtkDoubleArray> arrayPressure = vtkDoubleArray::New();
 
     // the pressure is a scalar which means the number of components is 1
     arrayPressure->SetNumberOfComponents(1);
@@ -68,7 +68,7 @@ void OutputWriterParaview::writeFile(double currentTime) {
 
     // add velocity field variable
     // ---------------------------
-    vtkSmartPointer<vtkDoubleArray> arrayVelocity = vtkDoubleArray::New();
+    const vtkSmartPointer<vtkDoubleArray> arrayVelocity = vtkDoubleArray::New();
 
     // here we have two components (u,v), but ParaView will only allow vector
     // glyphs if we have an ℝ^3 vector, therefore we use a 3-dimensional vector
@@ -105,7 +105,7 @@ void OutputWriterParaview::writeFile(double currentTime) {
     dataSet->GetPointData()->AddArray(arrayVelocity);
 
     // add current time
-    vtkSmartPointer<vtkDoubleArray> arrayTime = vtkDoubleArray::New();
+    const vtkSmartPointer<vtkDoubleArray> arrayTime = vtkDoubleArray::New();
     arrayTime->SetName("TIME");
     arrayTime->SetNumberOfTuples(1);
     arrayTime->SetTuple1(0, currentTime);

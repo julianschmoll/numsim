@@ -26,7 +26,7 @@ void OutputWriterText::writeFile(double currentTime) {
          << ", dy: " << discretization_->dy() << std::endl
          << std::endl;
 
-    const int fieldWidth = 9; // number of characters to use for a single value
+    constexpr int fieldWidth = 9; // number of characters to use for a single value
 
     // write u
     // ---------
@@ -149,7 +149,7 @@ void OutputWriterText::writeFile(double currentTime) {
     file << std::endl;
 }
 
-void OutputWriterText::writePressureFile() {
+void OutputWriterText::writePressureFile() const {
     // counter for files, counter value is part of the file name
     static int pressurefileNo = 0;
 
@@ -170,7 +170,7 @@ void OutputWriterText::writePressureFile() {
          << ", dy: " << discretization_->dy() << std::endl
          << std::endl;
 
-    const int fieldWidth = 9; // number of characters to use for a single value
+    constexpr int fieldWidth = 9; // number of characters to use for a single value
 
     // write p
     // ---------

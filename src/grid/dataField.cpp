@@ -7,7 +7,7 @@
 #include <iostream>
 
 DataField::DataField(const std::array<int, 2> size, const std::array<double, 2> meshWidth, const std::array<double, 2> offset,
-                     std::array<int, 2> iIndexRange, std::array<int, 2> jIndexRange)
+                     const std::array<int, 2> iIndexRange, const std::array<int, 2> jIndexRange)
     : Array2d(size), meshWidth_(meshWidth), offset_(offset), iIndexRange_(iIndexRange), jIndexRange_(jIndexRange) {}
 
 int DataField::beginJ() const {

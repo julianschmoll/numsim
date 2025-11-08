@@ -4,7 +4,7 @@
 #include <vector>
 
 /**
- * @class array2d
+ * @class Array2d
  * @brief Stores Data in 2D array, while internally storing values in a flat std::vector.
  */
 class Array2d {
@@ -20,7 +20,7 @@ public:
     explicit Array2d(std::array<int, 2> size);
 
     /**
-     * Destructor for array2d.
+     * Destructor for Array2d.
      */
     virtual ~Array2d() = default;
 
