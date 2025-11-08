@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <stdexcept>
+	
 
 void Settings::loadFromFile(const std::string& filename) {
   std::cout << "loading settings from " << filename << std::endl;
@@ -92,8 +94,15 @@ void Settings::loadFromFile(const std::string& filename) {
   if (settings.count("dirichletRightY"))
     dirichletBcRight[1] = std::stod(settings["dirichletRightY"]);
 
-  if (settings.count("pressureSolver"))
-    pressureSolver = settings["pressureSolver"];
+  if (settings.count("pressureSolver")) {
+    if (settings["pressureSolver"] == "SOR") {
+      pressureSolver = IterSolverType::SOR;
+    } else if (settings["pressureSolver"] == "GaussSeidel") {
+      pressureSolver = IterSolverType::GaussSeidel;
+    } else {
+      throw std::runtime_error("Unnknown solver type for \"pressureSolver\": use \"SOR\" or \"GaussSeidel\".");
+    }
+  }
   if (settings.count("omega"))
     omega = std::stod(settings["omega"]);
   if (settings.count("epsilon"))
@@ -126,7 +135,7 @@ void Settings::printSettings() const {
     << "  useDonorCell: " << std::boolalpha << useDonorCell
     << ", alpha: " << alpha << std::endl
 
-    << "  pressureSolver: " << pressureSolver << ", omega: " << omega
+    << "  pressureSolver: " << (pressureSolver == IterSolverType::SOR ? "SOR" : "GaussSeidel") << ", omega: " << omega
     << ", epsilon: " << epsilon
     << ", maximumNumberOfIterations: " << maximumNumberOfIterations
     << std::endl;

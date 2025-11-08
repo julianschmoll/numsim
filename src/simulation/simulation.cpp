@@ -16,16 +16,15 @@ Simulation::Simulation(Settings settings) : settings_(std::move(settings)) {
 		discOps_ = std::make_unique<discreteOperators>(settings_.nCells, meshWidth_, 0.0);
 	}
 
-	if (settings_.pressureSolver == "SOR") {
+	if (settings_.pressureSolver == IterSolverType::SOR) {
 		std::cout << "Using SOR solver." << std::endl;
 		pressureSolver_ = std::make_unique<PressureSolver>(discOps_, settings_.epsilon,
 		                                                   settings_.maximumNumberOfIterations, settings_.omega);
 	}
-	else if (settings_.pressureSolver == "GaussSeidel") {
+	else {
 		pressureSolver_ = std::make_unique<PressureSolver>(discOps_, settings_.epsilon,
 		                                                   settings_.maximumNumberOfIterations, 1);
 	}
-	else { throw std::runtime_error("Unknown pressure solver."); }
 
 	outputWriterParaview_ = std::make_unique<OutputWriterParaview>(discOps_);
 	outputWriterText_ = std::make_unique<OutputWriterText>(discOps_);

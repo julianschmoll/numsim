@@ -3,6 +3,10 @@
 #include <array>
 #include <iostream>
 
+enum class IterSolverType {
+  SOR, GaussSeidel
+};
+
 /**
  * All settings that parametrize a simulation run.
  */
@@ -47,7 +51,7 @@ struct Settings {
   std::array<double, 2> dirichletBcRight;
 
   // which pressure solver to use, "GaussSeidel" or "SOR"
-  std::string pressureSolver = "SOR";
+  IterSolverType pressureSolver = IterSolverType::SOR;
 
   // overrelaxation factor
   double omega = 1.0;
