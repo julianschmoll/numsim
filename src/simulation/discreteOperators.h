@@ -2,18 +2,19 @@
 
 #include "grid/discretization.h"
 
-class discreteOperators final : public Discretization {
+class DiscreteOperators final : public Discretization {
 
 public:
     /**
-     * Constructs a discreteOperators object that provides finite-difference approximations of spatial derivatives for
-     * the grid data.
+     * Constructs a discreteOperators object that provides finite-difference approximations of
+     * spatial derivatives for the grid data.
      *
      * @param nCells: Number of cells in x- and y-direction
      * @param meshWidth: Physical size of a grid cell in x and y-direction
-     * @param alpha: Donor cell contribution factor, range from 0 to 1. If set 0, pure central differences discretization is used.
+     * @param alpha: Donor cell contribution factor, range from 0 to 1. If set 0, pure central
+     * differences discretization is used.
      */
-    discreteOperators(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, double alpha);
+    DiscreteOperators(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, double alpha);
 
     /**
      * Computes du²/dx

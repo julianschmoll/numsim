@@ -3,24 +3,24 @@
 
 #include <iostream>
 
-int main(const int argc, char* argv[]) {
-	// we need an input file being specified
-	if (argc == 1) {
-		std::cout << "usage: " << argv[0] << " <filename>" << std::endl;
-		return EXIT_FAILURE;
-	}
-	const std::string filename = argv[1];
+int main(const int argc, char *argv[]) {
+    // we need an input file being specified
+    if (argc == 1) {
+        std::cout << "usage: " << argv[0] << " <filename>" << std::endl;
+        return EXIT_FAILURE;
+    }
+    const std::string filename = argv[1];
 
-	Settings settings;
-	settings.loadFromFile(filename);
+    Settings settings;
+    settings.loadFromFile(filename);
 
 #ifndef NDEBUG
-	settings.printSettings();
+    settings.printSettings();
 #endif
 
-	Simulation simulation(settings);
+    Simulation simulation(settings);
 
-	simulation.run();
+    simulation.run();
 
-	return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }

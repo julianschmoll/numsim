@@ -1,11 +1,11 @@
 #pragma once
 
-#include "settings.h"
 #include "grid/discretization.h"
-#include "outputWriter/outputWriterText.h"
 #include "outputWriter/outputWriterParaview.h"
-#include "simulation/pressureSolver.h"
+#include "outputWriter/outputWriterText.h"
+#include "settings.h"
 #include "simulation/discreteOperators.h"
+#include "simulation/pressureSolver.h"
 #include <memory>
 
 /**
@@ -23,7 +23,7 @@ public:
      *
      * @param settings Configuration parameters for simulation.
      */
-    explicit Simulation(Settings  settings);
+    explicit Simulation(Settings settings);
 
     /**
      * Destructs Simulation object.
@@ -40,7 +40,7 @@ private:
     std::array<double, 2> meshWidth_{};
 
     // Discrete operators for grid data
-    std::shared_ptr<discreteOperators> discOps_;
+    std::shared_ptr<DiscreteOperators> discOps_;
 
     // Writer for exporting simulation results for Paraview
     std::unique_ptr<OutputWriterParaview> outputWriterParaview_;

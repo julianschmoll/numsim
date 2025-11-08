@@ -1,14 +1,13 @@
 #pragma once
 
-#include <vector>
 #include <array>
-
+#include <vector>
 
 /**
  * @class array2d
  * @brief Stores Data in 2D array, while internally storing values in a flat std::vector.
  */
-class array2d {
+class Array2d {
 public:
     /**
      * Constructor for 2D Array storing data in a vector.
@@ -18,13 +17,12 @@ public:
      *
      * @param size Dimensions of the 2d array
      */
-    explicit array2d(std::array<int, 2> size);
+    explicit Array2d(std::array<int, 2> size);
 
     /**
      * Destructor for array2d.
      */
-    virtual ~array2d() = default;
-
+    virtual ~Array2d() = default;
 
     /**
      * Gets the size of the 2D Array in x any y direction.
@@ -42,7 +40,7 @@ public:
      * @param j Y-Coordinate of value to return.
      * @return Value
      */
-    double& operator()(int i, int j);
+    double &operator()(int i, int j);
 
     /**
      * Returns the value of 2D Array at specified coordinates.

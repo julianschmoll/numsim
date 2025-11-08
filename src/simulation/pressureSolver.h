@@ -24,8 +24,7 @@ public:
      * @param maxNumberOfIterations Maximum number of iterations.
      * @param omega Relaxation factor (1.0 for Gauss-Seidel, otherwise SOR).
      */
-    PressureSolver(std::shared_ptr<Discretization> discretization, double epsilon, double maxNumberOfIterations,
-                   double omega);
+    PressureSolver(std::shared_ptr<Discretization> discretization, double epsilon, double maxNumberOfIterations, double omega);
 
     /**
      * Destructs PressureSolver object.

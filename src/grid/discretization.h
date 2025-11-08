@@ -1,8 +1,7 @@
 #pragma once
 
-#include <array>
 #include "grid/dataField.h"
-
+#include <array>
 
 class Discretization {
     const std::array<double, 2> meshWidth_;
@@ -33,14 +32,13 @@ public:
     double g(int i, int j);
     double rhs(int i, int j);
 
-    DataField& u();
-    DataField& v();
-    DataField& p();
-    DataField& f();
-    DataField& g();
-    DataField& rhs();
+    DataField &u();
+    DataField &v();
+    DataField &p();
+    DataField &f();
+    DataField &g();
+    DataField &rhs();
 
     double dx() const;
     double dy() const;
-
 };

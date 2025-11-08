@@ -6,17 +6,25 @@
 
 #include <iostream>
 
-DataField::DataField(const std::array<int, 2> size, const std::array<double, 2> meshWidth,
-                     const std::array<double, 2> offset, std::array<int, 2> iIndexRange, std::array<int, 2> jIndexRange)
-    : array2d(size), meshWidth_(meshWidth), offset_(offset), iIndexRange_(iIndexRange), jIndexRange_(jIndexRange) {}
+DataField::DataField(const std::array<int, 2> size, const std::array<double, 2> meshWidth, const std::array<double, 2> offset,
+                     std::array<int, 2> iIndexRange, std::array<int, 2> jIndexRange)
+    : Array2d(size), meshWidth_(meshWidth), offset_(offset), iIndexRange_(iIndexRange), jIndexRange_(jIndexRange) {}
 
-int DataField::beginJ() const { return jIndexRange_[0]; }
+int DataField::beginJ() const {
+    return jIndexRange_[0];
+}
 
-int DataField::endJ() const { return jIndexRange_[1]; }
+int DataField::endJ() const {
+    return jIndexRange_[1];
+}
 
-int DataField::beginI() const { return iIndexRange_[0]; }
+int DataField::beginI() const {
+    return iIndexRange_[0];
+}
 
-int DataField::endI() const { return iIndexRange_[1]; }
+int DataField::endI() const {
+    return iIndexRange_[1];
+}
 
 double DataField::interpolateAt(double x, double y) const {
     x /= meshWidth_[0];

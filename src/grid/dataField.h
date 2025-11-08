@@ -6,7 +6,7 @@
  * @class DataField
  * @brief 2D Data representation containing method for interpolation.
  */
-class DataField : public array2d {
+class DataField : public Array2d {
 public:
     /**
      * Constructs DataField with grid size, offset, and index ranges.
@@ -17,8 +17,8 @@ public:
      * @param iIndexRange Valid index range in the i-direction.
      * @param jIndexRange Valid index range in the j-direction.
      */
-    DataField(std::array<int, 2> size, std::array<double, 2> meshWidth, std::array<double, 2> offset,
-              std::array<int, 2> iIndexRange, std::array<int, 2> jIndexRange);
+    DataField(std::array<int, 2> size, std::array<double, 2> meshWidth, std::array<double, 2> offset, std::array<int, 2> iIndexRange,
+              std::array<int, 2> jIndexRange);
 
     /**
      * Destructor for DataField.
@@ -70,12 +70,12 @@ private:
 
     /**
      * Describes the offset of the position of the data point from the lower left cell edge.
-     * 
+     *
      * (0,1)---(1,1)
      *   |       |
      *   |       |
      * (0,0)---(1,0)
-     * 
+     *
      * - Pressure:                0.5, 0.5
      * - Velocity in x direction: 0,   0.5
      * - Velocity in y direction: 0.5, 0

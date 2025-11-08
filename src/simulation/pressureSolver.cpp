@@ -2,25 +2,23 @@
 
 #include <utility>
 
-PressureSolver::PressureSolver(std::shared_ptr<Discretization> discretization, double epsilon,
-                               const double maxNumberOfIterations, const double omega)
-    : discretization_(std::move(discretization)), epsilon_(epsilon), maxNumberOfIterations_(maxNumberOfIterations),
-      omega_(omega) {}
+PressureSolver::PressureSolver(std::shared_ptr<Discretization> discretization, double epsilon, const double maxNumberOfIterations, const double omega)
+    : discretization_(std::move(discretization)), epsilon_(epsilon), maxNumberOfIterations_(maxNumberOfIterations), omega_(omega) {}
 
 double PressureSolver::calculateSquareResidual() const {
     double squareResidual = 0;
 
-    DataField& p = discretization_->p();
-    DataField& rhs = discretization_->rhs();
+    DataField &p = discretization_->p();
+    DataField &rhs = discretization_->rhs();
 
     double dx2 = discretization_->dx() * discretization_->dx();
     double dy2 = discretization_->dy() * discretization_->dy();
 
     for (int j = p.beginJ() + 1; j < p.endJ() - 1; j++) {
         for (int i = p.beginI() + 1; i < p.endI() - 1; i++) {
-            const double p_xx = (p(i - 1, j) - 2 * p(i, j) + p(i + 1, j)) / dx2;
-            const double p_yy = (p(i, j - 1) - 2 * p(i, j) + p(i, j + 1)) / dy2;
-            const double difference = rhs(i, j) - p_xx - p_yy;
+            const double pDxx = (p(i - 1, j) - 2 * p(i, j) + p(i + 1, j)) / dx2;
+            const double pDyy = (p(i, j - 1) - 2 * p(i, j) + p(i, j + 1)) / dy2;
+            const double difference = rhs(i, j) - pDxx - pDyy;
             squareResidual += difference * difference;
         }
     }
@@ -36,8 +34,8 @@ void PressureSolver::solve() {
     int it = 0;
     double squareResidual = 0;
 
-    DataField& p = discretization_->p();
-    DataField& rhs = discretization_->rhs();
+    DataField &p = discretization_->p();
+    DataField &rhs = discretization_->rhs();
 
     const double dx2 = discretization_->dx() * discretization_->dx();
     const double dy2 = discretization_->dy() * discretization_->dy();
@@ -72,7 +70,7 @@ void PressureSolver::solve() {
 }
 
 void PressureSolver::setBoundaryValues() {
-    DataField& p = discretization_->p();
+    DataField &p = discretization_->p();
     for (int i = p.beginI() + 1; i < p.endI() - 1; i++) {
         // bottom
         p(i, p.beginJ()) = p(i, p.beginJ() + 1);

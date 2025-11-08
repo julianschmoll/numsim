@@ -13,12 +13,11 @@ public:
     //! constructor
     //! @param discretization shared pointer to the discretization object that
     //! will contain all the data to be written to the file
-    explicit OutputWriterParaview(const std::shared_ptr<Discretization>& discretization);
+    explicit OutputWriterParaview(const std::shared_ptr<Discretization> &discretization);
 
     //! write current velocities to file, filename is output_<count>.vti
     void writeFile(double currentTime) override;
 
 private:
-    vtkSmartPointer<vtkXMLImageDataWriter>
-    vtkWriter_; //< vtk writer to write ImageData
+    vtkSmartPointer<vtkXMLImageDataWriter> vtkWriter_; //< vtk writer to write ImageData
 };
