@@ -1,25 +1,34 @@
 #include "simulation/pressureSolver.h"
 
+#include <iostream>
 #include <utility>
 
 PressureSolver::PressureSolver(std::shared_ptr<Discretization> discretization, double epsilon, const double maxNumberOfIterations, const double omega)
     : discretization_(std::move(discretization)), epsilon_(epsilon), maxNumberOfIterations_(maxNumberOfIterations), omega_(omega) {}
 
 double PressureSolver::calculateSquareResidual() const {
-    double squareResidual = 0;
+    double squareResidual = 0.0;
 
     DataField &p = discretization_->p();
     DataField &rhs = discretization_->rhs();
 
-    double dx2 = discretization_->dx() * discretization_->dx();
-    double dy2 = discretization_->dy() * discretization_->dy();
+    const double dx2 = discretization_->dx() * discretization_->dx();
+    const double dy2 = discretization_->dy() * discretization_->dy();
+    const double invDx2 = 1.0 / dx2;
+    const double invDy2 = 1.0 / dy2;
 
-    for (int j = p.beginJ() + 1; j < p.endJ() - 1; j++) {
-        for (int i = p.beginI() + 1; i < p.endI() - 1; i++) {
-            const double pDxx = (p(i - 1, j) - 2 * p(i, j) + p(i + 1, j)) / dx2;
-            const double pDyy = (p(i, j - 1) - 2 * p(i, j) + p(i, j + 1)) / dy2;
-            const double difference = rhs(i, j) - pDxx - pDyy;
-            squareResidual += difference * difference;
+    const int beginI = p.beginI();
+    const int endI = p.endI();
+    const int beginJ = p.beginJ();
+    const int endJ = p.endJ();
+
+    for (int j = beginJ + 1; j < endJ - 1; ++j) {
+        for (int i = beginI + 1; i < endI - 1; ++i) {
+            const double pij = p(i, j);
+            const double pDxx = (p(i - 1, j) - 2.0 * pij + p(i + 1, j)) * invDx2;
+            const double pDyy = (p(i, j - 1) - 2.0 * pij + p(i, j + 1)) * invDy2;
+            const double diff = rhs(i, j) - pDxx - pDyy;
+            squareResidual += diff * diff;
         }
     }
 
@@ -43,6 +52,7 @@ void PressureSolver::solve() {
     const double scalingFactor = 0.5 * dx2 * dy2 / (dx2 + dy2);
 
 #ifdef RESIDUAL_METHOD
+    const int residualStartThreshold = static_cast<int>(0.7 * lastIterationCount_);
     squareResidual = calculateSquareResidual();
 #else
     squareResidual = std::numeric_limits<double>::max();
@@ -63,10 +73,17 @@ void PressureSolver::solve() {
 
         setBoundaryValues();
 #ifdef RESIDUAL_METHOD
-        squareResidual = calculateSquareResidual();
+        if (it > residualStartThreshold) {
+            squareResidual = calculateSquareResidual();
+        }
 #endif
         it++;
     }
+#ifndef NDEBUG
+    std::cout << "took " << it << " iterations" << std::endl;
+#endif
+
+    lastIterationCount_ = it;
 }
 
 void PressureSolver::setBoundaryValues() {

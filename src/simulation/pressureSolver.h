@@ -53,6 +53,8 @@ private:
      */
     [[nodiscard]] double calculateSquareResidual() const;
 
+    int lastIterationCount_ = 0;
+
 protected:
     // object holding the needed field variables for rhs and p
     std::shared_ptr<Discretization> discretization_;
