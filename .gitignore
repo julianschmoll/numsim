@@ -46,6 +46,8 @@ submission.zip
 
 build
 cmake-build-debug
+_clang-tidy
+clang-tidy-build
 
 # IDE stuff
 .idea
