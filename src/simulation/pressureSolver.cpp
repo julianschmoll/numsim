@@ -1,29 +1,24 @@
 #include "simulation/pressureSolver.h"
-
+#include "macros.h"
 #include <iostream>
 #include <utility>
 
-PressureSolver::PressureSolver(std::shared_ptr<Discretization> discretization, double epsilon, const double maxNumberOfIterations, const double omega)
-    : discretization_(std::move(discretization)), epsilon_(epsilon), maxNumberOfIterations_(maxNumberOfIterations), omega_(omega) {}
+PressureSolver::PressureSolver(std::shared_ptr<StaggeredGrid> grid, double epsilon, const double maxNumberOfIterations, const double omega)
+    : grid_(grid), epsilon_(epsilon), maxNumberOfIterations_(maxNumberOfIterations), omega_(omega) {}
 
 double PressureSolver::calculateSquareResidual() const {
     double squareResidual = 0.0;
 
-    DataField &p = discretization_->p();
-    DataField &rhs = discretization_->rhs();
+    DataField &p = grid_->p();
+    DataField &rhs = grid_->rhs();
 
-    const double dx2 = discretization_->dx() * discretization_->dx();
-    const double dy2 = discretization_->dy() * discretization_->dy();
+    const double dx2 = grid_->dx() * grid_->dx();
+    const double dy2 = grid_->dy() * grid_->dy();
     const double invDx2 = 1.0 / dx2;
     const double invDy2 = 1.0 / dy2;
 
-    const int beginI = p.beginI();
-    const int endI = p.endI();
-    const int beginJ = p.beginJ();
-    const int endJ = p.endJ();
-
-    for (int j = beginJ + 1; j < endJ - 1; ++j) {
-        for (int i = beginI + 1; i < endI - 1; ++i) {
+    for (int j = p.beginJ() + 1; j < p.endJ() - 1; ++j) {
+        for (int i = p.beginI() + 1; i < p.endI() - 1; ++i) {
             const double pij = p(i, j);
             const double pDxx = (p(i - 1, j) - 2.0 * pij + p(i + 1, j)) * invDx2;
             const double pDyy = (p(i, j - 1) - 2.0 * pij + p(i, j + 1)) * invDy2;
@@ -32,8 +27,8 @@ double PressureSolver::calculateSquareResidual() const {
         }
     }
 
-    const int nCellsX = discretization_->nCells()[0] - 2;
-    const int nCellsY = discretization_->nCells()[1] - 2;
+    const int nCellsX = grid_->nCells()[0] - 2;
+    const int nCellsY = grid_->nCells()[1] - 2;
     const auto nCellsTotal = static_cast<double>(nCellsX * nCellsY);
 
     return squareResidual / nCellsTotal;
@@ -43,51 +38,43 @@ void PressureSolver::solve() {
     int it = 0;
     double squareResidual = 0;
 
-    DataField &p = discretization_->p();
-    DataField &rhs = discretization_->rhs();
+    DataField &p = grid_->p();
+    DataField &rhs = grid_->rhs();
 
-    const double dx2 = discretization_->dx() * discretization_->dx();
-    const double dy2 = discretization_->dy() * discretization_->dy();
+    const double dx2 = grid_->dx() * grid_->dx();
+    const double dy2 = grid_->dy() * grid_->dy();
 
     const double scalingFactor = 0.5 * dx2 * dy2 / (dx2 + dy2);
 
-#ifdef RESIDUAL_METHOD
     const int residualStartThreshold = static_cast<int>(0.7 * lastIterationCount_);
     squareResidual = calculateSquareResidual();
-#else
-    squareResidual = std::numeric_limits<double>::max();
-#endif
 
     while (it < maxNumberOfIterations_ && squareResidual > epsilon_ * epsilon_) {
         for (int j = p.beginJ() + 1; j < p.endJ() - 1; j++) {
             for (int i = p.beginI() + 1; i < p.endI() - 1; i++) {
                 const double pDxx = (p(i - 1, j) + p(i + 1, j)) / dx2;
                 const double pDyy = (p(i, j - 1) + p(i, j + 1)) / dy2;
-                const double pNew = (1 - omega_) * p(i, j) + omega_ * scalingFactor * (pDxx + pDyy - rhs(i, j));
-#ifndef RESIDUAL_METHOD
-                squareResidual += (p(i, j) - pNew) * (p(i, j) - pNew);
-#endif
-                p(i, j) = pNew;
+                p(i, j) = (1 - omega_) * p(i, j) + omega_ * scalingFactor * (pDxx + pDyy - rhs(i, j));
             }
         }
 
         setBoundaryValues();
-#ifdef RESIDUAL_METHOD
+
         if (it > residualStartThreshold) {
             squareResidual = calculateSquareResidual();
         }
-#endif
+
         it++;
     }
-#ifndef NDEBUG
-    std::cout << "took " << it << " iterations" << std::endl;
-#endif
+
+    DEBUG(std::cout << "PressureSolver::solve():  it=" << it << ",  res²=" << squareResidual << std::endl);
 
     lastIterationCount_ = it;
 }
 
+// TODO: Randwerte eventuell direkt in solver() Schleife setzen.
 void PressureSolver::setBoundaryValues() {
-    DataField &p = discretization_->p();
+    DataField &p = grid_->p();
     for (int i = p.beginI() + 1; i < p.endI() - 1; i++) {
         // bottom
         p(i, p.beginJ()) = p(i, p.beginJ() + 1);

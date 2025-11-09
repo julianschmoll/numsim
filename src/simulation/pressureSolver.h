@@ -1,6 +1,6 @@
 #pragma once
 
-#include "grid/discretization.h"
+#include "grid/staggeredGrid.h"
 #include <memory>
 
 #define RESIDUAL_METHOD
@@ -17,14 +17,14 @@
 class PressureSolver {
 public:
     /**
-     * Constructs a PressureSolver with the given discretization and solver parameters.
+     * Constructs a PressureSolver with the given grid and solver parameters.
      *
-     * @param discretization Shared pointer to the grid discretization.
+     * @param grid Shared pointer to the grid grid.
      * @param epsilon Convergence threshold for the residual.
      * @param maxNumberOfIterations Maximum number of iterations.
      * @param omega Relaxation factor (1.0 for Gauss-Seidel, otherwise SOR).
      */
-    PressureSolver(std::shared_ptr<Discretization> discretization, double epsilon, double maxNumberOfIterations, double omega);
+    PressureSolver(std::shared_ptr<StaggeredGrid> grid, double epsilon, double maxNumberOfIterations, double omega);
 
     /**
      * Destructs PressureSolver object.
@@ -57,7 +57,7 @@ private:
 
 protected:
     // object holding the needed field variables for rhs and p
-    std::shared_ptr<Discretization> discretization_;
+    std::shared_ptr<StaggeredGrid> grid_;
 
     // Convergence threshold for the residual
     double epsilon_;

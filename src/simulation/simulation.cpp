@@ -1,5 +1,7 @@
 #include "simulation.h"
 
+#include "macros.h"
+#include <chrono>
 #include <utility>
 
 Simulation::Simulation(Settings settings) : settings_(std::move(settings)) {
@@ -29,37 +31,34 @@ Simulation::Simulation(Settings settings) : settings_(std::move(settings)) {
 }
 
 void Simulation::run() {
-#ifndef NDEBUG
-    unsigned int counter = 0;
-#endif
+
+    auto start = std::chrono::high_resolution_clock::now();
+
     double currentTime = 0.0;
+
+    DEBUG(unsigned int counter = 0);
 
     while (currentTime < settings_.endTime) {
         setBoundaryValues();
 
         computeTimeStepWidth();
 
-#ifndef NDEBUG
-        std::cout << "**************************************" << std::endl;
-        std::cout << "Computing Timestep " << counter++;
-        const auto expectedTimesteps = static_cast<unsigned int>(counter + (settings_.endTime - currentTime) / timeStepWidth_ - 1);
-        std::cout << " of " << expectedTimesteps << " estimated Timesteps." << std::endl;
-#endif
+        DEBUG(std::cout << "**************************************" << std::endl);
+        DEBUG(std::cout << "Computing Timestep " << counter++);
+        DEBUG(const auto expectedTimesteps = static_cast<unsigned int>(counter + (settings_.endTime - currentTime) / timeStepWidth_ - 1));
+        DEBUG(std::cout << " of " << expectedTimesteps << " estimated Timesteps." << std::endl);
 
         if (currentTime + timeStepWidth_ > settings_.endTime) {
             timeStepWidth_ = settings_.endTime - currentTime;
         }
         currentTime += timeStepWidth_;
 
-#ifndef NDEBUG
-        std::cout << "Current Time: " << currentTime << "s";
-        std::cout << "/" << settings_.endTime << "s";
-        const double progress = (currentTime / settings_.endTime) * 100.0;
-        std::cout << " (" << std::fixed << std::setprecision(2) << progress << "%)" << std::endl;
-#endif
+        DEBUG(std::cout << "Current Time: " << currentTime << "s");
+        DEBUG(std::cout << "/" << settings_.endTime << "s");
+        DEBUG(const double progress = (currentTime / settings_.endTime) * 100.0);
+        DEBUG(std::cout << " (" << std::fixed << std::setprecision(2) << progress << "%)" << std::endl);
 
         setPreliminaryVelocities();
-
         setRightHandSide();
 
         pressureSolver_->solve();
@@ -70,7 +69,10 @@ void Simulation::run() {
         outputWriterText_->writeFile(currentTime);
     }
 
-    std::cout << "Simulation finished." << std::endl;
+    auto end = std::chrono::high_resolution_clock::now();
+    uint64_t ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+    std::cout << "Simulation finished in " << ms << "ms" << std::endl;
 }
 
 void Simulation::setBoundaryValues() {

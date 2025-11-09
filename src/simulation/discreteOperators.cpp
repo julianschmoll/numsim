@@ -2,7 +2,7 @@
 #include <cstdlib>
 
 DiscreteOperators::DiscreteOperators(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, double alpha)
-    : Discretization(nCells, meshWidth), alpha_(alpha) {}
+    : StaggeredGrid(nCells, meshWidth), alpha_(alpha) {}
 
 double DiscreteOperators::computeDu2Dx(const int i, const int j) const {
     const double uHalfRight = (u_(i + 1, j) + u_(i, j)) / 2;

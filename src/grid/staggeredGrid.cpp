@@ -1,6 +1,6 @@
-#include "grid/discretization.h"
+#include "grid/staggeredGrid.h"
 
-Discretization::Discretization(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth)
+StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth)
     : meshWidth_(meshWidth), nCells_(nCells), u_({nCells[0] + 1, nCells[1] + 2}, meshWidth, {0.0, 0.5}, {-1, nCells_[0]}, {-1, nCells_[1] + 1}),
       v_({nCells[0] + 2, nCells[1] + 1}, meshWidth, {0.5, 0.0}, {-1, nCells_[0] + 1}, {-1, nCells_[1]}),
       p_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.5}, {-1, nCells_[0] + 1}, {-1, nCells_[1] + 1}),
@@ -8,66 +8,66 @@ Discretization::Discretization(const std::array<int, 2> &nCells, const std::arra
       g_({nCells[0] + 2, nCells[1] + 1}, meshWidth, {0.5, 0.0}, {-1, nCells_[0] + 1}, {-1, nCells_[1]}),
       rhs_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.5}, {-1, nCells_[0] + 1}, {-1, nCells_[1] + 1}) {}
 
-const std::array<double, 2> &Discretization::meshWidth() const {
+const std::array<double, 2> &StaggeredGrid::meshWidth() const {
     return meshWidth_;
 }
 
-const std::array<int, 2> &Discretization::nCells() const {
+const std::array<int, 2> &StaggeredGrid::nCells() const {
     return nCells_;
 }
 
-double Discretization::u(const int i, const int j) {
+double StaggeredGrid::u(const int i, const int j) {
     return u_(i, j);
 }
 
-double Discretization::v(const int i, const int j) {
+double StaggeredGrid::v(const int i, const int j) {
     return v_(i, j);
 }
 
-double Discretization::p(const int i, const int j) {
+double StaggeredGrid::p(const int i, const int j) {
     return p_(i, j);
 }
 
-double Discretization::f(const int i, const int j) {
+double StaggeredGrid::f(const int i, const int j) {
     return f_(i, j);
 }
 
-double Discretization::g(const int i, const int j) {
+double StaggeredGrid::g(const int i, const int j) {
     return g_(i, j);
 }
 
-double Discretization::rhs(const int i, const int j) {
+double StaggeredGrid::rhs(const int i, const int j) {
     return rhs_(i, j);
 }
 
-DataField &Discretization::u() {
+DataField &StaggeredGrid::u() {
     return u_;
 }
 
-DataField &Discretization::v() {
+DataField &StaggeredGrid::v() {
     return v_;
 }
 
-DataField &Discretization::p() {
+DataField &StaggeredGrid::p() {
     return p_;
 }
 
-DataField &Discretization::f() {
+DataField &StaggeredGrid::f() {
     return f_;
 }
 
-DataField &Discretization::g() {
+DataField &StaggeredGrid::g() {
     return g_;
 }
 
-DataField &Discretization::rhs() {
+DataField &StaggeredGrid::rhs() {
     return rhs_;
 }
 
-double Discretization::dx() const {
+double StaggeredGrid::dx() const {
     return meshWidth_[0];
 }
 
-double Discretization::dy() const {
+double StaggeredGrid::dy() const {
     return meshWidth_[1];
 }

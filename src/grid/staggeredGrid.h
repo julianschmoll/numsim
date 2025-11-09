@@ -3,7 +3,7 @@
 #include "grid/dataField.h"
 #include <array>
 
-class Discretization {
+class StaggeredGrid {
     const std::array<double, 2> meshWidth_;
     /// number of cells in x, y direction not including boundary
     const std::array<int, 2> nCells_;
@@ -17,10 +17,10 @@ protected:
     DataField rhs_;
 
 public:
-    virtual ~Discretization() = default;
+    virtual ~StaggeredGrid() = default;
 
     //! construct the object with given numbers of cells in x and y direction
-    Discretization(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth);
+    StaggeredGrid(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth);
 
     const std::array<double, 2> &meshWidth() const;
     const std::array<int, 2> &nCells() const;

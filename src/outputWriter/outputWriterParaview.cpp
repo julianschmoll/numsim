@@ -1,6 +1,6 @@
 #include "outputWriterParaview.h"
 
-OutputWriterParaview::OutputWriterParaview(const std::shared_ptr<Discretization> &discretization) : OutputWriter(discretization) {
+OutputWriterParaview::OutputWriterParaview(const std::shared_ptr<StaggeredGrid> grid) : OutputWriter(grid) {
     // Create a vtkWriter_
     vtkWriter_ = vtkSmartPointer<vtkXMLImageDataWriter>::New();
 }
@@ -21,13 +21,13 @@ void OutputWriterParaview::writeFile(const double currentTime) {
     dataSet->SetOrigin(0, 0, 0);
 
     // set spacing of mesh
-    const double dx = discretization_->meshWidth()[0];
-    const double dy = discretization_->meshWidth()[1];
+    const double dx = grid_->meshWidth()[0];
+    const double dy = grid_->meshWidth()[1];
     constexpr double dz = 1;
     dataSet->SetSpacing(dx, dy, dz);
 
     // set number of points in each dimension, 1 cell in z direction
-    std::array<int, 2> nCells = discretization_->nCells();
+    std::array<int, 2> nCells = grid_->nCells();
     dataSet->SetDimensions(nCells[0] + 1, nCells[1] + 1,
                            1); // we want to have points at each corner of each cell
 
@@ -55,7 +55,7 @@ void OutputWriterParaview::writeFile(const double currentTime) {
             const double x = i * dx;
             const double y = j * dy;
 
-            arrayPressure->SetValue(index, discretization_->p().interpolateAt(x, y));
+            arrayPressure->SetValue(index, grid_->p().interpolateAt(x, y));
         }
     }
 
@@ -90,8 +90,8 @@ void OutputWriterParaview::writeFile(const double currentTime) {
             const double x = i * dx;
 
             std::array<double, 3> velocityVector;
-            velocityVector[0] = discretization_->u().interpolateAt(x, y);
-            velocityVector[1] = discretization_->v().interpolateAt(x, y);
+            velocityVector[0] = grid_->u().interpolateAt(x, y);
+            velocityVector[1] = grid_->v().interpolateAt(x, y);
             velocityVector[2] = 0.0; // z-direction is 0
 
             arrayVelocity->SetTuple(index, velocityVector.data());

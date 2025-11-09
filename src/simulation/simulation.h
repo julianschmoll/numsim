@@ -1,6 +1,6 @@
 #pragma once
 
-#include "grid/discretization.h"
+#include "grid/staggeredGrid.h"
 #include "outputWriter/outputWriterParaview.h"
 #include "outputWriter/outputWriterText.h"
 #include "settings.h"

@@ -11,7 +11,7 @@ add_executable(${PROJECT_NAME}
 
         #grid stuff
         grid/array2d.cpp
-        grid/discretization.cpp
+        grid/staggeredGrid.cpp
         grid/dataField.cpp
 
         # solver stuff

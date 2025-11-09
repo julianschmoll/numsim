@@ -1,5 +1,4 @@
 #include "grid/dataField.h"
-#include "grid/discretization.h"
 
 #include <cassert>
 #include <cmath>

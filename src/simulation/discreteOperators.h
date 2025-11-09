@@ -1,8 +1,8 @@
 #pragma once
 
-#include "grid/discretization.h"
+#include "grid/staggeredGrid.h"
 
-class DiscreteOperators final : public Discretization {
+class DiscreteOperators final : public StaggeredGrid {
 
 public:
     /**
