@@ -1,7 +1,6 @@
 #include "simulation/pressureSolver.h"
 #include "macros.h"
 #include <iostream>
-#include <utility>
 
 PressureSolver::PressureSolver(std::shared_ptr<StaggeredGrid> grid, double epsilon, const double maxNumberOfIterations, const double omega)
     : grid_(grid), epsilon_(epsilon), maxNumberOfIterations_(maxNumberOfIterations), omega_(omega) {}
@@ -36,38 +35,37 @@ double PressureSolver::calculateSquareResidual() const {
 
 void PressureSolver::solve() {
     int it = 0;
-    double squareResidual = 0;
 
     DataField &p = grid_->p();
     DataField &rhs = grid_->rhs();
 
     const double dx2 = grid_->dx() * grid_->dx();
     const double dy2 = grid_->dy() * grid_->dy();
-
+    const double invDx2 = 1 / dx2;
+    const double invDy2 = 1 / dy2;
     const double scalingFactor = 0.5 * dx2 * dy2 / (dx2 + dy2);
 
     const int residualStartThreshold = static_cast<int>(0.7 * lastIterationCount_);
-    squareResidual = calculateSquareResidual();
 
-    while (it < maxNumberOfIterations_ && squareResidual > epsilon_ * epsilon_) {
+    while (it < maxNumberOfIterations_) {
         for (int j = p.beginJ() + 1; j < p.endJ() - 1; j++) {
             for (int i = p.beginI() + 1; i < p.endI() - 1; i++) {
-                const double pDxx = (p(i - 1, j) + p(i + 1, j)) / dx2;
-                const double pDyy = (p(i, j - 1) + p(i, j + 1)) / dy2;
+                const double pDxx = (p(i - 1, j) + p(i + 1, j)) * invDx2;
+                const double pDyy = (p(i, j - 1) + p(i, j + 1)) * invDy2;
                 p(i, j) = (1 - omega_) * p(i, j) + omega_ * scalingFactor * (pDxx + pDyy - rhs(i, j));
             }
         }
 
         setBoundaryValues();
 
-        if (it > residualStartThreshold) {
-            squareResidual = calculateSquareResidual();
+        if (it > residualStartThreshold && calculateSquareResidual() < epsilon_ * epsilon_) {
+            break;
         }
 
         it++;
     }
 
-    DEBUG(std::cout << "PressureSolver::solve():  it=" << it << ",  res²=" << squareResidual << std::endl);
+    DEBUG(std::cout << "PressureSolver::solve():  it=" << it << ",  res²=" << calculateSquareResidual() << std::endl);
 
     lastIterationCount_ = it;
 }
