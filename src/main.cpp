@@ -1,5 +1,6 @@
 #include "settings.h"
 #include "simulation/simulation.h"
+#include "macros.h"
 
 #include <iostream>
 
@@ -14,9 +15,7 @@ int main(const int argc, char *argv[]) {
     Settings settings;
     settings.loadFromFile(filename);
 
-#ifndef NDEBUG
-    settings.printSettings();
-#endif
+    DEBUG(settings.printSettings());
 
     Simulation simulation(settings);
 

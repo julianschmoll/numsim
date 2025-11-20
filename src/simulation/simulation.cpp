@@ -135,7 +135,9 @@ void Simulation::computeTimeStepWidth() {
     const double hx = discOps_->dx();
     const double hy = discOps_->dy();
 
-    const double diffusive = (((hx * hx) + (hy * hy)) / 2.0) * (settings_.re / 2.0);
+    const double dx2 = hx * hx;
+    const double dy2 = hy * hy;
+    const double diffusive = (settings_.re / 2.0) * ((dx2 * dy2) / (dx2 + dy2));
 
     // we need to handle velocities being 0
     const double convectiveU = (uMax > 0) ? hx / uMax : std::numeric_limits<double>::max();
