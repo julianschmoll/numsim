@@ -2,9 +2,10 @@
 #include "simulation/simulation.h"
 #include "macros.h"
 
+#include <mpi.h>
 #include <iostream>
 
-int main(const int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
     // we need an input file being specified
     if (argc == 1) {
         std::cout << "usage: " << argv[0] << " <filename>" << std::endl;
@@ -12,14 +13,25 @@ int main(const int argc, char *argv[]) {
     }
     const std::string filename = argv[1];
 
-    Settings settings;
-    settings.loadFromFile(filename);
+    //Settings settings;
+    //settings.loadFromFile(filename);
 
-    DEBUG(settings.printSettings());
+    //DEBUG(settings.printSettings());
 
-    Simulation simulation(settings);
+    MPI_Init(&argc, &argv);
 
-    simulation.run();
+    int ownRankNo = 0;
+    int nRanks = 0;
+    MPI_Comm_rank(MPI_COMM_WORLD, &ownRankNo);
+    MPI_Comm_size(MPI_COMM_WORLD, &nRanks);
+
+    std::cout << "Hi, I'm process " << ownRankNo << std::endl;
+
+    //Simulation simulation(settings);
+
+    //simulation.run();
+
+    MPI_Finalize();
 
     return EXIT_SUCCESS;
 }

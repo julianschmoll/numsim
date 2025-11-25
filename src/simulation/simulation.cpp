@@ -3,6 +3,7 @@
 #include "macros.h"
 #include <chrono>
 #include <utility>
+#include <mpi.h>
 
 Simulation::Simulation(Settings settings) : settings_(std::move(settings)) {
     std::cout << "Initializing Simulation..." << std::endl;
