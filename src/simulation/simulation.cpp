@@ -38,8 +38,10 @@ void Simulation::run() {
 
     DEBUG(unsigned int counter = 0);
 
+    setBoundaryFG();
+
     while (currentTime < settings_.endTime) {
-        setBoundaryValues();
+        setBoundaryUV();
 
         computeTimeStepWidth();
 
@@ -75,7 +77,7 @@ void Simulation::run() {
     std::cout << "Simulation finished in " << ms << "ms" << std::endl;
 }
 
-void Simulation::setBoundaryValues() {
+void Simulation::setBoundaryUV() {
     const auto uBottom = settings_.dirichletBcBottom[0];
     const auto uTop = settings_.dirichletBcTop[0];
     const auto uLeft = settings_.dirichletBcLeft[0];
@@ -88,43 +90,60 @@ void Simulation::setBoundaryValues() {
 
     auto &u = discOps_->u();
     auto &v = discOps_->v();
-    auto &f = discOps_->f();
-    auto &g = discOps_->g();
 
-    // We expect u and f having the same size
     for (int i = u.beginI(); i < u.endI(); ++i) {
-        const double valBeginJ = 2.0 * uBottom - u(i, u.beginJ() + 1);
-        u(i, u.beginJ()) = valBeginJ;
-        f(i, f.beginJ()) = valBeginJ;
-
-        const double valEndJ = 2.0 * uTop - u(i, u.endJ() - 2);
-        u(i, u.endJ() - 1) = valEndJ;
-        f(i, f.endJ() - 1) = valEndJ;
+        u(i, u.beginJ()) = 2.0 * uBottom - u(i, u.beginJ() + 1);
+        u(i, u.endJ() - 1) = 2.0 * uTop - u(i, u.endJ() - 2);
     }
 
-    // We expect v and g having the same size
     for (int i = v.beginI(); i < v.endI(); ++i) {
         v(i, v.beginJ()) = vBottom;
-        g(i, g.beginJ()) = vBottom;
         v(i, v.endJ() - 1) = vTop;
-        g(i, g.endJ() - 1) = vTop;
     }
 
     for (int j = u.beginJ(); j < u.endJ(); ++j) {
         u(u.beginI(), j) = uLeft;
-        f(f.beginI(), j) = uLeft;
         u(u.endI() - 1, j) = uRight;
-        f(f.endI() - 1, j) = uRight;
     }
 
     for (int j = v.beginJ(); j < v.endJ(); ++j) {
-        const double valBeginI = 2.0 * vLeft - v(v.beginI() + 1, j);
-        v(v.beginI(), j) = valBeginI;
-        g(g.beginI(), j) = valBeginI;
+        v(v.beginI(), j) = 2.0 * vLeft - v(v.beginI() + 1, j);
+        v(v.endI() - 1, j) = 2.0 * vRight - v(v.endI() - 2, j);
+    }
+}
 
-        const double valEndI = 2.0 * vRight - v(v.endI() - 2, j);
-        v(v.endI() - 1, j) = valEndI;
-        g(g.endI() - 1, j) = valEndI;
+void Simulation::setBoundaryFG() {
+    const auto fBottom = settings_.dirichletBcBottom[0];
+    const auto fTop = settings_.dirichletBcTop[0];
+    const auto fLeft = settings_.dirichletBcLeft[0];
+    const auto fRight = settings_.dirichletBcRight[0];
+
+    const auto gBottom = settings_.dirichletBcBottom[1];
+    const auto gTop = settings_.dirichletBcTop[1];
+    const auto gLeft = settings_.dirichletBcLeft[1];
+    const auto gRight = settings_.dirichletBcRight[1];
+
+    auto &f = discOps_->f();
+    auto &g = discOps_->g();
+
+    for (int i = f.beginI(); i< f.endI(); ++i) {
+        f(i, f.beginJ()) = fBottom;
+        f(i, f.endJ()-1) = fTop;
+    }
+
+    for (int i = g.beginI(); i < g.endI(); ++i) {
+        g(i, g.beginJ()) = gBottom;
+        g(i, g.endJ()-1) = gTop;
+    }
+
+    for (int j = f.beginJ(); j < f.endJ(); ++j) {
+        f(f.beginI(), j) = fLeft;
+        f(f.endI() -1, j) = fRight;
+    }
+
+    for (int j = g.beginJ(); j < g.endJ(); ++j) {
+        g(g.beginI(), j) = gLeft;
+        g(g.endI() - 1, j) = gRight;
     }
 }
 

@@ -60,7 +60,12 @@ private:
     /**
      * Sets boundary values of u and v.
      */
-    void setBoundaryValues();
+    void setBoundaryUV();
+
+    /**
+     * Sets boundary values of F and G.
+     */
+    void setBoundaryFG();
 
     /**
      * Computes the preliminary velocities, F and G.
