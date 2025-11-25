@@ -23,6 +23,10 @@ add_executable(${PROJECT_NAME}
         outputWriter/outputWriter.cpp
         outputWriter/outputWriterParaview.cpp
         outputWriter/outputWriterText.cpp
+        outputWriter/outputWriterTextParallel.cpp
+        outputWriter/outputWriterTextParallel.h
+        outputWriter/outputWriterParaviewParallel.cpp
+        outputWriter/outputWriterParaviewParallel.h
         #simulation/partitioning.cpp
 )
 

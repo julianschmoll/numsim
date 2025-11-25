@@ -1,6 +1,8 @@
 #include "simulation.h"
 
 #include "macros.h"
+#include "partitioning.h"
+
 #include <chrono>
 #include <utility>
 #include <mpi.h>
@@ -11,6 +13,9 @@ Simulation::Simulation(Settings settings) : settings_(std::move(settings)) {
     for (int i = 0; i < 2; ++i) {
         meshWidth_[i] = settings_.physicalSize[i] / settings_.nCells[i];
     }
+
+    Partitioning partitioning;
+    partitioning.initialize(settings_.nCells);
 
     if (settings_.useDonorCell) {
         std::cout << "Using Donor Cell." << std::endl;
