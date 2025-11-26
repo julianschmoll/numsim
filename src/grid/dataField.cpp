@@ -25,6 +25,10 @@ int DataField::endI() const {
     return iIndexRange_[1];
 }
 
+void DataField::setToZero() {
+    for (int i = 0; i < data_.size(); i++) data_[i] = 0;
+}
+
 double DataField::interpolateAt(double x, double y) const {
     x /= meshWidth_[0];
     y /= meshWidth_[1];

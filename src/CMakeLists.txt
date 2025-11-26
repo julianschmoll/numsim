@@ -18,6 +18,8 @@ add_executable(${PROJECT_NAME}
         simulation/simulation.cpp
         simulation/pressureSolver.cpp
         simulation/discreteOperators.cpp
+        simulation/partitioning.cpp
+        simulation/parallelSimulation.cpp
 
         # outputWriter stuff
         outputWriter/outputWriter.cpp
@@ -27,7 +29,6 @@ add_executable(${PROJECT_NAME}
         outputWriter/outputWriterTextParallel.h
         outputWriter/outputWriterParaviewParallel.cpp
         outputWriter/outputWriterParaviewParallel.h
-        simulation/partitioning.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

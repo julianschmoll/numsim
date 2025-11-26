@@ -63,6 +63,8 @@ public:
      */
     [[nodiscard]] double absMax() const;
 
+    double *data();
+
 protected:
     // Flat storage for 2D array values
     std::vector<double> data_;

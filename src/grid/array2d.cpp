@@ -27,3 +27,8 @@ double Array2d::operator()(const int i, const int j) const {
 double Array2d::absMax() const {
     return std::fabs(*std::max_element(data_.begin(), data_.end(), [](const double a, const double b) { return std::fabs(a) < std::fabs(b); }));
 }
+
+double *Array2d::data() {
+    return data_.data();
+}
+

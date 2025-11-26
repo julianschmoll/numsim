@@ -64,6 +64,8 @@ public:
      */
     [[nodiscard]] int endI() const;
 
+    void setToZero();
+
 private:
     // Grid Spacing
     const std::array<double, 2> meshWidth_;

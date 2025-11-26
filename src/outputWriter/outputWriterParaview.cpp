@@ -1,6 +1,8 @@
 #include "outputWriterParaview.h"
 
-OutputWriterParaview::OutputWriterParaview(const std::shared_ptr<StaggeredGrid> grid) : OutputWriter(grid) {
+
+OutputWriterParaview::OutputWriterParaview(const std::shared_ptr<StaggeredGrid> grid, const Partitioning &partitioning)
+    : OutputWriter(grid, partitioning) {
     // Create a vtkWriter_
     vtkWriter_ = vtkSmartPointer<vtkXMLImageDataWriter>::New();
 }
@@ -28,8 +30,7 @@ void OutputWriterParaview::writeFile(const double currentTime) {
 
     // set number of points in each dimension, 1 cell in z direction
     std::array<int, 2> nCells = grid_->nCells();
-    dataSet->SetDimensions(nCells[0] + 1, nCells[1] + 1,
-                           1); // we want to have points at each corner of each cell
+    dataSet->SetDimensions(nCells[0] + 1, nCells[1] + 1, 1); // we want to have points at each corner of each cell
 
     // add pressure field variable
     // ---------------------------
@@ -38,18 +39,15 @@ void OutputWriterParaview::writeFile(const double currentTime) {
     // the pressure is a scalar which means the number of components is 1
     arrayPressure->SetNumberOfComponents(1);
 
-    // Set the number of pressure values and allocate memory for it. We already
-    // know the number, it has to be the same as there are nodes in the mesh.
+    // Set the number of pressure values and allocate memory for it. We already know the number, it has to be the same as there are nodes in the mesh.
     arrayPressure->SetNumberOfTuples(dataSet->GetNumberOfPoints());
 
     arrayPressure->SetName("pressure");
 
-    // loop over the nodes of the mesh and assign the interpolated p values in the
-    // vtk data structure we only consider the cells that are the actual
-    // computational domain, not the helper values in the "halo"
+    // loop over the nodes of the mesh and assign the interpolated p values in the vtk data structure
+    // we only consider the cells that are the actual computational domain, not the helper values in the "halo"
 
-    int index = 0; // index for the vtk data structure, will be incremented in the
-    // inner loop
+    int index = 0; // index for the vtk data structure, will be incremented in the inner loop
     for (int j = 0; j < nCells[1] + 1; j++) {
         for (int i = 0; i < nCells[0] + 1; i++, index++) {
             const double x = i * dx;
@@ -59,8 +57,7 @@ void OutputWriterParaview::writeFile(const double currentTime) {
         }
     }
 
-    // now, we should have added as many values as there are points in the vtk
-    // data structure
+    // now, we should have added as many values as there are points in the vtk data structure
     assert(index == dataSet->GetNumberOfPoints());
 
     // add the field variable to the data set
@@ -70,9 +67,8 @@ void OutputWriterParaview::writeFile(const double currentTime) {
     // ---------------------------
     const vtkSmartPointer<vtkDoubleArray> arrayVelocity = vtkDoubleArray::New();
 
-    // here we have two components (u,v), but ParaView will only allow vector
-    // glyphs if we have an ℝ^3 vector, therefore we use a 3-dimensional vector
-    // and set the 3rd component to zero
+    // here we have two components (u,v), but ParaView will only allow vector glyphs if we have an ℝ^3 vector,
+    // therefore we use a 3-dimensional vector and set the 3rd component to zero
     arrayVelocity->SetNumberOfComponents(3);
 
     // set the number of values
@@ -80,8 +76,7 @@ void OutputWriterParaview::writeFile(const double currentTime) {
 
     arrayVelocity->SetName("velocity");
 
-    // loop over the mesh where p is defined and assign the values in the vtk data
-    // structure
+    // loop over the mesh where p is defined and assign the values in the vtk data structure
     index = 0; // index for the vtk data structure
     for (int j = 0; j < nCells[1] + 1; j++) {
         const double y = j * dy;
@@ -97,8 +92,7 @@ void OutputWriterParaview::writeFile(const double currentTime) {
             arrayVelocity->SetTuple(index, velocityVector.data());
         }
     }
-    // now, we should have added as many values as there are points in the vtk
-    // data structure
+    // now, we should have added as many values as there are points in the vtk data structure
     assert(index == dataSet->GetNumberOfPoints());
 
     // add the field variable to the data set
@@ -117,10 +111,8 @@ void OutputWriterParaview::writeFile(const double currentTime) {
     // Write the data
     vtkWriter_->SetInputData(dataSet);
 
-    // vtkWriter_->SetDataModeToAscii();     // comment this in to get ascii text
-    // files: those can be checked in an editor
-    vtkWriter_->SetDataModeToBinary(); // set file mode to binary files: smaller
-    // file sizes
+    //vtkWriter_->SetDataModeToAscii();     // comment this in to get ascii text files: those can be checked in an editor
+    vtkWriter_->SetDataModeToBinary(); // set file mode to binary files: smaller file sizes
 
     // finally write out the data
     vtkWriter_->Write();

@@ -2,7 +2,7 @@
 
 #include "outputWriter.h"
 
-class OutputWriterText final : public OutputWriter {
+class OutputWriterText : public OutputWriter {
 public:
     //! use constructor of base class
     using OutputWriter::OutputWriter;
