@@ -1,6 +1,7 @@
 #include "settings.h"
 #include "simulation/simulation.h"
 #include "macros.h"
+#include "simulation/partitioning.h"
 
 #include <mpi.h>
 #include <iostream>
@@ -13,8 +14,8 @@ int main(int argc, char *argv[]) {
     }
     const std::string filename = argv[1];
 
-    //Settings settings;
-    //settings.loadFromFile(filename);
+    Settings settings;
+    settings.loadFromFile(filename);
 
     //DEBUG(settings.printSettings());
 
@@ -26,6 +27,9 @@ int main(int argc, char *argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &nRanks);
 
     std::cout << "Hi, I'm process " << ownRankNo << std::endl;
+
+    Partitioning partitioning;
+    partitioning.initialize(settings.nCells);
 
     //Simulation simulation(settings);
 

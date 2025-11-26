@@ -14,9 +14,6 @@ Simulation::Simulation(Settings settings) : settings_(std::move(settings)) {
         meshWidth_[i] = settings_.physicalSize[i] / settings_.nCells[i];
     }
 
-    Partitioning partitioning;
-    partitioning.initialize(settings_.nCells);
-
     if (settings_.useDonorCell) {
         std::cout << "Using Donor Cell." << std::endl;
         discOps_ = std::make_unique<DiscreteOperators>(settings_.nCells, meshWidth_, settings_.alpha);

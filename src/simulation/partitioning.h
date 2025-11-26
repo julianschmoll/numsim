@@ -5,6 +5,9 @@
 
 class Partitioning
 {
+    /// Dimensions of the problem: 2D grid with x,y directions.
+    static constexpr int dimensions_ = 2;
+
     std::array<int,2> nCellsLocal_;
     std::array<int,2> nCellsGlobal_;
 
@@ -18,8 +21,7 @@ class Partitioning
     int offsetX_ = 0;
     int offsetY_ = 0;
 
-    /// Dimensions of the problem: 2D grid with x,y directions.
-    static constexpr int dimensions_ = 2;
+    int ownRankNo_;
 
     std::array<int, dimensions_> rankCoordinates_;
 
