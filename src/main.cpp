@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     Settings settings;
     settings.loadFromFile(filename);
 
-    //DEBUG(settings.printSettings());
+    DEBUG(settings.printSettings());
 
     MPI_Init(&argc, &argv);
 
@@ -28,12 +28,9 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Hi, I'm process " << ownRankNo << std::endl;
 
-    Partitioning partitioning;
-    partitioning.initialize(settings.nCells);
+    Simulation simulation(settings);
 
-    //Simulation simulation(settings);
-
-    //simulation.run();
+    simulation.run();
 
     MPI_Finalize();
 

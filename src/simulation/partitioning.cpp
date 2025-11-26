@@ -37,17 +37,6 @@ void Partitioning::initialize(std::array<int, 2> nCellsGlobal) {
 
     offsetX_ = partWidth * rankCoordinates_[0] + std::min(rankCoordinates_[0], nCellsGlobal[0] % partitions[0]);
     offsetY_ = partHeight * rankCoordinates_[1] + std::min(rankCoordinates_[1], nCellsGlobal[1] % partitions[1]);
-
-    std::cout << "I'm partition " << ownRankNo_ << " with cells "
-    << offsetX_ << "-" << offsetX_ + nCellsLocal_[0] -1 << ", " << offsetY_ << "-" << offsetY_ + nCellsLocal_[1] -1
-    << ". Left neighbor: " << leftNeighbourRankNo()
-    << " right neighbor: " << rightNeighbourRankNo()
-    << " top neighbor: " << topNeighbourRankNo()
-    << " bottom neighbor: " << bottomNeighbourRankNo() << std::endl;
-    //<< ". Bottom Boundary: " << ownPartitionContainsBottomBoundary()
-    //<< " Left Boundary: " << ownPartitionContainsLeftBoundary()
-    //<< " Right Boundary: " <<     ownPartitionContainsRightBoundary()
-    //<< " Top Boundary: " << ownPartitionContainsTopBoundary() << std::endl;
 }
 
 int Partitioning::nRanks() const {
