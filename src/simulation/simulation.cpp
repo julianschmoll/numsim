@@ -9,7 +9,8 @@
 #include <utility>
 #include <mpi.h>
 
-Simulation::Simulation(Settings settings) : settings_(std::move(settings)) {
+void Simulation::initialize(const Settings &settings) {
+    settings_ = settings;
     std::cout << "Initializing Simulation..." << std::endl;
 
     for (int i = 0; i < 2; ++i) {
@@ -26,9 +27,9 @@ Simulation::Simulation(Settings settings) : settings_(std::move(settings)) {
 
     if (settings_.pressureSolver == IterSolverType::SOR) {
         std::cout << "Using SOR solver." << std::endl;
-        pressureSolver_ = std::make_unique<PressureSolver>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, settings_.omega);
+        pressureSolver_ = std::make_unique<PressureSolverSerial>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, settings_.omega);
     } else {
-        pressureSolver_ = std::make_unique<PressureSolver>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, 1);
+        pressureSolver_ = std::make_unique<PressureSolverSerial>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, 1);
     }
 
     // we wouldn't actually need a partitioning here as this is the single threaded simulation

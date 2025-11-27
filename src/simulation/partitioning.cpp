@@ -8,7 +8,7 @@ int Partitioning::ownRankNo() const {
     return rank;
 }
 
-void Partitioning::initialize(const std::array<int, 2> nCellsGlobal) {
+void Partitioning::initialize(std::array<int, 2> nCellsGlobal) {
     ownRankNo_ = ownRankNo();
     const int numberRanks = nRanks();
     nCellsGlobal_ = nCellsGlobal;

@@ -5,7 +5,7 @@
 #include "outputWriter/outputWriterText.h"
 #include "settings.h"
 #include "simulation/discreteOperators.h"
-#include "simulation/pressureSolver.h"
+#include "pressureSolver/pressureSolverSerial.h"
 #include <memory>
 
 /**
@@ -19,11 +19,9 @@
 class Simulation {
 public:
     /**
-     * Constructs a Simulation object with given Settings.
-     *
-     * @param settings Configuration parameters for simulation.
+     * Constructs a Simulation object.
      */
-    explicit Simulation(Settings settings);
+    Simulation() = default;
 
     /**
      * Destructs Simulation object.
@@ -35,7 +33,9 @@ public:
      */
     void run();
 
-private:
+    void initialize(const Settings &settings);
+
+protected:
     // Grid width in x and y directions
     std::array<double, 2> meshWidth_{};
 
@@ -49,7 +49,7 @@ private:
     std::unique_ptr<OutputWriter> outputWriterText_;
 
     // Solver for the pressure
-    std::unique_ptr<PressureSolver> pressureSolver_;
+    std::unique_ptr<PressureSolverSerial> pressureSolver_;
 
     // Configuration settings for the simulation
     Settings settings_;

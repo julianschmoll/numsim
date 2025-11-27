@@ -1,5 +1,6 @@
 #include "settings.h"
 #include "simulation/simulation.h"
+#include "simulation/parallelSimulation.h"
 #include "macros.h"
 #include "simulation/partitioning.h"
 
@@ -26,11 +27,16 @@ int main(int argc, char *argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &ownRankNo);
     MPI_Comm_size(MPI_COMM_WORLD, &nRanks);
 
-    std::cout << "Hi, I'm process " << ownRankNo << std::endl;
-
-    Simulation simulation(settings);
-
-    simulation.run();
+    // ToDo: This is nasty but it seems to be the easiest way of keeping both simulation methods
+    if (nRanks == 1) {
+        auto simulation = Simulation();
+        simulation.initialize(settings);
+        simulation.run();
+    } else {
+        auto simulation = ParallelSimulation();
+        simulation.initialize(settings);
+        simulation.run();
+    }
 
     MPI_Finalize();
 

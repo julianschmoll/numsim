@@ -1,11 +1,11 @@
-#include "simulation/pressureSolver.h"
+#include "pressureSolverSerial.h"
 #include "macros.h"
 #include <iostream>
 
-PressureSolver::PressureSolver(std::shared_ptr<StaggeredGrid> grid, double epsilon, const double maxNumberOfIterations, const double omega)
-    : grid_(grid), epsilon_(epsilon), maxNumberOfIterations_(maxNumberOfIterations), omega_(omega) {}
+PressureSolverSerial::PressureSolverSerial(const std::shared_ptr<StaggeredGrid> &grid, const double epsilon, const double maxNumberOfIterations, const double omega)
+    : PressureSolver(grid, epsilon, maxNumberOfIterations, omega) {}
 
-double PressureSolver::calculateSquareResidual() const {
+double PressureSolverSerial::calculateSquareResidual() const {
     double squareResidual = 0.0;
 
     DataField &p = grid_->p();
@@ -33,7 +33,7 @@ double PressureSolver::calculateSquareResidual() const {
     return squareResidual / nCellsTotal;
 }
 
-void PressureSolver::solve() {
+void PressureSolverSerial::solve() {
     int it = 0;
 
     DataField &p = grid_->p();
@@ -71,7 +71,7 @@ void PressureSolver::solve() {
 }
 
 // TODO: Randwerte eventuell direkt in solver() Schleife setzen.
-void PressureSolver::setBoundaryValues() {
+void PressureSolverSerial::setBoundaryValues() {
     DataField &p = grid_->p();
     for (int i = p.beginI() + 1; i < p.endI() - 1; i++) {
         // bottom

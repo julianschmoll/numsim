@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(numsim)
+project(numsim_parallel)
 add_subdirectory(src)
 
 # Define NDEBUG if not building in Debug mode

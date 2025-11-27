@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(numsim)
+project(${PROJECT_NAME})
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -16,7 +16,10 @@ add_executable(${PROJECT_NAME}
 
         # solver stuff
         simulation/simulation.cpp
-        simulation/pressureSolver.cpp
+        simulation/pressureSolver/pressureSolverSerial.cpp
+        simulation/pressureSolver/pressureSolver.cpp
+        simulation/pressureSolver/redBlack.cpp
+        simulation/pressureSolver/conjugateGradient.cpp
         simulation/discreteOperators.cpp
         simulation/partitioning.cpp
         simulation/parallelSimulation.cpp
