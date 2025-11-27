@@ -43,10 +43,10 @@ private:
     std::shared_ptr<DiscreteOperators> discOps_;
 
     // Writer for exporting simulation results for Paraview
-    std::unique_ptr<OutputWriterParaview> outputWriterParaview_;
+    std::unique_ptr<OutputWriter> outputWriterParaview_;
 
     // Writer for exporting simulation results in plain text
-    std::unique_ptr<OutputWriterText> outputWriterText_;
+    std::unique_ptr<OutputWriter> outputWriterText_;
 
     // Solver for the pressure
     std::unique_ptr<PressureSolver> pressureSolver_;

@@ -8,196 +8,189 @@
 #include <vtkPointData.h>
 #include <mpi.h>
 
-OutputWriterParaviewParallel::OutputWriterParaviewParallel(std::shared_ptr<StaggeredGrid> grid, const Partitioning &partitioning) :
-   OutputWriter(grid, partitioning),
+OutputWriterParaviewParallel::OutputWriterParaviewParallel(std::shared_ptr<StaggeredGrid> grid, const Partitioning &partitioning)
+    : OutputWriter(grid, partitioning),
 
-  nCellsGlobal_(partitioning_.nCellsGlobal()),
-  nPointsGlobal_ {nCellsGlobal_[0]+1, nCellsGlobal_[1]+1},    // we have one point more than cells in every coordinate direction
+      nCellsGlobal_(partitioning_.nCellsGlobal()),
 
-  // create field variables for resulting values, only for local data as send buffer
-  v_({nCellsGlobal_[0] + 2, nCellsGlobal_[1] + 1}, grid_->meshWidth(), {0.5, 0.0}, {-1, nCellsGlobal_[0] + 1}, {-1, nCellsGlobal_[1]}),
-  u_(nPointsGlobal_, std::array<double,2>{0.,0.}, grid_->meshWidth()),
-  p_(nPointsGlobal_, std::array<double,2>{0.,0.}, grid_->meshWidth()),
+      // ToDo: Why are we doing this?
+      nPointsGlobal_{nCellsGlobal_[0] + 1, nCellsGlobal_[1] + 1}, // we have one point more than cells in every coordinate direction
 
-  // create field variables for resulting values, after MPI communication
-  uGlobal_(nPointsGlobal_, std::array<double,2>{0.,0.}, grid_->meshWidth()),
-  vGlobal_(nPointsGlobal_, std::array<double,2>{0.,0.}, grid_->meshWidth()),
-  pGlobal_(nPointsGlobal_, std::array<double,2>{0.,0.}, grid_->meshWidth())
-{
-  // Create a vtkWriter_
-  vtkWriter_ = vtkSmartPointer<vtkXMLImageDataWriter>::New();
+      // create field variables for resulting values, only for local data as send buffer
+      u_({nPointsGlobal_[0] + 1, nPointsGlobal_[1] + 2}, grid_->meshWidth(), {0.0, 0.5}, {-1, nPointsGlobal_[0]}, {-1, nPointsGlobal_[1] + 1}),
+      v_({nPointsGlobal_[0] + 2, nPointsGlobal_[1] + 1}, grid_->meshWidth(), {0.5, 0.0}, {-1, nPointsGlobal_[0] + 1}, {-1, nPointsGlobal_[1]}),
+      p_({nPointsGlobal_[0] + 2, nPointsGlobal_[1] + 2}, grid_->meshWidth(), {0.5, 0.5}, {-1, nPointsGlobal_[0] + 1}, {-1, nPointsGlobal_[1] + 1}),
+
+      // create field variables for resulting values, after MPI communication
+      uGlobal_({nPointsGlobal_[0] + 1, nPointsGlobal_[1] + 2}, grid_->meshWidth(), {0.0, 0.5}, {-1, nPointsGlobal_[0]}, {-1, nPointsGlobal_[1] + 1}),
+      vGlobal_({nPointsGlobal_[0] + 2, nPointsGlobal_[1] + 1}, grid_->meshWidth(), {0.5, 0.0}, {-1, nPointsGlobal_[0] + 1}, {-1, nPointsGlobal_[1]}),
+      pGlobal_({nPointsGlobal_[0] + 2, nPointsGlobal_[1] + 2}, grid_->meshWidth(), {0.5, 0.5}, {-1, nPointsGlobal_[0] + 1},
+               {-1, nPointsGlobal_[1] + 1}) {
+    // Create a vtkWriter_
+    vtkWriter_ = vtkSmartPointer<vtkXMLImageDataWriter>::New();
 }
 
-void OutputWriterParaviewParallel::gatherData()
-{
- // std::array<int,2> size, std::array<double,2> origin, std::array<double,2> meshWidth
+void OutputWriterParaviewParallel::gatherData() {
+    // std::array<int,2> size, std::array<double,2> origin, std::array<double,2> meshWidth
 
-  int nPointsGlobalTotal = nPointsGlobal_[0] * nPointsGlobal_[1];
-  const double dx = grid_->meshWidth()[0];
-  const double dy = grid_->meshWidth()[1];
+    const int nPointsGlobalTotal = nPointsGlobal_[0] * nPointsGlobal_[1];
+    const double dx = grid_->meshWidth()[0];
+    const double dy = grid_->meshWidth()[1];
 
-  // set values in own subdomain, other values are left at zero
+    // set values in own subdomain, other values are left at zero
 
-  // determine data range {0,…,iEnd-1} x {0,…,jEnd-1}
-  std::array<int,2> nCells = grid_->nCells();
-  int jEnd = nCells[1];
-  int iEnd = nCells[0];
+    // determine data range {0,…,iEnd-1} x {0,…,jEnd-1}
+    const std::array<int, 2> nCells = grid_->nCells();
+    int jEnd = nCells[1];
+    int iEnd = nCells[0];
 
-  // add right-most points at ranks with right boundary
-  if (partitioning_.ownPartitionContainsRightBoundary())
-    iEnd += 1;
+    // ToDo: This is weird as we already should have boundary in the index range
+    // add right-most points at ranks with right boundary
+    if (partitioning_.ownPartitionContainsBoundary(Direction::Right))
+        iEnd += 1;
 
-  // add right-most points at ranks with top boundary
-  if (partitioning_.ownPartitionContainsTopBoundary())
-    jEnd += 1;
+    // add right-most points at ranks with top boundary
+    if (partitioning_.ownPartitionContainsBoundary(Direction::Top))
+        jEnd += 1;
 
-  std::array<int,2> nodeOffset = partitioning_.nodeOffset();
+    const std::array<int, 2> nodeOffset = partitioning_.nodeOffset();
 
-  u_.setToZero(); // TODO: necessary?
-  v_.setToZero();
-  p_.setToZero();
+    u_.setToZero(); // TODO: necessary?
+    v_.setToZero();
+    p_.setToZero();
 
-  for (int j = 0; j < jEnd; j++)
-  {
-    for (int i = 0; i < iEnd; i++)
-    {
-      const double x = i*dx;
-      const double y = j*dy;
+    for (int j = 0; j < jEnd; j++) {
+        for (int i = 0; i < iEnd; i++) {
+            const double x = i * dx;
+            const double y = j * dy;
 
-      // get global indices
-      int iGlobal = nodeOffset[0] + i;
-      int jGlobal = nodeOffset[1] + j;
+            // get global indices
+            const int iGlobal = nodeOffset[0] + i;
+            const int jGlobal = nodeOffset[1] + j;
 
-      u_(iGlobal,jGlobal) = grid_->u().interpolateAt(x,y);
-      v_(iGlobal,jGlobal) = grid_->v().interpolateAt(x,y);
-      p_(iGlobal,jGlobal) = grid_->p().interpolateAt(x,y);
+            u_(iGlobal, jGlobal) = grid_->u().interpolateAt(x, y);
+            v_(iGlobal, jGlobal) = grid_->v().interpolateAt(x, y);
+            p_(iGlobal, jGlobal) = grid_->p().interpolateAt(x, y);
+        }
     }
-  }
 
-  // sum up values from all ranks, not set values are zero
-  MPI_Reduce(u_.data(), uGlobal_.data(), nPointsGlobalTotal, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-  MPI_Reduce(v_.data(), vGlobal_.data(), nPointsGlobalTotal, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-  MPI_Reduce(p_.data(), pGlobal_.data(), nPointsGlobalTotal, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    // sum up values from all ranks, not set values are zero
+    MPI_Reduce(u_.data(), uGlobal_.data(), nPointsGlobalTotal, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(v_.data(), vGlobal_.data(), nPointsGlobalTotal, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(p_.data(), pGlobal_.data(), nPointsGlobalTotal, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 }
 
-void OutputWriterParaviewParallel::writeFile(double currentTime)
-{
-  // communicate all data to rank 0
-  gatherData();
+void OutputWriterParaviewParallel::writeFile(double currentTime) {
+    // communicate all data to rank 0
+    gatherData();
 
-  // only continue to write the file on rank 0
-  if (partitioning_.ownRankNo() != 0)
-  {
-    return;
-  }
-
-  // Assemble the filename
-  std::stringstream fileName;
-  fileName << "out/output_" << std::setw(4) << setfill('0') << fileNo_ << "." << vtkWriter_->GetDefaultFileExtension();
-
-  // increment file no.
-  fileNo_++;
-
-  // assign the new file name to the output vtkWriter_
-  vtkWriter_->SetFileName(fileName.str().c_str());
-
-  // initialize data set that will be output to the file
-  vtkSmartPointer<vtkImageData> dataSet = vtkSmartPointer<vtkImageData>::New();
-  dataSet->SetOrigin(0, 0, 0);
-
-  // set spacing of mesh
-  const double dx = grid_->meshWidth()[0];
-  const double dy = grid_->meshWidth()[1];
-  const double dz = 1;
-  dataSet->SetSpacing(dx, dy, dz);
-
-  // set number of points in each dimension, 1 cell in z direction
-  dataSet->SetDimensions(nCellsGlobal_[0]+1, nCellsGlobal_[1]+1, 1);  // we want to have points at each corner of each cell
-
-
-  // add pressure field variable
-  // ---------------------------
-  vtkSmartPointer<vtkDoubleArray> arrayPressure = vtkDoubleArray::New();
-
-  // the pressure is a scalar which means the number of components is 1
-  arrayPressure->SetNumberOfComponents(1);
-
-  // Set the number of pressure values and allocate memory for it. We already know the number, it has to be the same as there are nodes in the mesh.
-  arrayPressure->SetNumberOfTuples(dataSet->GetNumberOfPoints());
-
-  arrayPressure->SetName("pressure");
-
-  // loop over the nodes of the mesh and assign the interpolated p values in the vtk data structure
-  // we only consider the cells that are the actual computational domain, not the helper values in the "halo"
-
-  int index = 0;   // index for the vtk data structure, will be incremented in the inner loop
-  for (int j = 0; j < nCellsGlobal_[1]+1; j++)
-  {
-    for (int i = 0; i < nCellsGlobal_[0]+1; i++, index++)
-    {
-      arrayPressure->SetValue(index, pGlobal_(i,j));
+    // only continue to write the file on rank 0
+    if (partitioning_.ownRankNo() != 0) {
+        return;
     }
-  }
 
-  // now, we should have added as many values as there are points in the vtk data structure
-  assert(index == dataSet->GetNumberOfPoints());
+    // Assemble the filename
+    std::stringstream fileName;
+    fileName << "out/output_" << std::setw(4) << setfill('0') << fileNo_ << "." << vtkWriter_->GetDefaultFileExtension();
 
-  // add the field variable to the data set
-  dataSet->GetPointData()->AddArray(arrayPressure);
+    // increment file no.
+    fileNo_++;
 
-  // add velocity field variable
-  // ---------------------------
-  vtkSmartPointer<vtkDoubleArray> arrayVelocity = vtkDoubleArray::New();
+    // assign the new file name to the output vtkWriter_
+    vtkWriter_->SetFileName(fileName.str().c_str());
 
-  // here we have two components (u,v), but ParaView will only allow vector glyphs if we have an ℝ^3 vector,
-  // therefore we use a 3-dimensional vector and set the 3rd component to zero
-  arrayVelocity->SetNumberOfComponents(3);
+    // initialize data set that will be output to the file
+    const vtkSmartPointer<vtkImageData> dataSet = vtkSmartPointer<vtkImageData>::New();
+    dataSet->SetOrigin(0, 0, 0);
 
-  // set the number of values
-  arrayVelocity->SetNumberOfTuples(dataSet->GetNumberOfPoints());
+    // set spacing of mesh
+    const double dx = grid_->meshWidth()[0];
+    const double dy = grid_->meshWidth()[1];
+    constexpr double dz = 1;
+    dataSet->SetSpacing(dx, dy, dz);
 
-  arrayVelocity->SetName("velocity");
+    // set number of points in each dimension, 1 cell in z direction
+    dataSet->SetDimensions(nCellsGlobal_[0] + 1, nCellsGlobal_[1] + 1, 1); // we want to have points at each corner of each cell
 
-  // loop over the mesh where p is defined and assign the values in the vtk data structure
-  index = 0;   // index for the vtk data structure
-  for (int j = 0; j < nCellsGlobal_[1]+1; j++)
-  {
-    const double y = j*dy;
+    // add pressure field variable
+    // ---------------------------
+    const vtkSmartPointer<vtkDoubleArray> arrayPressure = vtkDoubleArray::New();
 
-    for (int i = 0; i < nCellsGlobal_[0]+1; i++, index++)
-    {
-      const double x = i*dx;
+    // the pressure is a scalar which means the number of components is 1
+    arrayPressure->SetNumberOfComponents(1);
 
-      std::array<double,3> velocityVector;
-      velocityVector[0] = uGlobal_(i,j);
-      velocityVector[1] = vGlobal_(i,j);
-      velocityVector[2] = 0.0;    // z-direction is 0
+    // Set the number of pressure values and allocate memory for it. We already know the number, it has to be the same as there are nodes in the mesh.
+    arrayPressure->SetNumberOfTuples(dataSet->GetNumberOfPoints());
 
-      arrayVelocity->SetTuple(index, velocityVector.data());
+    arrayPressure->SetName("pressure");
+
+    // loop over the nodes of the mesh and assign the interpolated p values in the vtk data structure
+    // we only consider the cells that are the actual computational domain, not the helper values in the "halo"
+
+    int index = 0; // index for the vtk data structure, will be incremented in the inner loop
+    for (int j = 0; j < nCellsGlobal_[1] + 1; j++) {
+        for (int i = 0; i < nCellsGlobal_[0] + 1; i++, index++) {
+            arrayPressure->SetValue(index, pGlobal_(i, j));
+        }
     }
-  }
-  // now, we should have added as many values as there are points in the vtk data structure
-  assert(index == dataSet->GetNumberOfPoints());
 
-  // add the field variable to the data set
-  dataSet->GetPointData()->AddArray(arrayVelocity);
+    // now, we should have added as many values as there are points in the vtk data structure
+    assert(index == dataSet->GetNumberOfPoints());
 
-  // add current time
-  vtkSmartPointer<vtkDoubleArray> arrayTime = vtkDoubleArray::New();
-  arrayTime->SetName("TIME");
-  arrayTime->SetNumberOfTuples(1);
-  arrayTime->SetTuple1(0, currentTime);
-  dataSet->GetFieldData()->AddArray(arrayTime);
+    // add the field variable to the data set
+    dataSet->GetPointData()->AddArray(arrayPressure);
 
-  // Remove unused memory
-  dataSet->Squeeze();
+    // add velocity field variable
+    // ---------------------------
+    vtkSmartPointer<vtkDoubleArray> arrayVelocity = vtkDoubleArray::New();
 
-  // Write the data
-  vtkWriter_->SetInputData(dataSet);
+    // here we have two components (u,v), but ParaView will only allow vector glyphs if we have an ℝ^3 vector,
+    // therefore we use a 3-dimensional vector and set the 3rd component to zero
+    arrayVelocity->SetNumberOfComponents(3);
 
-  //vtkWriter_->SetDataModeToAscii();     // comment this in to get ascii text files: those can be checked in an editor
-  vtkWriter_->SetDataModeToBinary();      // set file mode to binary files: smaller file sizes
+    // set the number of values
+    arrayVelocity->SetNumberOfTuples(dataSet->GetNumberOfPoints());
 
-  // finally write out the data
-  vtkWriter_->Write();
+    arrayVelocity->SetName("velocity");
+
+    // loop over the mesh where p is defined and assign the values in the vtk data structure
+    index = 0; // index for the vtk data structure
+    for (int j = 0; j < nCellsGlobal_[1] + 1; j++) {
+        const double y = j * dy;
+
+        for (int i = 0; i < nCellsGlobal_[0] + 1; i++, index++) {
+            const double x = i * dx;
+
+            std::array<double, 3> velocityVector;
+            velocityVector[0] = uGlobal_(i, j);
+            velocityVector[1] = vGlobal_(i, j);
+            velocityVector[2] = 0.0; // z-direction is 0
+
+            arrayVelocity->SetTuple(index, velocityVector.data());
+        }
+    }
+    // now, we should have added as many values as there are points in the vtk data structure
+    assert(index == dataSet->GetNumberOfPoints());
+
+    // add the field variable to the data set
+    dataSet->GetPointData()->AddArray(arrayVelocity);
+
+    // add current time
+    vtkSmartPointer<vtkDoubleArray> arrayTime = vtkDoubleArray::New();
+    arrayTime->SetName("TIME");
+    arrayTime->SetNumberOfTuples(1);
+    arrayTime->SetTuple1(0, currentTime);
+    dataSet->GetFieldData()->AddArray(arrayTime);
+
+    // Remove unused memory
+    dataSet->Squeeze();
+
+    // Write the data
+    vtkWriter_->SetInputData(dataSet);
+
+    //vtkWriter_->SetDataModeToAscii();     // comment this in to get ascii text files: those can be checked in an editor
+    vtkWriter_->SetDataModeToBinary(); // set file mode to binary files: smaller file sizes
+
+    // finally write out the data
+    vtkWriter_->Write();
 }

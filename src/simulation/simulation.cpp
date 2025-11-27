@@ -2,6 +2,8 @@
 
 #include "macros.h"
 #include "partitioning.h"
+#include "outputWriter/outputWriterParaviewParallel.h"
+#include "outputWriter/outputWriterTextParallel.h"
 
 #include <chrono>
 #include <utility>
@@ -29,8 +31,11 @@ Simulation::Simulation(Settings settings) : settings_(std::move(settings)) {
         pressureSolver_ = std::make_unique<PressureSolver>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, 1);
     }
 
-    outputWriterParaview_ = std::make_unique<OutputWriterParaview>(discOps_);
-    outputWriterText_ = std::make_unique<OutputWriterText>(discOps_);
+    // we wouldn't actually need a partitioning here as this is the single threaded simulation
+    Partitioning partitioning;
+    partitioning.initialize(settings_.nCells);
+    outputWriterParaview_ = std::make_unique<OutputWriterParaview>(discOps_, partitioning);
+    outputWriterText_ = std::make_unique<OutputWriterText>(discOps_, partitioning);
 }
 
 void Simulation::run() {
