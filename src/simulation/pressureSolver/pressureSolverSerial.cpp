@@ -1,9 +1,9 @@
-#include "pressureSolverSerial.h"
+#include "simulation/pressureSolver/pressureSolverSerial.h"
 #include "macros.h"
 #include <iostream>
 
 PressureSolverSerial::PressureSolverSerial(const std::shared_ptr<StaggeredGrid> &grid, const double epsilon, const double maxNumberOfIterations, const double omega)
-    : PressureSolver(grid, epsilon, maxNumberOfIterations, omega) {}
+    : grid_(grid), epsilon_(epsilon), maxNumberOfIterations_(maxNumberOfIterations), omega_(omega) {}
 
 double PressureSolverSerial::calculateSquareResidual() const {
     double squareResidual = 0.0;
@@ -65,7 +65,7 @@ void PressureSolverSerial::solve() {
         it++;
     }
 
-    DEBUG(std::cout << "PressureSolver::solve():  it=" << it << ",  res²=" << calculateSquareResidual() << std::endl);
+    DEBUG(std::cout << "PressureSolverSerial::solve():  it=" << it << ",  res²=" << calculateSquareResidual() << std::endl);
 
     lastIterationCount_ = it;
 }

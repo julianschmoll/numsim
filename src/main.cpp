@@ -37,7 +37,6 @@ int main(int argc, char *argv[]) {
         simulation.initialize(settings);
         simulation.run();
     }
-
     MPI_Finalize();
 
     return EXIT_SUCCESS;

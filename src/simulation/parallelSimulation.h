@@ -28,9 +28,14 @@ private:
     void setBoundaryFG();
 
     /**
- * Computes the time step width dt from maximum velocities.
- */
+    * Computes the time step width dt from maximum velocities.
+    */
     void computeTimeStepWidth();
+
+    /**
+     * Exchanges u and v values
+     */
+    void exchangeVelocities();
 
     std::shared_ptr<Partitioning> partitioning_;
 

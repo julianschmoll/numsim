@@ -1,6 +1,5 @@
 #pragma once
 
-#include "simulation/pressureSolver/pressureSolver.h"
 #include "grid/staggeredGrid.h"
 #include <memory>
 
@@ -15,29 +14,32 @@
  * the pressure is solved according to GaussSeidel, if omega does
  * not equal one, the pressure is solved according to SOR.
  */
-class PressureSolverSerial final : PressureSolver {
+class PressureSolverSerial {
 public:
     /**
-     * Constructs a PressureSolver with the given grid and solver parameters.
+     * Constructs a PressureSolverSerial with the given grid and solver parameters.
      *
-     * @param grid Shared pointer to the grid.
+     * @param grid Shared pointer to the grid grid.
      * @param epsilon Convergence threshold for the residual.
      * @param maxNumberOfIterations Maximum number of iterations.
      * @param omega Relaxation factor (1.0 for Gauss-Seidel, otherwise SOR).
      */
-    PressureSolverSerial(const std::shared_ptr<StaggeredGrid> &grid, double epsilon, double maxNumberOfIterations, double omega);
+    PressureSolverSerial(const std::shared_ptr<StaggeredGrid> &grid,
+        double epsilon,
+        double maxNumberOfIterations,
+        double omega);
 
     /**
-     * Destructs PressureSolver object.
+     * Destructs PressureSolverSerial object.
      */
-    ~PressureSolverSerial() override = default;
+    ~PressureSolverSerial() = default;
 
     /**
      * Solves the Poisson problem for the pressure.
      *
      * Uses the rhs and p field variables in the grid.
      */
-    void solve() override;
+    void solve();
 
 private:
     /**
@@ -55,4 +57,17 @@ private:
     [[nodiscard]] double calculateSquareResidual() const;
 
     int lastIterationCount_ = 0;
+
+protected:
+    // object holding the needed field variables for rhs and p
+    std::shared_ptr<StaggeredGrid> grid_;
+
+    // Convergence threshold for the residual
+    double epsilon_;
+
+    // Maximum number of iterations allowed in the solver
+    double maxNumberOfIterations_;
+
+    // Relaxation factor
+    double omega_;
 };

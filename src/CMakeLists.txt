@@ -17,12 +17,11 @@ add_executable(${PROJECT_NAME}
         # solver stuff
         simulation/simulation.cpp
         simulation/pressureSolver/pressureSolverSerial.cpp
-        simulation/pressureSolver/pressureSolver.cpp
         simulation/pressureSolver/redBlack.cpp
         simulation/pressureSolver/conjugateGradient.cpp
         simulation/discreteOperators.cpp
         simulation/partitioning.cpp
-        simulation/parallelSimulation.cpp
+        #simulation/parallelSimulation.cpp
 
         # outputWriter stuff
         outputWriter/outputWriter.cpp
