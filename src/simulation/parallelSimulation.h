@@ -3,7 +3,9 @@
 #include "partitioning.h"
 #include "outputWriter/outputWriterParaviewParallel.h"
 #include "outputWriter/outputWriterTextParallel.h"
+#include "pressureSolver/redBlack.h"
 
+// ToDo: Do we really want/need inheritance here?
 class ParallelSimulation final : public Simulation {
 public:
     /**
@@ -39,5 +41,7 @@ private:
 
     std::shared_ptr<Partitioning> partitioning_;
 
+    // Solver for the pressure
+    std::unique_ptr<RedBlack> pressureSolver_;
 
 };

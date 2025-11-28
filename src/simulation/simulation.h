@@ -48,9 +48,6 @@ protected:
     // Writer for exporting simulation results in plain text
     std::unique_ptr<OutputWriter> outputWriterText_;
 
-    // Solver for the pressure
-    std::unique_ptr<PressureSolverSerial> pressureSolver_;
-
     // Configuration settings for the simulation
     Settings settings_;
 
@@ -86,4 +83,8 @@ protected:
      * computes the new velocities, u,v, from the preliminary velocities, F,G and the pressure, p.
      */
     void setVelocities();
+
+private:
+    // Solver for the pressure
+    std::unique_ptr<PressureSolverSerial> pressureSolver_;
 };

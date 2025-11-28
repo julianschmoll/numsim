@@ -21,7 +21,7 @@ add_executable(${PROJECT_NAME}
         simulation/pressureSolver/conjugateGradient.cpp
         simulation/discreteOperators.cpp
         simulation/partitioning.cpp
-        #simulation/parallelSimulation.cpp
+        simulation/parallelSimulation.cpp
 
         # outputWriter stuff
         outputWriter/outputWriter.cpp

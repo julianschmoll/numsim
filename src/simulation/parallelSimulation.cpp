@@ -34,9 +34,9 @@ void ParallelSimulation::initialize(const Settings &settings) {
     // ToDo: We probably want to have a redblack pressure solver here and also hand over partition
     if (settings_.pressureSolver == IterSolverType::SOR) {
         std::cout << "Using SOR solver." << std::endl;
-        pressureSolver_ = std::make_unique<RedBlack>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, settings_.omega);
+        pressureSolver_ = std::make_unique<RedBlack>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, settings_.omega, partitioning_);
     } else {
-        pressureSolver_ = std::make_unique<RedBlack>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, 1);
+        pressureSolver_ = std::make_unique<RedBlack>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, 1, partitioning_);
     }
 
     outputWriterParaview_ = std::make_unique<OutputWriterParaviewParallel>(discOps_, *partitioning_);
