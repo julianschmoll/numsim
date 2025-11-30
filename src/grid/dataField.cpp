@@ -13,6 +13,7 @@ int DataField::beginJ() const {
     return jIndexRange_[0];
 }
 
+// TODO: end hat mich jetzt schon mehrfach verarscht...
 int DataField::endJ() const {
     return jIndexRange_[1];
 }
