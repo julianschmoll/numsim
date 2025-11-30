@@ -264,7 +264,8 @@ void ParallelSimulation::exchangeVelocities() {
 
     std::vector<double> leftVSendBuffer(vHeight), leftVRecvBuffer(vHeight); //TODO Eckrandwerte?
     std::vector<double> rightVSendBuffer(vHeight),  rightVRecvBuffer(vHeight);
-    std::vector<double> topVSendBuffer(vWidth), bottomVRecvBuffer(vWidth); // notwendig? beieinander im speicher
+    std::vector<double> topVSendBuffer(vWidth), topVRecvBuffer(vWidth);
+    std::vector<double> bottomVSendBuffer(vWidth), bottomVRecvBuffer(vWidth);
 
 
     // v: left <--> right
@@ -282,14 +283,16 @@ void ParallelSimulation::exchangeVelocities() {
     MPI_Irecv(rightVRecvBuffer.data(), rightVRecvBuffer.size(), MPI_DOUBLE, rightRankNo, V_TAG, MPI_COMM_WORLD, &requestVRightRecv);
 
 
-    // v: top --> bottom
-
+    // v: top <--> bottom
     for (int i = v.beginI(); i < v.endI(); i++) {
         topVSendBuffer[i + 1] = v(i, v.endJ() - 2);
+        bottomVSendBuffer[i + 1] = v(i, v.beginJ() + 1);
     }
-    MPI_Request requestVTopSend, requestVBottomRecv;
+    MPI_Request requestVTopSend, requestVBottomSend, requestVBottomRecv, requestVTopRecv;
     MPI_Isend(topVSendBuffer.data(), topVSendBuffer.size(), MPI_DOUBLE, topRankNo, V_TAG, MPI_COMM_WORLD, &requestVTopSend);
     MPI_Irecv(bottomVRecvBuffer.data(), bottomVRecvBuffer.size(), MPI_DOUBLE, bottomRankNo, V_TAG, MPI_COMM_WORLD, &requestVBottomRecv);
+    MPI_Isend(bottomVSendBuffer.data(), bottomVSendBuffer.size(), MPI_DOUBLE, bottomRankNo, V_TAG, MPI_COMM_WORLD, &requestVBottomSend);
+    MPI_Irecv(topVRecvBuffer.data(), topVRecvBuffer.size(), MPI_DOUBLE, topRankNo, V_TAG, MPI_COMM_WORLD, &requestVTopRecv);
 
 
     //u: bottom <--> top
@@ -309,16 +312,19 @@ void ParallelSimulation::exchangeVelocities() {
     MPI_Irecv(topURecvBuffer.data(), topURecvBuffer.size(), MPI_DOUBLE, topRankNo, U_TAG, MPI_COMM_WORLD, &requestUTopRecv);
 
 
-    //u: right --> left
-    std::vector<double> rightUSendBuffer(uHeight), leftURecvBuffer(uHeight);
+    //u: right <--> left
+    std::vector<double> rightUSendBuffer(uHeight), leftUSendBuffer(uHeight), leftURecvBuffer(uHeight), rightURecvBuffer(uHeight);
 
     for (int j = u.beginJ(); j < u.endJ(); j++) {
         rightUSendBuffer[j + 1] = u(u.endI() - 2, j);
+        leftUSendBuffer[j + 1] = u(u.beginI() + 1 , j);
     }
 
-    MPI_Request requestURightSend, requestULeftRecv;
+    MPI_Request requestURightSend, requestULeftRecv, requestULeftSend, requestURightRecv;
     MPI_Isend(rightUSendBuffer.data(), rightUSendBuffer.size(), MPI_DOUBLE, rightRankNo, U_TAG, MPI_COMM_WORLD, &requestURightSend);
     MPI_Irecv(leftURecvBuffer.data(), leftURecvBuffer.size(), MPI_DOUBLE, leftRankNo, U_TAG, MPI_COMM_WORLD, &requestULeftRecv);
+    MPI_Isend(leftUSendBuffer.data(), leftUSendBuffer.size(), MPI_DOUBLE, leftRankNo, U_TAG, MPI_COMM_WORLD, &requestULeftSend);
+    MPI_Irecv(rightURecvBuffer.data(), rightURecvBuffer.size(), MPI_DOUBLE, leftRankNo, U_TAG, MPI_COMM_WORLD, &requestURightRecv);
 
     //We need to waitall before pasting the values, since the left side of the current partition is the right side of the left  neighbor partition.
     //Hence, we can't do the directions sequentially like "complete left, then go on with right" etc.

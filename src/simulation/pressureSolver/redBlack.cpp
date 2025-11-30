@@ -10,8 +10,6 @@ RedBlack::RedBlack(const std::shared_ptr<StaggeredGrid> &grid,
                    const std::shared_ptr<Partitioning> &partitioning)
     : partitioning_(partitioning), grid_(grid), epsilon_(epsilon), maxNumberOfIterations_(maximumNumberOfIterations), omega_(omega) {
     const DataField &p = grid_->p();
-    requests_.clear();
-
     const int numberX = p.endI() - p.beginI();
     const int numberY = p.endJ() - p.beginJ();
 
@@ -24,6 +22,7 @@ RedBlack::~RedBlack() {
 }
 
 
+// ToDo: I think the residual is still fucked up a little
 void RedBlack::solve() {
     int it = 0;
 
@@ -36,8 +35,7 @@ void RedBlack::solve() {
     const double invDy2 = 1 / dy2;
     const double scalingFactor = 0.5 * dx2 * dy2 / (dx2 + dy2);
 
-    localPressureError_ = std::numeric_limits<double>::max();
-    globalPressureError_ = 0;
+    globalPressureError_ = std::numeric_limits<double>::max();
 
     const int beginI = p.beginI() + 1;
     const int endI = p.endI() - 1;
