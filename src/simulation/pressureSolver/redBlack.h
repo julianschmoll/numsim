@@ -18,13 +18,9 @@ public:
     void solve();
 
 private:
-    void exchange();
+    void updatePressureBoundaries();
 
     void setBoundaryValues(Direction direction);
-    template <class Func>
-    void copyBoundary(Func set, int begin, int end);
-    void setVerticalBoundaryValues(int iIndex, int offset, DataField &df);
-    void setHorizontalBoundaryValues(int jIndex, int offset, DataField &df);
 
 protected:
     std::shared_ptr<Partitioning> partitioning_;
@@ -41,5 +37,12 @@ protected:
     // Relaxation factor
     double omega_;
 
-    int lastIterationCount_ = 0;
+    int lastIterationCount_ = maxNumberOfIterations_;
+
+    // MPI Requests buffer
+    std::vector<MPI_Request> requests_;
+
+    double localPressureError_ = 0;
+
+    double globalPressureError_ = 0;
 };

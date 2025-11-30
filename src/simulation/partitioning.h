@@ -8,6 +8,11 @@ enum class Direction {
     Left, Right, Top, Bottom
 };
 
+// This can be used to iterate over every direction and avoid redundancy in code :)
+constexpr std::array<Direction, 4> directions() {
+    return {Direction::Left, Direction::Right, Direction::Bottom, Direction::Top};
+}
+
 class Partitioning
 {
     /// Dimensions of the problem: 2D grid with x,y directions.

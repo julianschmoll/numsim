@@ -31,7 +31,6 @@ void ParallelSimulation::initialize(const Settings &settings) {
         discOps_ = std::make_unique<DiscreteOperators>(partitioning_->nCellsLocal(), meshWidth_, 0.0);
     }
 
-    // ToDo: We probably want to have a redblack pressure solver here and also hand over partition
     if (settings_.pressureSolver == IterSolverType::SOR) {
         std::cout << "Using SOR solver." << std::endl;
         pressureSolver_ = std::make_unique<RedBlack>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, settings_.omega, partitioning_);
@@ -80,7 +79,11 @@ void ParallelSimulation::run() {
 
         pressureSolver_->solve(); //ToDo: add communication for pressure halo cells after every iteration
 
+        DEBUG(std::cout << "Solved pressure" << std::endl);
+
         setVelocities();
+
+        DEBUG(std::cout << "Set velocities" << std::endl);
 
         exchangeVelocities();
         //ToDo: Exchange velocity halo cells
@@ -90,6 +93,7 @@ void ParallelSimulation::run() {
             outputWriterText_->writeFile(currentTime);
         } else {
             //ToDo: Put local values in global grid
+            // is that actually a todo or isn't that done by the writer?
             //ToDo: Send global grid to ROOT_RANK
         }
     }
@@ -277,37 +281,24 @@ void ParallelSimulation::exchangeVelocities() {
         MPI_Send(rightVSendBuffer.data(), ownPartHeight, MPI_DOUBLE, rightRankNo, V_TAG, MPI_COMM_WORLD);
     }
 
+    MPI_Request requestUBottomSend, requestUTopSend, requestUBottomRecv, requestUTopRecv;
+    MPI_Isend(bottomUSendBuffer.data(), ownPartWidth, MPI_DOUBLE, bottomRankNo, U_TAG, MPI_COMM_WORLD, &requestUBottomSend);
+    MPI_Irecv(bottomURecvBuffer.data(), ownPartWidth, MPI_DOUBLE, bottomRankNo, U_TAG, MPI_COMM_WORLD, &requestUBottomRecv);
 
-    //BOTTOM SIDE
-    std::vector<double> bottomURecvBuffer(ownPartHeight), bottomVRecvBuffer(ownPartHeight);
-    MPI_Irecv(bottomURecvBuffer.data(), ownPartWidth, MPI_DOUBLE, bottomRankNo, U_TAG, MPI_COMM_WORLD, &requestUBottom);
-    MPI_Irecv(bottomVRecvBuffer.data(), ownPartWidth, MPI_DOUBLE, bottomRankNo, V_TAG, MPI_COMM_WORLD, &requestVBottom);
+    MPI_Isend(topUSendBuffer.data(), ownPartWidth, MPI_DOUBLE, topRankNo, U_TAG, MPI_COMM_WORLD, &requestUTopSend);
+    MPI_Irecv(topURecvBuffer.data(), ownPartWidth, MPI_DOUBLE, topRankNo, U_TAG, MPI_COMM_WORLD, &requestUTopRecv);
 
-    if (bottomRankNo != MPI_PROC_NULL) {
-        std::vector<double> bottomUSendBuffer(ownPartHeight), bottomVSendBuffer(ownPartHeight);
-        for (int i = 0; i < ownPartWidth; i++) {
-            bottomUSendBuffer[i] = u(i, 0);
-            bottomVSendBuffer[i] = v(i, 0);
-        }
-        MPI_Send(bottomUSendBuffer.data(), ownPartWidth, MPI_DOUBLE, bottomRankNo, U_TAG, MPI_COMM_WORLD);
-        MPI_Send(bottomVSendBuffer.data(), ownPartWidth, MPI_DOUBLE, bottomRankNo, V_TAG, MPI_COMM_WORLD);
+
+    //u: right --> left
+    std::vector<double> rightUSendBuffer(ownPartHeight), leftURecvBuffer(ownPartHeight);
+
+    for (int j = 0; j < ownPartHeight; j++) {
+        rightUSendBuffer[j] = u(ownPartWidth - 1, j);
     }
 
-
-    //TOP SIDE
-    std::vector<double> topURecvBuffer(ownPartHeight), topVRecvBuffer(ownPartHeight);
-    MPI_Irecv(topURecvBuffer.data(), ownPartWidth, MPI_DOUBLE, topRankNo, U_TAG, MPI_COMM_WORLD, &requestUTop);
-    MPI_Irecv(topVRecvBuffer.data(), ownPartWidth, MPI_DOUBLE, topRankNo, V_TAG, MPI_COMM_WORLD, &requestVTop);
-
-    if (topRankNo != MPI_PROC_NULL) {
-        std::vector<double> topUSendBuffer(ownPartHeight), topVSendBuffer(ownPartHeight);
-        for (int i = 0; i < ownPartWidth; i++) {
-            topUSendBuffer[i] = u(i, ownPartHeight-1);
-            topVSendBuffer[i] = v(i, ownPartHeight-1);
-        }
-        MPI_Send(topUSendBuffer.data(), ownPartWidth, MPI_DOUBLE, topRankNo, U_TAG, MPI_COMM_WORLD);
-        MPI_Send(topVSendBuffer.data(), ownPartWidth, MPI_DOUBLE, topRankNo, V_TAG, MPI_COMM_WORLD);
-    }
+    MPI_Request requestURightSend, requestULeftRecv;
+    MPI_Isend(rightUSendBuffer.data(), ownPartHeight, MPI_DOUBLE, rightRankNo, U_TAG, MPI_COMM_WORLD, &requestURightSend);
+    MPI_Irecv(leftURecvBuffer.data(), ownPartHeight, MPI_DOUBLE, leftRankNo, U_TAG, MPI_COMM_WORLD, &requestULeftRecv);
 
     //We need to waitall before pasting the values, since the left side of the current partition is the right side of the left  neighbor partition.
     //Hence, we can't do the directions sequentially like "complete left, then go on with right" etc.
