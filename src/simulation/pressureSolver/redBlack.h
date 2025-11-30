@@ -13,7 +13,7 @@ public:
         double omega,
         const std::shared_ptr<Partitioning> &partitioning);
 
-    ~RedBlack() = default;
+    ~RedBlack();
 
     void solve();
 
@@ -37,12 +37,12 @@ protected:
     // Relaxation factor
     double omega_;
 
-    int lastIterationCount_ = maxNumberOfIterations_;
-
     // MPI Requests buffer
     std::vector<MPI_Request> requests_;
 
     double localPressureError_ = 0;
 
     double globalPressureError_ = 0;
+
+    MPI_Datatype mpiColumn_;
 };
