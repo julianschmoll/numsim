@@ -302,11 +302,11 @@ void ParallelSimulation::exchangeVelocities() {
 
     //We need to waitall before pasting the values, since the left side of the current partition is the right side of the left  neighbor partition.
     //Hence, we can't do the directions sequentially like "complete left, then go on with right" etc.
-    std::array<MPI_Request, 8> requests = {
-        requestULeft, requestVLeft,
-        requestURight, requestVRight,
-        requestUBottom, requestVBottom,
-        requestUTop, requestVTop
+    std::array<MPI_Request, 12> requests = {
+        requestVLeftSend, requestVRightSend, requestVLeftRecv, requestVRightRecv,
+        requestVTopSend, requestVBottomRecv,
+        requestUBottomSend, requestUTopSend, requestUBottomRecv, requestUTopRecv,
+        requestURightSend, requestULeftRecv
     };
     MPI_Waitall(8, requests.data(), MPI_STATUS_IGNORE);
 
@@ -319,7 +319,6 @@ void ParallelSimulation::exchangeVelocities() {
     }
     if (rightRankNo != MPI_PROC_NULL) {
         for (int j = 0; j < ownPartHeight; j++) {
-            u(ownPartWidth, j) = rightURecvBuffer[j];
             v(ownPartWidth, j) = rightVRecvBuffer[j];
         }
     }
@@ -332,7 +331,6 @@ void ParallelSimulation::exchangeVelocities() {
     if (topRankNo != MPI_PROC_NULL) {
         for (int i = 0; i < ownPartHeight; i++) {
             u(i, ownPartHeight) = topURecvBuffer[i];
-            v(i, ownPartHeight) = topVRecvBuffer[i];
         }
     }
 
