@@ -247,12 +247,12 @@ void ParallelSimulation::exchangeVelocities() {
     //Receive requests should cancel automatically if source rank is MPI_PROC_NULL
 
     //LEFT SIDE
-    std::array<double,ownPartHeight> leftURecvBuffer, leftVRecvBuffer;
+    std::vector<double> leftURecvBuffer(ownPartHeight), leftVRecvBuffer(ownPartHeight);
     MPI_Irecv(leftURecvBuffer.data(), ownPartHeight, MPI_DOUBLE, leftRankNo, U_TAG, MPI_COMM_WORLD, &requestULeft);
     MPI_Irecv(leftVRecvBuffer.data(), ownPartHeight, MPI_DOUBLE, leftRankNo, V_TAG, MPI_COMM_WORLD, &requestVLeft);
 
     if (leftRankNo != MPI_PROC_NULL) {
-        std::array<double,ownPartHeight> leftUSendBuffer, leftVSendBuffer;
+        std::vector<double> leftUSendBuffer(ownPartHeight), leftVSendBuffer(ownPartHeight);
         for (int j = 0; j < ownPartHeight; j++) {
             leftUSendBuffer[j] = u(0, j);
             leftVSendBuffer[j] = v(0, j);
@@ -263,12 +263,12 @@ void ParallelSimulation::exchangeVelocities() {
 
 
     //RIGHT SIDE
-    std::array<double,ownPartHeight> rightURecvBuffer, rightVRecvBuffer;
+    std::vector<double> rightURecvBuffer(ownPartHeight), rightVRecvBuffer(ownPartHeight);
     MPI_Irecv(rightURecvBuffer.data(), ownPartHeight, MPI_DOUBLE, rightRankNo, U_TAG, MPI_COMM_WORLD, &requestURight);
     MPI_Irecv(rightVRecvBuffer.data(), ownPartHeight, MPI_DOUBLE, rightRankNo, V_TAG, MPI_COMM_WORLD, &requestVRight);
 
     if (rightRankNo != MPI_PROC_NULL) {
-        std::array<double,ownPartHeight> rightUSendBuffer, rightVSendBuffer;
+        std::vector<double> rightUSendBuffer(ownPartHeight), rightVSendBuffer(ownPartHeight);
         for (int j = 0; j < ownPartHeight; j++) {
             rightUSendBuffer[j] = u(ownPartWidth - 1, j);
             rightVSendBuffer[j] = v(ownPartWidth - 1, j);
@@ -279,12 +279,12 @@ void ParallelSimulation::exchangeVelocities() {
 
 
     //BOTTOM SIDE
-    std::array<double,ownPartWidth> bottomURecvBuffer, bottomVRecvBuffer;
+    std::vector<double> bottomURecvBuffer(ownPartHeight), bottomVRecvBuffer(ownPartHeight);
     MPI_Irecv(bottomURecvBuffer.data(), ownPartWidth, MPI_DOUBLE, bottomRankNo, U_TAG, MPI_COMM_WORLD, &requestUBottom);
     MPI_Irecv(bottomVRecvBuffer.data(), ownPartWidth, MPI_DOUBLE, bottomRankNo, V_TAG, MPI_COMM_WORLD, &requestVBottom);
 
     if (bottomRankNo != MPI_PROC_NULL) {
-        std::array<double,ownPartWidth> bottomUSendBuffer, bottomVSendBuffer;
+        std::vector<double> bottomUSendBuffer(ownPartHeight), bottomVSendBuffer(ownPartHeight);
         for (int i = 0; i < ownPartWidth; i++) {
             bottomUSendBuffer[i] = u(i, 0);
             bottomVSendBuffer[i] = v(i, 0);
@@ -295,12 +295,12 @@ void ParallelSimulation::exchangeVelocities() {
 
 
     //TOP SIDE
-    std::array<double,ownPartWidth> topURecvBuffer, topVRecvBuffer;
+    std::vector<double> topURecvBuffer(ownPartHeight), topVRecvBuffer(ownPartHeight);
     MPI_Irecv(topURecvBuffer.data(), ownPartWidth, MPI_DOUBLE, topRankNo, U_TAG, MPI_COMM_WORLD, &requestUTop);
     MPI_Irecv(topVRecvBuffer.data(), ownPartWidth, MPI_DOUBLE, topRankNo, V_TAG, MPI_COMM_WORLD, &requestVTop);
 
     if (topRankNo != MPI_PROC_NULL) {
-        std::array<double,ownPartWidth> topUSendBuffer, topVSendBuffer;
+        std::vector<double> topUSendBuffer(ownPartHeight), topVSendBuffer(ownPartHeight);
         for (int i = 0; i < ownPartWidth; i++) {
             topUSendBuffer[i] = u(i, ownPartHeight-1);
             topVSendBuffer[i] = v(i, ownPartHeight-1);
@@ -311,13 +311,13 @@ void ParallelSimulation::exchangeVelocities() {
 
     //We need to waitall before pasting the values, since the left side of the current partition is the right side of the left  neighbor partition.
     //Hence, we can't do the directions sequentially like "complete left, then go on with right" etc.
-    MPI_Request requests[8] = {
+    std::array<MPI_Request, 8> requests = {
         requestULeft, requestVLeft,
         requestURight, requestVRight,
         requestUBottom, requestVBottom,
         requestUTop, requestVTop
     };
-    MPI_Waitall(8, requests, MPI_STATUS_IGNORE);
+    MPI_Waitall(8, requests.data(), MPI_STATUS_IGNORE);
 
     //Put received values into grid
     if (leftRankNo != MPI_PROC_NULL) {

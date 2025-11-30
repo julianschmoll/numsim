@@ -29,11 +29,11 @@ int main(int argc, char *argv[]) {
 
     // ToDo: This is nasty but it seems to be the easiest way of keeping both simulation methods
     if (nRanks == 1) {
-        auto simulation = Simulation();
+        Simulation simulation {};
         simulation.initialize(settings);
         simulation.run();
     } else {
-        auto simulation = ParallelSimulation();
+        ParallelSimulation simulation {};
         simulation.initialize(settings);
         simulation.run();
     }
