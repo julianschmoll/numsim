@@ -1,7 +1,9 @@
 #pragma once
 
 #include <array>
+#include <cassert>
 #include <mpi.h>
+#include "../grid/dataField.h"
 
 // This avoids magic numbers in shift and can be used in direction as well
 enum class Direction {
@@ -16,7 +18,7 @@ constexpr std::array<Direction, 4> directions() {
 class Partitioning
 {
     /// Dimensions of the problem: 2D grid with x,y directions.
-    static constexpr int dimensions_ = 2;
+    static constexpr int dimensions_ = 2; // TODO: move
 
     std::array<int,2> nCellsLocal_ = {};
     std::array<int,2> nCellsGlobal_ = {};
@@ -36,6 +38,8 @@ class Partitioning
     std::array<int, dimensions_> rankCoordinates_ = {};
 
 public:
+
+    //TODO: tabs
 
   //! compute partitioning, set internal variables
   void initialize(std::array<int,2> nCellsGlobal);
@@ -67,5 +71,88 @@ public:
 
   std::array<int,2> getCurrentRankCoords() const;
 
+  inline std::string dirToStr(Direction dir) const {
+    if (dir == Direction::Left) return "Left";
+    else if (dir == Direction::Right) return "Right";
+    else if (dir == Direction::Bottom) return "Bottom";
+    else return "Top";
+  }
+
   void printPartitioningInfo() const;
+
+    template<Direction direction>
+    MPI_Request sendBorder(DataField &field) const {
+        MPI_Request sendReq{};
+
+        int i = 0, j = 0;
+        MPI_Datatype type = field.getMPIRowType();
+        int count = field.cols();
+
+        if constexpr (direction == Direction::Left) {
+            i = field.beginI() + 1;
+            j = field.beginJ();
+            type = field.getMPIColType();
+            count = 1;
+        } else if constexpr (direction == Direction::Right) {
+            i = field.endI() - 2;
+            j = field.beginJ();
+            type = field.getMPIColType();
+            count = 1;
+        } else if constexpr (direction == Direction::Bottom) {
+            i = field.beginI();
+            j = field.beginJ() + 1;
+        } else if constexpr (direction == Direction::Top) {
+            i = field.beginI();
+            j = field.endJ() - 2;
+        } else {
+            assert(false);
+        }
+
+        if (neighborRankNo(direction) != MPI_PROC_NULL) {
+            std::cout << "[" << ownRankNo_ << "] send " << dirToStr(direction) << " to [" << neighborRankNo(direction) << "]: ";
+            std::cout << "n=" << count << ", start i=" << i << ",j=" << j << ", id=" << field.getID() << "\n";
+        }
+        
+        MPI_Isend(&field(i, j), count, type, neighborRankNo(direction), field.getID(), MPI_COMM_WORLD, &sendReq);
+
+        return sendReq;
+    }
+
+    template<Direction direction>
+    MPI_Request recvBorder(DataField &field) const {
+        MPI_Request recvReq{};
+        
+        int i = 0, j = 0;
+        MPI_Datatype type = field.getMPIRowType();
+        int count = field.cols();
+
+        if constexpr (direction == Direction::Left) {
+            i = field.beginI();
+            j = field.beginJ();
+            type = field.getMPIColType();
+            count = 1;
+        } else if constexpr (direction == Direction::Right) {
+            i = field.endI() - 1;
+            j = field.beginJ();
+            type = field.getMPIColType();
+            count = 1;
+        } else if constexpr (direction == Direction::Bottom) {
+            i = field.beginI();
+            j = field.beginJ();
+        } else if constexpr (direction == Direction::Top) {
+            i = field.beginI();
+            j = field.endJ() - 1;
+        } else {
+            assert(false);
+        }
+
+        if (neighborRankNo(direction) != MPI_PROC_NULL) {
+            std::cout << "[" << ownRankNo_ << "] recv " << dirToStr(direction) << " to [" << neighborRankNo(direction) << "]: ";
+            std::cout << "n=" << count << ", start i=" << i << ",j=" << j << ", id=" << field.getID() << "\n";
+        }
+        
+        MPI_Irecv(&field(i, j), count, type, neighborRankNo(direction), field.getID(), MPI_COMM_WORLD, &recvReq);
+        return recvReq;
+    }
+
 };

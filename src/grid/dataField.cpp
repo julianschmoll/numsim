@@ -2,13 +2,36 @@
 
 #include <cassert>
 #include <cmath>
+#include <mpi.h>
 
 
-DataField::DataField() : meshWidth_({0, 0}), offset_({0, 0}) {}
+DataField::DataField() : 
+    meshWidth_({0, 0}),
+    offset_({0, 0}),
+    mpiColType_(nullptr),
+    fieldID_(-1)
+{}
 
 
-DataField::DataField(const std::array<int, 2> size, const std::array<double, 2> meshWidth, const std::array<double, 2> offset)
-    : Array2d(size), meshWidth_(meshWidth), offset_(offset) {}
+DataField::DataField(const std::array<int, 2> size, const std::array<double, 2> meshWidth, const std::array<double, 2> offset, int fieldID)
+    : Array2d(size), meshWidth_(meshWidth), offset_(offset), mpiColType_(nullptr), fieldID_(fieldID)
+{
+    int cols = size[0], rows = size[1];
+    MPI_Type_vector(rows, 1, cols, MPI_DOUBLE, &mpiColType_);
+    MPI_Type_commit(&mpiColType_);
+}
+
+DataField::~DataField() {
+    MPI_Type_free(&mpiColType_);
+}
+
+int DataField::rows() const {
+    return size_[1];
+}
+
+int DataField::cols() const {
+    return size_[0];
+}
 
 int DataField::beginJ() const {
     return -1;
@@ -28,7 +51,19 @@ int DataField::endI() const {
 }
 
 void DataField::setToZero() {
-    for (int i = 0; i < data_.size(); i++) data_[i] = 0;
+    for (auto &entry : data_) entry = 0;
+}
+
+int DataField::getID() const {
+    return fieldID_;
+}
+
+MPI_Datatype DataField::getMPIColType() const {
+    return mpiColType_;
+}
+
+MPI_Datatype DataField::getMPIRowType() const {
+    return MPI_DOUBLE;
 }
 
 double DataField::interpolateAt(double x, double y) const {

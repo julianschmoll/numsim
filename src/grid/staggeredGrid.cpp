@@ -2,6 +2,7 @@
 #include "grid/dataField.h"
 #include "simulation/partitioning.h"
 #include <array>
+#include <iostream>
 
 //TODO: Rename meshWidth -> meshResolution
 StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, const Partitioning &partitioning)
@@ -17,23 +18,23 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
     const int pHeight = nCells[1] + 2;
 
     // Add additional row/col as a new boundary to the top/right, otherwise the owner of the cells on the partition boundary cannot compute new values.
-    bool topBorderPartition = partitioning.ownPartitionContainsBoundary(Direction::Top);
-    bool rightBorderPartition = partitioning.ownPartitionContainsBoundary(Direction::Right);
-    if (!topBorderPartition) {
+    bool topBoundaryPartition = partitioning.ownPartitionContainsBoundary(Direction::Top);
+    bool rightBoundaryPartition = partitioning.ownPartitionContainsBoundary(Direction::Right);
+    if (!topBoundaryPartition) {
         vHeight += 1;
     }
-    if (!rightBorderPartition) {
+    if (!rightBoundaryPartition) {
         uWidth += 1;
     }
 
-    p_   = DataField({pWidth, pHeight}, meshWidth, {0.5, 0.5});
-    rhs_ = DataField({pWidth, pHeight}, meshWidth, {0.5, 0.5});
+    p_   = DataField({pWidth, pHeight}, meshWidth, {0.5, 0.5}, 1); // TODO maybe macros
+    rhs_ = DataField({pWidth, pHeight}, meshWidth, {0.5, 0.5}, 2);
 
-    u_ = DataField({uWidth, uHeight}, meshWidth, {0.0, 0.5});
-    f_ = DataField({uWidth, uHeight}, meshWidth, {0.0, 0.5});
+    u_ = DataField({uWidth, uHeight}, meshWidth, {0.0, 0.5}, 3);
+    f_ = DataField({uWidth, uHeight}, meshWidth, {0.0, 0.5}, 4);
 
-    v_ = DataField({vWidth, vHeight}, meshWidth, {0.5, 0.0});
-    g_ = DataField({vWidth, vHeight}, meshWidth, {0.5, 0.0});
+    v_ = DataField({vWidth, vHeight}, meshWidth, {0.5, 0.0}, 5);
+    g_ = DataField({vWidth, vHeight}, meshWidth, {0.5, 0.0}, 6);
 
     int ownRankNo = partitioning.ownRankNo();
     auto rankCoords = partitioning.getCurrentRankCoords();

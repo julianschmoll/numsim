@@ -1,6 +1,7 @@
 #pragma once
 
 #include "grid/array2d.h"
+#include "mpi.h"
 
 /**
  * @class DataField
@@ -16,14 +17,14 @@ public:
      * @param offset Offset from the lower-left cell corner to the data point location.
      */
      //TODO: should parameters be const references?
-    explicit DataField(std::array<int, 2> size, std::array<double, 2> meshWidth, std::array<double, 2> offset);
+    explicit DataField(std::array<int, 2> size, std::array<double, 2> meshWidth, std::array<double, 2> offset, int fieldID = 0);
 
     DataField();
 
     /**
      * Destructor for DataField.
      */
-    ~DataField() override = default;
+    ~DataField() override;
 
     /**
      * Interpolates the value at a given coordinate (x, y).
@@ -66,6 +67,14 @@ public:
 
     void setToZero();
 
+    int getID() const;
+
+    MPI_Datatype getMPIColType() const;
+    MPI_Datatype getMPIRowType() const;
+
+    int rows() const;
+    int cols() const;
+
 private:
     // Grid Spacing
     std::array<double, 2> meshWidth_;
@@ -83,4 +92,8 @@ private:
      * - Velocity in y direction: 0.5, 0
      */
     std::array<double, 2> offset_;
+
+    MPI_Datatype mpiColType_;
+
+    int fieldID_;
 };
