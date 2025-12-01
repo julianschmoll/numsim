@@ -1,12 +1,40 @@
 #include "grid/staggeredGrid.h"
+#include "grid/dataField.h"
+#include "simulation/partitioning.h"
+#include <array>
 
-StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth) // TODO: Je nachdem, ob an globalem Rand oder nicht
-    : meshWidth_(meshWidth), nCells_(nCells), u_({nCells[0] + 1, nCells[1] + 2}, meshWidth, {0.0, 0.5}, {-1, nCells_[0]}, {-1, nCells_[1] + 1}),
-      v_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.0}, {-1, nCells_[0] + 1}, {-1, nCells_[1] + 1}),
-      p_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.5}, {-1, nCells_[0] + 1}, {-1, nCells_[1] + 1}),
-      f_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.0, 0.5}, {-1, nCells_[0] + 1}, {-1, nCells_[1] + 1}),
-      g_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.0}, {-1, nCells_[0] + 1}, {-1, nCells_[1] + 1}),
-      rhs_({nCells[0] + 2, nCells[1] + 2}, meshWidth, {0.5, 0.5}, {-1, nCells_[0] + 1}, {-1, nCells_[1] + 1}) {}
+//TODO: Rename meshWidth -> meshResolution
+StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, const Partitioning &partitioning)
+    : meshWidth_(meshWidth), nCells_(nCells)
+{   
+    int vWidth = nCells[1] + 2;
+    int vHeight = nCells[1] + 1;
+
+    int uWidth = nCells[0] + 1;
+    int uHeight = nCells[1] + 2;
+
+    const int pWidth = nCells[0] + 2;
+    const int pHeight = nCells[1] + 2;
+
+    // Add additional row/col as a new boundary to the top/right, otherwise the owner of the cells on the partition boundary cannot compute new values.
+    bool topBorderPartition = partitioning.ownPartitionContainsBoundary(Direction::Top);
+    bool rightBorderPartition = partitioning.ownPartitionContainsBoundary(Direction::Right);
+    if (!topBorderPartition) {
+        vHeight += 1;
+    }
+    if (!rightBorderPartition) {
+        uWidth += 1;
+    }
+
+    p_   = DataField({pWidth, pHeight}, meshWidth, {0.5, 0.5});
+    rhs_ = DataField({pWidth, pHeight}, meshWidth, {0.5, 0.5});
+
+    v_ = DataField({vWidth, vHeight}, meshWidth, {0.5, 0.0});
+    g_ = DataField({vWidth, vHeight}, meshWidth, {0.5, 0.0});
+
+    u_ = DataField({uWidth, uHeight}, meshWidth, {0.0, 0.5});
+    f_ = DataField({uWidth, uHeight}, meshWidth, {0.0, 0.5});
+}
 
 const std::array<double, 2> &StaggeredGrid::meshWidth() const {
     return meshWidth_;

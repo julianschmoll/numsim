@@ -3,27 +3,28 @@
 #include <cassert>
 #include <cmath>
 
-#include <iostream>
 
-DataField::DataField(const std::array<int, 2> size, const std::array<double, 2> meshWidth, const std::array<double, 2> offset,
-                     const std::array<int, 2> iIndexRange, const std::array<int, 2> jIndexRange)
-    : Array2d(size), meshWidth_(meshWidth), offset_(offset), iIndexRange_(iIndexRange), jIndexRange_(jIndexRange) {}
+DataField::DataField() : meshWidth_({0, 0}), offset_({0, 0}) {}
+
+
+DataField::DataField(const std::array<int, 2> size, const std::array<double, 2> meshWidth, const std::array<double, 2> offset)
+    : Array2d(size), meshWidth_(meshWidth), offset_(offset) {}
 
 int DataField::beginJ() const {
-    return jIndexRange_[0];
+    return -1;
 }
 
 // TODO: end hat mich jetzt schon mehrfach verarscht...
 int DataField::endJ() const {
-    return jIndexRange_[1];
+    return size_[1] + 1;
 }
 
 int DataField::beginI() const {
-    return iIndexRange_[0];
+    return -1;
 }
 
 int DataField::endI() const {
-    return iIndexRange_[1];
+    return size_[1] +1 ;
 }
 
 void DataField::setToZero() {

@@ -16,16 +16,16 @@ OutputWriterParaviewParallel::OutputWriterParaviewParallel(std::shared_ptr<Stagg
       // ToDo: Why are we doing this?
       nPointsGlobal_{nCellsGlobal_[0] + 1, nCellsGlobal_[1] + 1}, // we have one point more than cells in every coordinate direction
 
+      // TODO: Does this make sense, what about ghost cells?
       // create field variables for resulting values, only for local data as send buffer
-      u_({nPointsGlobal_[0] + 1, nPointsGlobal_[1] + 2}, grid_->meshWidth(), {0.0, 0.5}, {-1, nPointsGlobal_[0]}, {-1, nPointsGlobal_[1] + 1}),
-      v_({nPointsGlobal_[0] + 2, nPointsGlobal_[1] + 1}, grid_->meshWidth(), {0.5, 0.0}, {-1, nPointsGlobal_[0] + 1}, {-1, nPointsGlobal_[1]}),
-      p_({nPointsGlobal_[0] + 2, nPointsGlobal_[1] + 2}, grid_->meshWidth(), {0.5, 0.5}, {-1, nPointsGlobal_[0] + 1}, {-1, nPointsGlobal_[1] + 1}),
+      u_({nPointsGlobal_[0] + 1, nPointsGlobal_[1] + 2}, grid_->meshWidth(), {0.0, 0.5}),
+      v_({nPointsGlobal_[0] + 2, nPointsGlobal_[1] + 1}, grid_->meshWidth(), {0.5, 0.0}),
+      p_({nPointsGlobal_[0] + 2, nPointsGlobal_[1] + 2}, grid_->meshWidth(), {0.5, 0.5}),
 
       // create field variables for resulting values, after MPI communication
-      uGlobal_({nPointsGlobal_[0] + 1, nPointsGlobal_[1] + 2}, grid_->meshWidth(), {0.0, 0.5}, {-1, nPointsGlobal_[0]}, {-1, nPointsGlobal_[1] + 1}),
-      vGlobal_({nPointsGlobal_[0] + 2, nPointsGlobal_[1] + 1}, grid_->meshWidth(), {0.5, 0.0}, {-1, nPointsGlobal_[0] + 1}, {-1, nPointsGlobal_[1]}),
-      pGlobal_({nPointsGlobal_[0] + 2, nPointsGlobal_[1] + 2}, grid_->meshWidth(), {0.5, 0.5}, {-1, nPointsGlobal_[0] + 1},
-               {-1, nPointsGlobal_[1] + 1}) {
+      uGlobal_({nPointsGlobal_[0] + 1, nPointsGlobal_[1] + 2}, grid_->meshWidth(), {0.0, 0.5}),
+      vGlobal_({nPointsGlobal_[0] + 2, nPointsGlobal_[1] + 1}, grid_->meshWidth(), {0.5, 0.0}),
+      pGlobal_({nPointsGlobal_[0] + 2, nPointsGlobal_[1] + 2}, grid_->meshWidth(), {0.5, 0.5}) {
     // Create a vtkWriter_
     vtkWriter_ = vtkSmartPointer<vtkXMLImageDataWriter>::New();
 }

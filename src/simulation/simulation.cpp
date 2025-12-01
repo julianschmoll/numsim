@@ -19,10 +19,10 @@ void Simulation::initialize(const Settings &settings) {
 
     if (settings_.useDonorCell) {
         std::cout << "Using Donor Cell." << std::endl;
-        discOps_ = std::make_unique<DiscreteOperators>(settings_.nCells, meshWidth_, settings_.alpha);
+        discOps_ = std::make_unique<DiscreteOperators>(settings_.nCells, meshWidth_, Partitioning{}, settings_.alpha);
     } else {
         std::cout << "Using Central Differences." << std::endl;
-        discOps_ = std::make_unique<DiscreteOperators>(settings_.nCells, meshWidth_, 0.0);
+        discOps_ = std::make_unique<DiscreteOperators>(settings_.nCells, meshWidth_, Partitioning{}, 0.0);
     }
 
     if (settings_.pressureSolver == IterSolverType::SOR) {

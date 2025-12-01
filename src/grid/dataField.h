@@ -14,11 +14,11 @@ public:
      * @param size Dimensions of the data field (number of cells in x and y).
      * @param meshWidth Physical size of the grid.
      * @param offset Offset from the lower-left cell corner to the data point location.
-     * @param iIndexRange Valid index range in the i-direction.
-     * @param jIndexRange Valid index range in the j-direction.
      */
-    DataField(std::array<int, 2> size, std::array<double, 2> meshWidth, std::array<double, 2> offset, std::array<int, 2> iIndexRange,
-              std::array<int, 2> jIndexRange);
+     //TODO: should parameters be const references?
+    explicit DataField(std::array<int, 2> size, std::array<double, 2> meshWidth, std::array<double, 2> offset);
+
+    DataField();
 
     /**
      * Destructor for DataField.
@@ -41,34 +41,34 @@ public:
      *
      * @return First valid j-index.
      */
-    [[nodiscard]] int beginJ() const;
+    int beginJ() const;
 
     /**
      * Returns the ending index in the j-direction.
      *
      * @return Last valid j-index.
      */
-    [[nodiscard]] int endJ() const;
+    int endJ() const;
 
     /**
      * Returns the starting index in the i-direction.
      *
      * @return First valid i-index.
      */
-    [[nodiscard]] int beginI() const;
+    int beginI() const;
 
     /**
      * Returns the ending index in the i-direction.
      *
      * @return Last valid i-index.
      */
-    [[nodiscard]] int endI() const;
+    int endI() const;
 
     void setToZero();
 
 private:
     // Grid Spacing
-    const std::array<double, 2> meshWidth_;
+    std::array<double, 2> meshWidth_;
 
     /**
      * Describes the offset of the position of the data point from the lower left cell edge.
@@ -82,11 +82,5 @@ private:
      * - Velocity in x direction: 0,   0.5
      * - Velocity in y direction: 0.5, 0
      */
-    const std::array<double, 2> offset_;
-
-    // Valid index range in i direction
-    const std::array<int, 2> iIndexRange_;
-
-    // Valid index range in j direction
-    const std::array<int, 2> jIndexRange_;
+    std::array<double, 2> offset_;
 };

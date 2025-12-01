@@ -1,9 +1,7 @@
 #include "parallelSimulation.h"
 
-#include "grid/staggeredGrid.h"
 #include "settings.h"
 #include "simulation/discreteOperators.h"
-#include "pressureSolver/pressureSolverSerial.h"
 #include "macros.h"
 #include "outputWriter/outputWriterParaviewParallel.h"
 #include "outputWriter/outputWriterTextParallel.h"
@@ -25,10 +23,10 @@ void ParallelSimulation::initialize(const Settings &settings) {
 
     if (settings_.useDonorCell) {
         std::cout << "Using Donor Cell." << std::endl;
-        discOps_ = std::make_unique<DiscreteOperators>(partitioning_->nCellsLocal(), meshWidth_, settings_.alpha);
+        discOps_ = std::make_unique<DiscreteOperators>(partitioning_->nCellsLocal(), meshWidth_, *partitioning_, settings_.alpha);
     } else {
         std::cout << "Using Central Differences." << std::endl;
-        discOps_ = std::make_unique<DiscreteOperators>(partitioning_->nCellsLocal(), meshWidth_, 0.0);
+        discOps_ = std::make_unique<DiscreteOperators>(partitioning_->nCellsLocal(), meshWidth_, *partitioning_, 0.0);
     }
 
     if (settings_.pressureSolver == IterSolverType::SOR) {

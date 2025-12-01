@@ -66,6 +66,7 @@ std::array<int, 2> Partitioning::getCurrentRankCoords() const {
     return coordinates;
 }
 
+// TODO: make template: replace switch case with consexpr based solution
 bool Partitioning::ownPartitionContainsBoundary(const Direction direction) const {
     switch (direction) {
     case Direction::Left:
@@ -80,6 +81,7 @@ bool Partitioning::ownPartitionContainsBoundary(const Direction direction) const
     return false;
 }
 
+// TODO: make template: replace switch case with consexpr based solution
 int Partitioning::neighborRankNo(const Direction direction) const {
     int destRank;
     int srcRank = ownRankNo_;

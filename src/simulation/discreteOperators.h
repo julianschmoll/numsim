@@ -1,6 +1,7 @@
 #pragma once
 
 #include "grid/staggeredGrid.h"
+#include "simulation/partitioning.h"
 
 class DiscreteOperators final : public StaggeredGrid {
 
@@ -14,7 +15,7 @@ public:
      * @param alpha: Donor cell contribution factor, range from 0 to 1. If set 0, pure central
      * differences discretization is used.
      */
-    DiscreteOperators(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, double alpha);
+    DiscreteOperators(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, const Partitioning &partitioning, double alpha);
 
     /**
      * Computes du²/dx

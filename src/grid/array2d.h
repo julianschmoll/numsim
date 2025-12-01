@@ -3,6 +3,8 @@
 #include <array>
 #include <vector>
 
+//TODO: merge this and DataField
+
 /**
  * @class Array2d
  * @brief Stores Data in 2D array, while internally storing values in a flat std::vector.
@@ -18,6 +20,9 @@ public:
      * @param size Dimensions of the 2d array
      */
     explicit Array2d(std::array<int, 2> size);
+
+    /// initialize size with 0 and data_ via the default constructor
+    Array2d();
 
     /**
      * Destructor for Array2d.
