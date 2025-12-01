@@ -10,6 +10,8 @@ void OutputWriterTextParallel::writeFile(double currentTime) {
   std::stringstream fileName;
   fileName << "out/output_" << std::setw(4) << std::setfill('0') << fileNo_ << "." << partitioning_.ownRankNo() << ".txt";
 
+  std::cout << "Printing to: " << fileName.str() << std::endl;
+
   // increment file no.
   fileNo_++;
 

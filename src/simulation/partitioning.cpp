@@ -37,13 +37,6 @@ void Partitioning::initialize(std::array<int, 2> nCellsGlobal) {
 
     offsetX_ = partWidth * rankCoordinates_[0] + std::min(rankCoordinates_[0], nCellsGlobal[0] % partitions_[0]);
     offsetY_ = partHeight * rankCoordinates_[1] + std::min(rankCoordinates_[1], nCellsGlobal[1] % partitions_[1]);
-
-    std::cout << "I'm partition " << ownRankNo_ << " with cells "
-    << offsetX_ << "-" << offsetX_ + nCellsLocal_[0] -1 << ", " << offsetY_ << "-" << offsetY_ + nCellsLocal_[1] -1
-    << ". Left neighbor: " << neighborRankNo(Direction::Left)
-    << " right neighbor: " << neighborRankNo(Direction::Right)
-    << " top neighbor: " << neighborRankNo(Direction::Top)
-    << " bottom neighbor: " << neighborRankNo(Direction::Bottom) << std::endl;
 }
 
 int Partitioning::nRanks() const {
@@ -104,4 +97,17 @@ int Partitioning::neighborRankNo(const Direction direction) const {
 
 std::array<int, 2> Partitioning::nodeOffset() const {
     return {offsetX_, offsetY_};
+}
+
+void Partitioning::printPartitioningInfo() const {
+    std::cout << "rank " << ownRankNo_ << ": (" << rankCoordinates_[0] << ", " << rankCoordinates_[1] << ")\n";
+    if (ownRankNo_ == 0) {
+        std::cout << " -- nCellsGlobal_ = [" << nCellsLocal_[0] << ", " << nCellsLocal_[1] << "]\n";
+    }
+    std::cout << " -- nCellsLocal_ = [" << nCellsLocal_[0] << ", " << nCellsLocal_[1] << "]\n";
+    std::cout << " -- Neighbours: top = " << neighborRankNo(Direction::Top) << ", "
+    << "right = " << neighborRankNo(Direction::Right) << ", "
+    << "bottom = " << neighborRankNo(Direction::Bottom) << ", "
+    << "left = " << neighborRankNo(Direction::Left);
+    std::cout << std::endl;
 }

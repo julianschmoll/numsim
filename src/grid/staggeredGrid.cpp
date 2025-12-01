@@ -7,7 +7,7 @@
 StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, const Partitioning &partitioning)
     : meshWidth_(meshWidth), nCells_(nCells)
 {   
-    int vWidth = nCells[1] + 2;
+    int vWidth = nCells[0] + 2;
     int vHeight = nCells[1] + 1;
 
     int uWidth = nCells[0] + 1;
@@ -29,11 +29,20 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
     p_   = DataField({pWidth, pHeight}, meshWidth, {0.5, 0.5});
     rhs_ = DataField({pWidth, pHeight}, meshWidth, {0.5, 0.5});
 
+    u_ = DataField({uWidth, uHeight}, meshWidth, {0.0, 0.5});
+    f_ = DataField({uWidth, uHeight}, meshWidth, {0.0, 0.5});
+
     v_ = DataField({vWidth, vHeight}, meshWidth, {0.5, 0.0});
     g_ = DataField({vWidth, vHeight}, meshWidth, {0.5, 0.0});
 
-    u_ = DataField({uWidth, uHeight}, meshWidth, {0.0, 0.5});
-    f_ = DataField({uWidth, uHeight}, meshWidth, {0.0, 0.5});
+    int ownRankNo = partitioning.ownRankNo();
+    auto rankCoords = partitioning.getCurrentRankCoords();
+
+    std::cout << "rank " << ownRankNo << ": (" << rankCoords[0] << ", " << rankCoords[1] << ")\n";
+    std::cout << " -- p_: size = [" << pWidth << ", " << pHeight << "]\n";
+    std::cout << " -- v_: size = [" << vWidth << ", " << vHeight << "]\n";
+    std::cout << " -- u_: size = [" << uWidth << ", " << uHeight << "]\n";
+    std::cout << std::endl;
 }
 
 const std::array<double, 2> &StaggeredGrid::meshWidth() const {

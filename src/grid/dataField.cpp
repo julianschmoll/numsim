@@ -16,7 +16,7 @@ int DataField::beginJ() const {
 
 // TODO: end hat mich jetzt schon mehrfach verarscht...
 int DataField::endJ() const {
-    return size_[1] + 1;
+    return size_[1] - 1; // size = cells + 2
 }
 
 int DataField::beginI() const {
@@ -24,7 +24,7 @@ int DataField::beginI() const {
 }
 
 int DataField::endI() const {
-    return size_[1] +1 ;
+    return size_[0] - 1;
 }
 
 void DataField::setToZero() {

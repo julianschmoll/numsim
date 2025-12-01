@@ -66,4 +66,6 @@ public:
   std::array<int,2> nodeOffset() const;
 
   std::array<int,2> getCurrentRankCoords() const;
+
+  void printPartitioningInfo() const;
 };

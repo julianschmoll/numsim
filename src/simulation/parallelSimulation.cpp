@@ -9,6 +9,7 @@
 
 #include <memory>
 #include <chrono>
+#include <ostream>
 
 void ParallelSimulation::initialize(const Settings &settings) {
     std::cout << "Initializing parallel Simulation..." << std::endl;
@@ -50,6 +51,8 @@ void ParallelSimulation::run() {
 
     //ToDo: Exchange velocity halo cells (necessary only if we do not always start with 0-velocities for inner, non-boundary cells)
 
+    partitioning_->printPartitioningInfo();
+
     setBoundaryFG();
 
     while (currentTime < settings_.endTime) {
@@ -87,12 +90,12 @@ void ParallelSimulation::run() {
         DEBUG(std::cout << "Set velocities" << std::endl);
 
         exchangeVelocities();
-        //ToDo: Exchange velocity halo cells
 
-        if (writeOutput) {
+        if (true) {
             outputWriterParaview_->writeFile(currentTime);
             outputWriterText_->writeFile(currentTime);
         }
+        break;
     }
 
     auto end = std::chrono::high_resolution_clock::now();
@@ -243,7 +246,7 @@ void ParallelSimulation::exchangeVelocities() {
     DataField &u = discOps_->u();
     DataField &v = discOps_->v();
 
-    int uWidth = u.endI() - u.beginI();
+    int uWidth = u.endI() - u.beginI(); // TODO: implement DataField::cols(), DataField::rows(), innerCols, innerRows
     int uHeight = u.endJ() - u.beginJ();
 
     int vWidth = v.endI() - v.beginI();
@@ -251,13 +254,6 @@ void ParallelSimulation::exchangeVelocities() {
 
     int ownRankNumber = partitioning_->ownRankNo();
 
-    /*
-    for (int i = u.beginI() + 1; i < u.endI() - 1; i++) {
-        for (int j = u.beginJ() + 1; j < u.endJ() - 1; j++) u(i,j) = ownRankNumber;
-    }
-    for (int i = v.beginI() + 1; i < v.endI() - 1; i++) {
-        for (int j = v.beginJ() + 1; j < v.endJ() - 1; j++) v(i,j) = ownRankNumber;
-    }*/
 
     //Receive requests should cancel automatically if source rank is MPI_PROC_NULL
 
@@ -323,15 +319,19 @@ void ParallelSimulation::exchangeVelocities() {
     MPI_Isend(rightUSendBuffer.data(), rightUSendBuffer.size(), MPI_DOUBLE, rightRankNo, U_TAG, MPI_COMM_WORLD, &requestURightSend);
     MPI_Irecv(leftURecvBuffer.data(), leftURecvBuffer.size(), MPI_DOUBLE, leftRankNo, U_TAG, MPI_COMM_WORLD, &requestULeftRecv);
     MPI_Isend(leftUSendBuffer.data(), leftUSendBuffer.size(), MPI_DOUBLE, leftRankNo, U_TAG, MPI_COMM_WORLD, &requestULeftSend);
-    MPI_Irecv(rightURecvBuffer.data(), rightURecvBuffer.size(), MPI_DOUBLE, leftRankNo, U_TAG, MPI_COMM_WORLD, &requestURightRecv);
+    MPI_Irecv(rightURecvBuffer.data(), rightURecvBuffer.size(), MPI_DOUBLE, rightRankNo, U_TAG, MPI_COMM_WORLD, &requestURightRecv);
 
     //We need to waitall before pasting the values, since the left side of the current partition is the right side of the left  neighbor partition.
     //Hence, we can't do the directions sequentially like "complete left, then go on with right" etc.
-    std::array<MPI_Request, 12> requests = {
-        requestVLeftSend, requestVRightSend, requestVLeftRecv, requestVRightRecv,
-        requestVTopSend, requestVBottomRecv,
-        requestUBottomSend, requestUTopSend, requestUBottomRecv, requestUTopRecv,
-        requestURightSend, requestULeftRecv
+    std::array<MPI_Request, 16> requests = {
+        requestVLeftSend, requestVLeftRecv, 
+        requestVRightSend, requestVRightRecv,
+        requestVTopSend, requestVTopRecv,
+        requestVBottomSend, requestVBottomRecv,
+        requestULeftSend, requestULeftRecv, 
+        requestURightSend, requestURightRecv,
+        requestUTopSend, requestUTopRecv,
+        requestUBottomSend, requestUBottomRecv
     };
     MPI_Waitall(requests.size(), requests.data(), MPI_STATUS_IGNORE);
 
@@ -348,6 +348,9 @@ void ParallelSimulation::exchangeVelocities() {
         for (int j = v.beginJ(); j < v.endJ(); j++) {
             v(v.endI() - 1, j) = rightVRecvBuffer[j + 1];
         }
+        for (int j = u.beginJ(); j < u.endJ(); j++) {
+            u(u.endI() - 1, j) = rightURecvBuffer[j + 1];
+        }
     }
     if (bottomRankNo != MPI_PROC_NULL) {
         for (int i = u.beginI(); i < u.endI(); i++) {
@@ -358,6 +361,9 @@ void ParallelSimulation::exchangeVelocities() {
         }
     }
     if (topRankNo != MPI_PROC_NULL) {
+        for (int i = v.beginI(); i < v.endI(); i++) {
+            v(i, v.endJ() - 1) = topVRecvBuffer[i + 1];
+        }
         for (int i = u.beginI(); i < u.endI(); i++) {
             u(i, u.endJ() - 1) = topURecvBuffer[i + 1];
         }
