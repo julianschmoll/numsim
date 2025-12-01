@@ -46,7 +46,9 @@ void RedBlack::solve() {
     while (it < maxNumberOfIterations_) {
         localPressureError_ = 0.0;
         // rb = 0 is red, rb=1 is black pass
+        // #pragma omp parallel for reduction(+:localPressureError_)
         for (int rb = 0; rb < 2; ++rb) {
+            // #pragma omp simd reduction(+:localPressureError_)
             for (int j = beginJ; j < endJ; ++j) {
                 // ((beginI + j + rb) & 1) calculates offset 0 or 1
                 for (int i = beginI + ((beginI + j + rb) & 1); i < endI; i += 2) {

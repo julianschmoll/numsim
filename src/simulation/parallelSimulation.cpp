@@ -67,7 +67,10 @@ void ParallelSimulation::run() {
         if (currentTime + timeStepWidth_ > settings_.endTime) {
             timeStepWidth_ = settings_.endTime - currentTime;
         }
+        const int lastSec = static_cast<int>(currentTime);
         currentTime += timeStepWidth_;
+        const int currentSec = static_cast<int>(currentTime);
+        const bool writeOutput = (currentSec > lastSec);
 
         DEBUG(std::cout << "Current Time: " << currentTime << "s");
         DEBUG(std::cout << "/" << settings_.endTime << "s");
@@ -79,8 +82,6 @@ void ParallelSimulation::run() {
 
         pressureSolver_->solve();
 
-        DEBUG(std::cout << "Solved pressure" << std::endl);
-
         setVelocities();
 
         DEBUG(std::cout << "Set velocities" << std::endl);
@@ -88,12 +89,10 @@ void ParallelSimulation::run() {
         exchangeVelocities();
         //ToDo: Exchange velocity halo cells
 
-        DEBUG(std::cout << "asdasd" << std::endl);
-
-        outputWriterParaview_->writeFile(currentTime);
-        outputWriterText_->writeFile(currentTime);
-
-        break;
+        if (writeOutput) {
+            outputWriterParaview_->writeFile(currentTime);
+            outputWriterText_->writeFile(currentTime);
+        }
     }
 
     auto end = std::chrono::high_resolution_clock::now();
