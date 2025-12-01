@@ -67,6 +67,8 @@ void ParallelSimulation::run() {
         if (currentTime + timeStepWidth_ > settings_.endTime) {
             timeStepWidth_ = settings_.endTime - currentTime;
         }
+
+        // ToDo: Do we want to snap to integer values or just write when we crossed one
         const int lastSec = static_cast<int>(currentTime);
         currentTime += timeStepWidth_;
         const int currentSec = static_cast<int>(currentTime);
