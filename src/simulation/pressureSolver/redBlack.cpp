@@ -75,51 +75,6 @@ void RedBlack::solve() {
     }
 }
 
-void RedBlack::updatePressureBoundaries() {
-    DataField &p = grid_->p();
-    requests_.clear();
-    requests_.reserve(8);
-
-    const int numberX = p.endI() - p.beginI();
-
-    for (const Direction direction : directions()) {
-        if (partitioning_->ownPartitionContainsBoundary(direction)) {
-            //setBoundaryValues(direction);
-        } else {
-            const int neighborRank = partitioning_->neighborRankNo(direction);
-            MPI_Request sendReq{}, recvReq{};
-            switch (direction) {
-            case Direction::Left: {
-                MPI_Isend(&p(p.beginI() + 1, p.beginJ()), 1, mpiColumn_, neighborRank, P_TAG, MPI_COMM_WORLD, &sendReq);
-                MPI_Irecv(&p(p.beginI(), p.beginJ()), 1, mpiColumn_, neighborRank, P_TAG, MPI_COMM_WORLD, &recvReq);
-                break;
-            }
-            case Direction::Right: {
-                MPI_Isend(&p(p.endI() - 2, p.beginJ()), 1, mpiColumn_, neighborRank, P_TAG, MPI_COMM_WORLD, &sendReq);
-                MPI_Irecv(&p(p.endI() - 1, p.beginJ()), 1, mpiColumn_, neighborRank, P_TAG, MPI_COMM_WORLD, &recvReq);
-                break;
-            }
-            case Direction::Bottom: {
-                MPI_Isend(&p(p.beginI(), p.beginJ() + 1), numberX, MPI_DOUBLE, neighborRank, P_TAG, MPI_COMM_WORLD, &sendReq);
-                MPI_Irecv(&p(p.beginI(), p.beginJ()), numberX, MPI_DOUBLE, neighborRank, P_TAG, MPI_COMM_WORLD, &recvReq);
-                break;
-            }
-            case Direction::Top: {
-                MPI_Isend(&p(p.beginI(), p.endJ() - 2), numberX, MPI_DOUBLE, neighborRank, P_TAG, MPI_COMM_WORLD, &sendReq);
-                MPI_Irecv(&p(p.beginI(), p.endJ() - 1), numberX, MPI_DOUBLE, neighborRank, P_TAG, MPI_COMM_WORLD, &recvReq);
-                break;
-            }
-            }
-            requests_.push_back(sendReq);
-            requests_.push_back(recvReq);
-        }
-    }
-
-    if (!requests_.empty()) {
-        MPI_Waitall(requests_.size(), requests_.data(), MPI_STATUSES_IGNORE);
-    }
-}
-
 void RedBlack::setBoundaryValues() {
     DataField &p = grid_->p();
 
