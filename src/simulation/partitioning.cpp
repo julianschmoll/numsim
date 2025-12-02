@@ -112,7 +112,7 @@ void Partitioning::printPartitioningInfo() const {
     std::cout << std::endl;
 }
 
-void Partitioning::exchange(std::vector<DataField*> &fields) const {
+void Partitioning::exchange(const std::vector<DataField*> &fields) const {
     std::vector<MPI_Request> requests;
 
     // TODO: kann das kombiniert werden?

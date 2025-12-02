@@ -1,32 +1,29 @@
 #pragma once
 
+#include "../grid/dataField.h"
 #include <array>
 #include <cassert>
-#include <string>
 #include <iostream>
 #include <mpi.h>
-#include "../grid/dataField.h"
+#include <string>
 
 // This avoids magic numbers in shift and can be used in direction as well
-enum class Direction {
-    Left, Right, Top, Bottom
-};
+enum class Direction { Left, Right, Top, Bottom };
 
 // This can be used to iterate over every direction and avoid redundancy in code :)
 constexpr std::array<Direction, 4> directions() {
     return {Direction::Left, Direction::Right, Direction::Bottom, Direction::Top};
 }
 
-class Partitioning
-{
+class Partitioning {
     /// Dimensions of the problem: 2D grid with x,y directions.
     static constexpr int dimensions_ = 2; // TODO: move
 
-    std::array<int,2> nCellsLocal_ = {};
-    std::array<int,2> nCellsGlobal_ = {};
+    std::array<int, 2> nCellsLocal_ = {};
+    std::array<int, 2> nCellsGlobal_ = {};
 
     /// Number of ranks in each direction.
-    std::array<int,2> partitions_ = {};
+    std::array<int, 2> partitions_ = {};
 
     /// MPI communicator with cartesian coordinate information attached.
     MPI_Comm cartComm_ = nullptr;
@@ -40,52 +37,54 @@ class Partitioning
     std::array<int, dimensions_> rankCoordinates_ = {};
 
 public:
+    // TODO: tabs
 
-    //TODO: tabs
+    //! compute partitioning, set internal variables
+    void initialize(std::array<int, 2> nCellsGlobal);
 
-  //! compute partitioning, set internal variables
-  void initialize(std::array<int,2> nCellsGlobal);
+    //! get the local number of cells in the own subdomain
+    std::array<int, 2> nCellsLocal() const;
 
-  //! get the local number of cells in the own subdomain
-  std::array<int,2> nCellsLocal() const;
+    //! get the global number of cells in the whole computational domain
+    //! used in OutputWriterParaviewParallel
+    std::array<int, 2> nCellsGlobal() const;
 
-  //! get the global number of cells in the whole computational domain
-  //! used in OutputWriterParaviewParallel
-  std::array<int,2> nCellsGlobal() const;
+    //! get the own MPI rank no
+    //! used in OutputWriterParaviewParallel and OutputWriterTextParallel
+    int ownRankNo() const;
 
-  //! get the own MPI rank no
-  //! used in OutputWriterParaviewParallel and OutputWriterTextParallel
-  int ownRankNo() const;
+    //! number of MPI ranks
+    int nRanks() const;
 
-  //! number of MPI ranks
-  int nRanks() const;
+    //! if the own partition has part of the bottom boundary of the whole domain
+    bool ownPartitionContainsBoundary(Direction direction) const;
 
-  //! if the own partition has part of the bottom boundary of the whole domain
-  bool ownPartitionContainsBoundary(Direction direction) const;
+    //! get the rank no of the left neighbouring rank
+    int neighborRankNo(Direction direction) const;
 
-  //! get the rank no of the left neighbouring rank
-  int neighborRankNo(Direction direction) const;
+    //! get the offset values for counting local nodes in x and y direction.
+    //! (i_local,j_local) + nodeOffset = (i_global,j_global)
+    //! used in OutputWriterParaviewParallel
+    std::array<int, 2> nodeOffset() const;
 
-  //! get the offset values for counting local nodes in x and y direction. 
-  //! (i_local,j_local) + nodeOffset = (i_global,j_global)
-  //! used in OutputWriterParaviewParallel
-  std::array<int,2> nodeOffset() const;
+    std::array<int, 2> getCurrentRankCoords() const;
 
-  std::array<int,2> getCurrentRankCoords() const;
+    void exchange(const std::vector<DataField *> &fields) const;
 
-    void exchange(std::vector<DataField*> &fields) const;
+    inline std::string dirToStr(Direction dir) const {
+        if (dir == Direction::Left)
+            return "Left";
+        else if (dir == Direction::Right)
+            return "Right";
+        else if (dir == Direction::Bottom)
+            return "Bottom";
+        else
+            return "Top";
+    }
 
-  inline std::string dirToStr(Direction dir) const {
-    if (dir == Direction::Left) return "Left";
-    else if (dir == Direction::Right) return "Right";
-    else if (dir == Direction::Bottom) return "Bottom";
-    else return "Top";
-  }
+    void printPartitioningInfo() const;
 
-  void printPartitioningInfo() const;
-
-    template<Direction direction>
-    MPI_Request sendBorder(DataField &field) const {
+    template <Direction direction> MPI_Request sendBorder(DataField &field) const {
         MPI_Request sendReq{};
 
         int i = 0, j = 0;
@@ -118,10 +117,11 @@ public:
         }
 
         if (neighborRankNo(direction) != MPI_PROC_NULL) {
-            //std::cout << "[" << ownRankNo_ << "] send " << dirToStr(direction) << " to [" << neighborRankNo(direction) << "]: ";
-            //std::cout << "n=" << 1 << ", size=[" << field.cols() << ", " << field.rows() << "]" << ", start i=" << i << ",j=" << j << ", id=" << field.getID() << "\n";
+            // std::cout << "[" << ownRankNo_ << "] send " << dirToStr(direction) << " to [" << neighborRankNo(direction) << "]: ";
+            // std::cout << "n=" << 1 << ", size=[" << field.cols() << ", " << field.rows() << "]" << ", start i=" << i << ",j=" << j << ", id=" <<
+            // field.getID() << "\n";
         }
-        
+
         MPI_Isend(&field(i, j), count, type, neighborRankNo(direction), field.getID(), cartComm_, &sendReq);
 
         MPI_Type_free(&coltype);
@@ -129,10 +129,9 @@ public:
         return sendReq;
     }
 
-    template<Direction direction>
-    MPI_Request recvBorder(DataField &field) const {
+    template <Direction direction> MPI_Request recvBorder(DataField &field) const {
         MPI_Request recvReq{};
-        
+
         int i = 0, j = 0;
         int count = field.cols();
         MPI_Datatype type = MPI_DOUBLE;
@@ -163,15 +162,15 @@ public:
         }
 
         if (neighborRankNo(direction) != MPI_PROC_NULL) {
-            //std::cout << "[" << ownRankNo_ << "] recv " << dirToStr(direction) << " to [" << neighborRankNo(direction) << "]: ";
-            //std::cout << "n=" << count << ", size=[" << field.cols() << ", " << field.rows() << "]" << ", start i=" << i << ",j=" << j << ", id=" << field.getID() << "\n";
+            // std::cout << "[" << ownRankNo_ << "] recv " << dirToStr(direction) << " to [" << neighborRankNo(direction) << "]: ";
+            // std::cout << "n=" << count << ", size=[" << field.cols() << ", " << field.rows() << "]" << ", start i=" << i << ",j=" << j << ", id="
+            // << field.getID() << "\n";
         }
-        
+
         MPI_Irecv(&field(i, j), count, type, neighborRankNo(direction), field.getID(), cartComm_, &recvReq);
-        
+
         MPI_Type_free(&coltype);
-        
+
         return recvReq;
     }
-
 };

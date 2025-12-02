@@ -1,7 +1,9 @@
 #include "redBlack.h"
+#include "grid/dataField.h"
 #include "macros.h"
+#include "simulation/partitioning.h"
 #include <limits>
-#include <iostream>
+#include <vector>
 
 RedBlack::RedBlack(const std::shared_ptr<StaggeredGrid> &grid,
                    const double epsilon,
@@ -59,7 +61,8 @@ void RedBlack::solve() {
                     p(i, j) = pNew;
                 }
             }
-            updatePressureBoundaries();
+            setBoundaryValues();
+            partitioning_->exchange(std::vector<DataField *>{&p});
         }
 
         MPI_Allreduce(&localPressureError_, &globalPressureError_, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -81,7 +84,7 @@ void RedBlack::updatePressureBoundaries() {
 
     for (const Direction direction : directions()) {
         if (partitioning_->ownPartitionContainsBoundary(direction)) {
-            setBoundaryValues(direction);
+            //setBoundaryValues(direction);
         } else {
             const int neighborRank = partitioning_->neighborRankNo(direction);
             MPI_Request sendReq{}, recvReq{};
@@ -117,34 +120,27 @@ void RedBlack::updatePressureBoundaries() {
     }
 }
 
-// I did this with a template set method before, but it's probably faster this way
-void RedBlack::setBoundaryValues(const Direction direction) {
+void RedBlack::setBoundaryValues() {
     DataField &p = grid_->p();
 
-    switch (direction) {
-    case Direction::Left: {
-        for (int j = p.beginJ(); j < p.endJ(); j++) {
-            p(p.beginI(), j) = p(p.beginI() + 1, j);
-        }
-        break;
-    }
-    case Direction::Right: {
-        for (int j = p.beginJ(); j < p.endJ(); j++) {
-            p(p.endI() - 1, j) = p(p.endI() - 2, j);
-        }
-        break;
-    }
-    case Direction::Bottom: {
+    if (partitioning_->ownPartitionContainsBoundary(Direction::Bottom)) {
         for (int i = p.beginI() + 1; i < p.endI() - 1; i++) {
             p(i, p.beginJ()) = p(i, p.beginJ() + 1);
         }
-        break;
     }
-    case Direction::Top: {
+    if (partitioning_->ownPartitionContainsBoundary(Direction::Top)) {
         for (int i = p.beginI() + 1; i < p.endI() - 1; i++) {
             p(i, p.endJ() - 1) = p(i, p.endJ() - 2);
         }
-        break;
     }
+    if (partitioning_->ownPartitionContainsBoundary(Direction::Left)) {
+        for (int j = p.beginJ(); j < p.endJ(); j++) {
+            p(p.beginI(), j) = p(p.beginI() + 1, j);
+        }
+    }
+    if (partitioning_->ownPartitionContainsBoundary(Direction::Right)) {
+        for (int j = p.beginJ(); j < p.endJ(); j++) {
+            p(p.endI() - 1, j) = p(p.endI() - 2, j);
+        }
     }
 }

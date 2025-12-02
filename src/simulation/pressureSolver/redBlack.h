@@ -20,7 +20,7 @@ public:
 private:
     void updatePressureBoundaries();
 
-    void setBoundaryValues(Direction direction);
+    void setBoundaryValues();
 
 protected:
     std::shared_ptr<Partitioning> partitioning_;
