@@ -18,7 +18,6 @@ public:
     void solve();
 
 private:
-    void updatePressureBoundaries();
 
     void setBoundaryValues();
 
