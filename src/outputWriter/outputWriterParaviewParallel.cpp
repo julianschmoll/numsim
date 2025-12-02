@@ -47,11 +47,11 @@ void OutputWriterParaviewParallel::gatherData() {
 
     // ToDo: This is weird as we already should have boundary in the index range
     // add right-most points at ranks with right boundary
-    if (partitioning_.ownPartitionContainsBoundary(Direction::Right))
+    if (partitioning_.ownContainsBoundary<Direction::Right>())
         iEnd += 1;
 
     // add right-most points at ranks with top boundary
-    if (partitioning_.ownPartitionContainsBoundary(Direction::Top))
+    if (partitioning_.ownContainsBoundary<Direction::Top>())
         jEnd += 1;
 
     std::array<int, 2> nodeOffset = partitioning_.nodeOffset();
@@ -86,7 +86,7 @@ void OutputWriterParaviewParallel::writeFile(double currentTime) {
     gatherData();
 
     // only continue to write the file on rank 0
-    if (partitioning_.ownRankNo() != 0) {
+    if (!partitioning_.onPrimaryRank()) {
         return;
     }
 

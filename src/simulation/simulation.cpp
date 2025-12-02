@@ -2,15 +2,13 @@
 
 #include "macros.h"
 #include "partitioning.h"
-#include "outputWriter/outputWriterParaviewParallel.h"
-#include "outputWriter/outputWriterTextParallel.h"
 
 #include <chrono>
-#include <utility>
 #include <mpi.h>
 
-void Simulation::initialize(const Settings &settings) {
-    settings_ = settings;
+Simulation::Simulation(const Settings &settings) 
+    : settings_(settings)
+{
     std::cout << "Initializing Simulation..." << std::endl;
 
     for (int i = 0; i < 2; ++i) {
@@ -19,10 +17,10 @@ void Simulation::initialize(const Settings &settings) {
 
     if (settings_.useDonorCell) {
         std::cout << "Using Donor Cell." << std::endl;
-        discOps_ = std::make_unique<DiscreteOperators>(settings_.nCells, meshWidth_, Partitioning{}, settings_.alpha);
+        discOps_ = std::make_unique<DiscreteOperators>(settings_.nCells, meshWidth_, Partitioning{settings_.nCells}, settings_.alpha);
     } else {
         std::cout << "Using Central Differences." << std::endl;
-        discOps_ = std::make_unique<DiscreteOperators>(settings_.nCells, meshWidth_, Partitioning{}, 0.0);
+        discOps_ = std::make_unique<DiscreteOperators>(settings_.nCells, meshWidth_, Partitioning{settings_.nCells}, 0.0);
     }
 
     if (settings_.pressureSolver == IterSolverType::SOR) {
@@ -32,9 +30,8 @@ void Simulation::initialize(const Settings &settings) {
         pressureSolver_ = std::make_unique<PressureSolverSerial>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, 1);
     }
 
-    // we wouldn't actually need a partitioning here as this is the single threaded simulation
-    Partitioning partitioning;
-    partitioning.initialize(settings_.nCells);
+    // TODO: we wouldn't actually need a partitioning here as this is the single threaded simulation
+    Partitioning partitioning{settings_.nCells};
     outputWriterParaview_ = std::make_unique<OutputWriterParaview>(discOps_, partitioning);
     outputWriterText_ = std::make_unique<OutputWriterText>(discOps_, partitioning);
 }

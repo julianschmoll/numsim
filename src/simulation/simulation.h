@@ -21,6 +21,8 @@ public:
     /**
      * Constructs a Simulation object.
      */
+    explicit Simulation(const Settings &settings);
+
     Simulation() = default;
 
     /**
@@ -32,8 +34,6 @@ public:
      * Runs the simulation.
      */
     void run();
-
-    void initialize(const Settings &settings);
 
 protected:
     // Grid width in x and y directions

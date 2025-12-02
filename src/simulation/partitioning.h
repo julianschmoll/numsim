@@ -3,9 +3,9 @@
 #include "../grid/dataField.h"
 #include <array>
 #include <cassert>
-#include <iostream>
 #include <mpi.h>
-#include <string>
+
+using Rank = int;
 
 // This avoids magic numbers in shift and can be used in direction as well
 enum class Direction { Left, Right, Top, Bottom };
@@ -16,15 +16,14 @@ constexpr std::array<Direction, 4> directions() {
 }
 
 class Partitioning {
-    /// Dimensions of the problem: 2D grid with x,y directions.
-    static constexpr int dimensions_ = 2; // TODO: move
-
-    std::array<int, 2> nCellsLocal_ = {};
-    std::array<int, 2> nCellsGlobal_ = {};
+    std::array<int, 2> nCellsLocal_{};
+    std::array<int, 2> nCellsGlobal_{};
 
     /// Number of ranks in each direction.
-    std::array<int, 2> partitions_ = {};
+    std::array<int, 2> partitions_{};
 
+    std::array<int, 2> rankCoordinates_;
+    
     /// MPI communicator with cartesian coordinate information attached.
     MPI_Comm cartComm_ = nullptr;
 
@@ -32,15 +31,14 @@ class Partitioning {
     int offsetX_ = 0;
     int offsetY_ = 0;
 
-    int ownRankNo_ = 0;
+    Rank ownRank_ = 0;
 
-    std::array<int, dimensions_> rankCoordinates_ = {};
 
 public:
-    // TODO: tabs
+    Partitioning() = delete;
 
     //! compute partitioning, set internal variables
-    void initialize(std::array<int, 2> nCellsGlobal);
+    explicit Partitioning(std::array<int, 2> nCellsGlobal);
 
     //! get the local number of cells in the own subdomain
     std::array<int, 2> nCellsLocal() const;
@@ -51,44 +49,66 @@ public:
 
     //! get the own MPI rank no
     //! used in OutputWriterParaviewParallel and OutputWriterTextParallel
-    int ownRankNo() const;
+    Rank ownRank() const;
 
     //! number of MPI ranks
     int nRanks() const;
-
-    //! if the own partition has part of the bottom boundary of the whole domain
-    bool ownPartitionContainsBoundary(Direction direction) const;
-
-    //! get the rank no of the left neighbouring rank
-    int neighborRankNo(Direction direction) const;
 
     //! get the offset values for counting local nodes in x and y direction.
     //! (i_local,j_local) + nodeOffset = (i_global,j_global)
     //! used in OutputWriterParaviewParallel
     std::array<int, 2> nodeOffset() const;
-
+    
     std::array<int, 2> getCurrentRankCoords() const;
-
+    
     void exchange(const std::vector<DataField *> &fields) const;
-
+    
     void barrier() const;
-
+    
     bool onPrimaryRank() const;
-
-    inline std::string dirToStr(Direction dir) const {
-        if (dir == Direction::Left)
-            return "Left";
-        else if (dir == Direction::Right)
-            return "Right";
-        else if (dir == Direction::Bottom)
-            return "Bottom";
-        else
-            return "Top";
-    }
-
+    
     void printPartitioningInfo() const;
 
-    template <Direction direction> MPI_Request sendBorder(DataField &field) const {
+    //! if the own partition has part of the bottom boundary of the whole domain
+    template<Direction direction>
+    bool ownContainsBoundary() const {
+        if constexpr (direction == Direction::Left) {
+            return rankCoordinates_[0] == 0;
+        }
+        if constexpr (direction == Direction::Right) {
+            return rankCoordinates_[0] == partitions_[0] - 1;
+        }
+        if constexpr (direction == Direction::Bottom) {
+            return rankCoordinates_[1] == 0;
+        }
+        if constexpr (direction == Direction::Top) {
+            return rankCoordinates_[1] == partitions_[1] - 1;
+        }
+        return false;
+    }
+        
+    //! get the rank no of the left neighbouring rank
+    template <Direction direction>
+    Rank neighborRank() const {
+        Rank destRank{};
+        Rank srcRank = ownRank_;
+        if constexpr (direction == Direction::Left) {
+            MPI_Cart_shift(cartComm_, 0, -1, &srcRank, &destRank);
+        }
+        if constexpr (direction == Direction::Right) {
+            MPI_Cart_shift(cartComm_, 0, 1, &srcRank, &destRank);
+        }
+        if constexpr (direction == Direction::Top) {
+            MPI_Cart_shift(cartComm_, 1, 1, &srcRank, &destRank);
+        }
+        if constexpr (direction == Direction::Bottom) {
+            MPI_Cart_shift(cartComm_, 1, -1, &srcRank, &destRank);
+        }
+        return destRank;
+    }
+
+    template <Direction direction>
+    MPI_Request sendBorder(DataField &field) const {
         MPI_Request sendReq{};
 
         int i = 0, j = 0;
@@ -120,20 +140,15 @@ public:
             assert(false);
         }
 
-        if (neighborRankNo(direction) != MPI_PROC_NULL) {
-            // std::cout << "[" << ownRankNo_ << "] send " << dirToStr(direction) << " to [" << neighborRankNo(direction) << "]: ";
-            // std::cout << "n=" << 1 << ", size=[" << field.cols() << ", " << field.rows() << "]" << ", start i=" << i << ",j=" << j << ", id=" <<
-            // field.getID() << "\n";
-        }
-
-        MPI_Isend(&field(i, j), count, type, neighborRankNo(direction), field.getID(), cartComm_, &sendReq);
+        MPI_Isend(&field(i, j), count, type, neighborRank<direction>(), field.getID(), cartComm_, &sendReq);
 
         MPI_Type_free(&coltype);
 
         return sendReq;
     }
 
-    template <Direction direction> MPI_Request recvBorder(DataField &field) const {
+    template <Direction direction>
+    MPI_Request recvBorder(DataField &field) const {
         MPI_Request recvReq{};
 
         int i = 0, j = 0;
@@ -165,13 +180,7 @@ public:
             assert(false);
         }
 
-        if (neighborRankNo(direction) != MPI_PROC_NULL) {
-            // std::cout << "[" << ownRankNo_ << "] recv " << dirToStr(direction) << " to [" << neighborRankNo(direction) << "]: ";
-            // std::cout << "n=" << count << ", size=[" << field.cols() << ", " << field.rows() << "]" << ", start i=" << i << ",j=" << j << ", id="
-            // << field.getID() << "\n";
-        }
-
-        MPI_Irecv(&field(i, j), count, type, neighborRankNo(direction), field.getID(), cartComm_, &recvReq);
+        MPI_Irecv(&field(i, j), count, type, neighborRank<direction>(), field.getID(), cartComm_, &recvReq);
 
         MPI_Type_free(&coltype);
 

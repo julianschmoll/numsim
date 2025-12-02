@@ -20,7 +20,7 @@ public:
 
     using Simulation::Simulation;
 
-    void initialize(const Settings &settings);
+    ParallelSimulation(const Settings &settings);
 
 private:
 

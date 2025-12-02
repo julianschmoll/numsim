@@ -3,7 +3,6 @@
 #include "simulation/partitioning.h"
 #include <array>
 #include <iostream>
-#include <string>
 
 //TODO: Rename meshWidth -> meshResolution
 StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, const Partitioning &partitioning)
@@ -19,8 +18,8 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
     const int pHeight = nCells[1] + 2;
 
     // Add additional row/col as a new boundary to the top/right, otherwise the owner of the cells on the partition boundary cannot compute new values.
-    bool topBoundaryPartition = partitioning.ownPartitionContainsBoundary(Direction::Top);
-    bool rightBoundaryPartition = partitioning.ownPartitionContainsBoundary(Direction::Right);
+    bool topBoundaryPartition = partitioning.ownContainsBoundary<Direction::Top>();
+    bool rightBoundaryPartition = partitioning.ownContainsBoundary<Direction::Right>();
     if (!topBoundaryPartition) {
         vHeight += 1;
     }
@@ -37,10 +36,10 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
     v_ = DataField({vWidth, vHeight}, meshWidth, {0.5, 0.0}, 5);
     g_ = DataField({vWidth, vHeight}, meshWidth, {0.5, 0.0}, 6);
 
-    int ownRankNo = partitioning.ownRankNo();
+    Rank rank = partitioning.ownRank();
     auto rankCoords = partitioning.getCurrentRankCoords();
 
-    std::cout << "rank " << ownRankNo << ": (" << rankCoords[0] << ", " << rankCoords[1] << ")\n";
+    std::cout << "rank " << rank << ": (" << rankCoords[0] << ", " << rankCoords[1] << ")\n";
     std::cout << " -- p_: size = [" << pWidth << ", " << pHeight << "]\n";
     std::cout << " -- v_: size = [" << vWidth << ", " << vHeight << "]\n";
     std::cout << " -- u_: size = [" << uWidth << ", " << uHeight << "]\n";

@@ -78,22 +78,22 @@ void RedBlack::solve() {
 void RedBlack::setBoundaryValues() {
     DataField &p = grid_->p();
 
-    if (partitioning_->ownPartitionContainsBoundary(Direction::Bottom)) {
+    if (partitioning_->ownContainsBoundary<Direction::Bottom>()) {
         for (int i = p.beginI() + 1; i < p.endI() - 1; i++) {
             p(i, p.beginJ()) = p(i, p.beginJ() + 1);
         }
     }
-    if (partitioning_->ownPartitionContainsBoundary(Direction::Top)) {
+    if (partitioning_->ownContainsBoundary<Direction::Top>()) {
         for (int i = p.beginI() + 1; i < p.endI() - 1; i++) {
             p(i, p.endJ() - 1) = p(i, p.endJ() - 2);
         }
     }
-    if (partitioning_->ownPartitionContainsBoundary(Direction::Left)) {
+    if (partitioning_->ownContainsBoundary<Direction::Left>()) {
         for (int j = p.beginJ(); j < p.endJ(); j++) {
             p(p.beginI(), j) = p(p.beginI() + 1, j);
         }
     }
-    if (partitioning_->ownPartitionContainsBoundary(Direction::Right)) {
+    if (partitioning_->ownContainsBoundary<Direction::Right>()) {
         for (int j = p.beginJ(); j < p.endJ(); j++) {
             p(p.endI() - 1, j) = p(p.endI() - 2, j);
         }

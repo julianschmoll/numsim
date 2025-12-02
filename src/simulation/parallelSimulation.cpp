@@ -8,38 +8,40 @@
 #include "settings.h"
 #include "simulation/discreteOperators.h"
 #include "simulation/partitioning.h"
+#include "simulation/simulation.h"
 
 #include <chrono>
 #include <iostream>
 #include <memory>
 #include <ostream>
 
-void ParallelSimulation::initialize(const Settings &settings) {
-    std::cout << "Initializing parallel Simulation..." << std::endl;
+ParallelSimulation::ParallelSimulation(const Settings &settings) // TODO: remove inheritance?
+{
     settings_ = settings;
+    partitioning_ = std::make_shared<Partitioning>(settings_.nCells);
 
-    partitioning_ = std::make_shared<Partitioning>();
-    partitioning_->initialize(settings_.nCells);
-
+    std::cout << "Initializing parallel Simulation on" << partitioning_->nRanks() << " ranks." << std::endl;
+    
     for (int i = 0; i < 2; ++i) {
         meshWidth_[i] = settings_.physicalSize[i] / settings_.nCells[i];
     }
-
+    
     if (settings_.useDonorCell) {
-        std::cout << "Using Donor Cell." << std::endl;
+        std::cout << " -- Using Donor Cell." << std::endl;
         discOps_ = std::make_unique<DiscreteOperators>(partitioning_->nCellsLocal(), meshWidth_, *partitioning_, settings_.alpha);
     } else {
-        std::cout << "Using Central Differences." << std::endl;
+        std::cout << " -- Using Central Differences." << std::endl;
         discOps_ = std::make_unique<DiscreteOperators>(partitioning_->nCellsLocal(), meshWidth_, *partitioning_, 0.0);
     }
-
+    
     if (settings_.pressureSolver == IterSolverType::SOR) {
-        std::cout << "Using SOR solver." << std::endl;
-        pressureSolver_ =
-            std::make_unique<RedBlack>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, settings_.omega, partitioning_);
+        std::cout << " -- Using SOR solver." << std::endl;
+        pressureSolver_ = std::make_unique<RedBlack>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, settings_.omega, partitioning_);
     } else {
         pressureSolver_ = std::make_unique<RedBlack>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, 1, partitioning_);
     }
+
+    partitioning_->printPartitioningInfo();
 
     outputWriterParaview_ = std::make_unique<OutputWriterParaviewParallel>(discOps_, *partitioning_);
     outputWriterText_ = std::make_unique<OutputWriterTextParallel>(discOps_, *partitioning_);
@@ -50,12 +52,6 @@ void ParallelSimulation::run() {
     auto start = std::chrono::high_resolution_clock::now();
 
     double currentTime = 0.0;
-
-    DEBUG(unsigned int counter = 0);
-
-    // ToDo: Exchange velocity halo cells (necessary only if we do not always start with 0-velocities for inner, non-boundary cells)
-
-    partitioning_->printPartitioningInfo();
 
     std::vector uv = {&discOps_->u(), &discOps_->v()};
     std::vector fg = {&discOps_->f(), &discOps_->g()};
@@ -130,7 +126,7 @@ void ParallelSimulation::setBoundaryUV() {
     auto &u = discOps_->u();
     auto &v = discOps_->v();
 
-    if (partitioning_->ownPartitionContainsBoundary(Direction::Bottom)) {
+    if (partitioning_->ownContainsBoundary<Direction::Bottom>()) {
         const auto uBottom = settings_.dirichletBcBottom[0];
         const auto vBottom = settings_.dirichletBcBottom[1];
 
@@ -142,7 +138,7 @@ void ParallelSimulation::setBoundaryUV() {
         }
     }
 
-    if (partitioning_->ownPartitionContainsBoundary(Direction::Top)) {
+    if (partitioning_->ownContainsBoundary<Direction::Top>()) {
         const auto uTop = settings_.dirichletBcTop[0];
         const auto vTop = settings_.dirichletBcTop[1];
 
@@ -154,7 +150,7 @@ void ParallelSimulation::setBoundaryUV() {
         }
     }
 
-    if (partitioning_->ownPartitionContainsBoundary(Direction::Left)) {
+    if (partitioning_->ownContainsBoundary<Direction::Left>()) {
         const auto uLeft = settings_.dirichletBcLeft[0];
         const auto vLeft = settings_.dirichletBcLeft[1];
 
@@ -166,7 +162,7 @@ void ParallelSimulation::setBoundaryUV() {
         }
     }
 
-    if (partitioning_->ownPartitionContainsBoundary(Direction::Right)) {
+    if (partitioning_->ownContainsBoundary<Direction::Right>()) {
         const auto uRight = settings_.dirichletBcRight[0];
         const auto vRight = settings_.dirichletBcRight[1];
 
@@ -187,7 +183,7 @@ void ParallelSimulation::setBoundaryFG() {
     auto &u = discOps_->u();
     auto &v = discOps_->v();
 
-    if (partitioning_->ownPartitionContainsBoundary(Direction::Bottom)) {
+    if (partitioning_->ownContainsBoundary<Direction::Bottom>()) {
         const auto fBottom = settings_.dirichletBcBottom[0];
         const auto gBottom = settings_.dirichletBcBottom[1];
 
@@ -199,7 +195,7 @@ void ParallelSimulation::setBoundaryFG() {
         }
     }
 
-    if (partitioning_->ownPartitionContainsBoundary(Direction::Top)) {
+    if (partitioning_->ownContainsBoundary<Direction::Top>()) {
         const auto fTop = settings_.dirichletBcTop[0];
         const auto gTop = settings_.dirichletBcTop[1];
 
@@ -211,7 +207,7 @@ void ParallelSimulation::setBoundaryFG() {
         }
     }
 
-    if (partitioning_->ownPartitionContainsBoundary(Direction::Left)) {
+    if (partitioning_->ownContainsBoundary<Direction::Left>()) {
         const auto fLeft = settings_.dirichletBcLeft[0];
         const auto gLeft = settings_.dirichletBcLeft[1];
 
@@ -223,7 +219,7 @@ void ParallelSimulation::setBoundaryFG() {
         }
     }
 
-    if (partitioning_->ownPartitionContainsBoundary(Direction::Right)) {
+    if (partitioning_->ownContainsBoundary<Direction::Right>()) {
         const auto fRight = settings_.dirichletBcRight[0];
         const auto gRight = settings_.dirichletBcRight[1];
 
