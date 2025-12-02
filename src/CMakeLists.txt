@@ -5,30 +5,30 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(${PROJECT_NAME}
-        # main stuff
-        settings.cpp
-        main.cpp
+    # main stuff
+    settings.cpp
+    main.cpp
 
-        #grid stuff
-        grid/array2d.cpp
-        grid/staggeredGrid.cpp
-        grid/dataField.cpp
+    #grid stuff
+    grid/array2d.cpp
+    grid/staggeredGrid.cpp
+    grid/dataField.cpp
 
-        # solver stuff
-        simulation/simulation.cpp
-        simulation/pressureSolver/pressureSolverSerial.cpp
-        simulation/pressureSolver/redBlack.cpp
-        simulation/pressureSolver/conjugateGradient.cpp
-        simulation/discreteOperators.cpp
-        simulation/partitioning.cpp
-        simulation/parallelSimulation.cpp
+    # solver stuff
+    simulation/simulation.cpp
+    simulation/pressureSolver/pressureSolverSerial.cpp
+    simulation/pressureSolver/redBlack.cpp
+    simulation/pressureSolver/conjugateGradient.cpp
+    simulation/discreteOperators.cpp
+    simulation/partitioning.cpp
+    simulation/parallelSimulation.cpp
 
-        # outputWriter stuff
-        outputWriter/outputWriter.cpp
-        outputWriter/outputWriterParaview.cpp
-        outputWriter/outputWriterText.cpp
-        outputWriter/outputWriterTextParallel.cpp
-        outputWriter/outputWriterParaviewParallel.cpp
+    # outputWriter stuff
+    outputWriter/outputWriter.cpp
+    outputWriter/outputWriterParaview.cpp
+    outputWriter/outputWriterText.cpp
+    outputWriter/outputWriterTextParallel.cpp
+    outputWriter/outputWriterParaviewParallel.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
@@ -54,9 +54,9 @@ if (VTK_FOUND)
     include_directories(${VTK_INCLUDE_DIRS})
     target_link_libraries(${PROJECT_NAME} ${VTK_LIBRARIES})
     message(STATUS "Found VTK ${VTK_VERSION} in \"${VTK_DIR}\"")
-else ()
+else()
     message(FATAL_ERROR "VTK not found. Please install VTK and set VTK_DIR if needed.")
-endif ()
+endif()
 
 # install numsim executable in build directory and get rid of annoying warnings
 # make_policy(SET CMP0177 NEW # TODO: does not compile!! Added in version 3.31.
