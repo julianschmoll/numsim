@@ -63,8 +63,8 @@ void ParallelSimulation::run() {
     partitioning_->exchange(fg);
 
     while (currentTime < settings_.endTime) {
-        //setBoundaryFG();
         setBoundaryUV();
+        setBoundaryFG(); // TODO: not every iteration but after u, v
 
         partitioning_->exchange(uv);
 
@@ -173,15 +173,18 @@ void ParallelSimulation::setBoundaryFG() {
     auto &f = discOps_->f();
     auto &g = discOps_->g();
 
+    auto &u = discOps_->u();
+    auto &v = discOps_->v();
+
     if (partitioning_->ownPartitionContainsBoundary(Direction::Bottom)) {
         const auto fBottom = settings_.dirichletBcBottom[0];
         const auto gBottom = settings_.dirichletBcBottom[1];
 
         for (int i = f.beginI(); i< f.endI(); ++i) {
-            f(i, f.beginJ()) = fBottom;
+            f(i, f.beginJ()) = u(i, f.beginJ());
         }
         for (int i = g.beginI(); i < g.endI(); ++i) {
-            g(i, g.beginJ()) = gBottom;
+            g(i, g.beginJ()) = v(i, g.beginJ());
         }
     }
 
@@ -190,10 +193,10 @@ void ParallelSimulation::setBoundaryFG() {
         const auto gTop = settings_.dirichletBcTop[1];
 
         for (int i = f.beginI(); i< f.endI(); ++i) {
-            f(i, f.endJ()-1) = fTop;
+            f(i, f.endJ()-1) = u(i, f.endJ()-1);
         }
         for (int i = g.beginI(); i < g.endI(); ++i) {
-            g(i, g.endJ()-1) = gTop;
+            g(i, g.endJ()-1) = v(i, g.endJ()-1);
         }
     }
 
@@ -202,10 +205,10 @@ void ParallelSimulation::setBoundaryFG() {
         const auto gLeft = settings_.dirichletBcLeft[1];
 
         for (int j = f.beginJ(); j < f.endJ(); ++j) {
-            f(f.beginI(), j) = fLeft;
+            f(f.beginI(), j) = u(f.beginI(), j);
         }
         for (int j = g.beginJ(); j < g.endJ(); ++j) {
-            g(g.beginI(), j) = gLeft;
+            g(g.beginI(), j) = v(g.beginI(), j);
         }
     }
 
@@ -214,10 +217,10 @@ void ParallelSimulation::setBoundaryFG() {
         const auto gRight = settings_.dirichletBcRight[1];
 
         for (int j = f.beginJ(); j < f.endJ(); ++j) {
-            f(f.endI() - 1, j) = fRight;
+            f(f.endI() - 1, j) = u(f.endI() - 1, j);
         }
         for (int j = g.beginJ(); j < g.endJ(); ++j) {
-            g(g.endI() - 1, j) = gRight;
+            g(g.endI() - 1, j) = v(g.endI() - 1, j);
         }
     }
 }
