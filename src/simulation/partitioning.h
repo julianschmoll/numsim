@@ -89,16 +89,24 @@ public:
         MPI_Request sendReq{};
 
         int i = 0, j = 0;
-        MPI_Datatype type = field.getMPIRowType();
+        int count = field.cols();
+        MPI_Datatype type = MPI_DOUBLE;
+        MPI_Datatype coltype{};
+
+        // For some reason MPI does not let us store this type in DataField
+        MPI_Type_vector(field.rows(), 1, field.cols(), type, &coltype);
+        MPI_Type_commit(&coltype);
 
         if constexpr (direction == Direction::Left) {
             i = field.beginI() + 1;
             j = field.beginJ();
-            type = field.getMPIColType();
+            type = coltype;
+            count = 1;
         } else if constexpr (direction == Direction::Right) {
             i = field.endI() - 2;
             j = field.beginJ();
-            type = field.getMPIColType();
+            type = coltype;
+            count = 1;
         } else if constexpr (direction == Direction::Bottom) {
             i = field.beginI();
             j = field.beginJ() + 1;
@@ -110,11 +118,13 @@ public:
         }
 
         if (neighborRankNo(direction) != MPI_PROC_NULL) {
-            std::cout << "[" << ownRankNo_ << "] send " << dirToStr(direction) << " to [" << neighborRankNo(direction) << "]: ";
-            std::cout << "n=" << 1 << ", size=[" << field.cols() << ", " << field.rows() << "]" << ", start i=" << i << ",j=" << j << ", id=" << field.getID() << "\n";
+            //std::cout << "[" << ownRankNo_ << "] send " << dirToStr(direction) << " to [" << neighborRankNo(direction) << "]: ";
+            //std::cout << "n=" << 1 << ", size=[" << field.cols() << ", " << field.rows() << "]" << ", start i=" << i << ",j=" << j << ", id=" << field.getID() << "\n";
         }
         
-        MPI_Isend(&field(i, j), 1, type, neighborRankNo(direction), field.getID(), cartComm_, &sendReq);
+        MPI_Isend(&field(i, j), count, type, neighborRankNo(direction), field.getID(), cartComm_, &sendReq);
+
+        MPI_Type_free(&coltype);
 
         return sendReq;
     }
@@ -124,18 +134,23 @@ public:
         MPI_Request recvReq{};
         
         int i = 0, j = 0;
-        MPI_Datatype type = field.getMPIRowType();
-        int count = 1;
+        int count = field.cols();
+        MPI_Datatype type = MPI_DOUBLE;
+        MPI_Datatype coltype{};
+
+        // For some reason MPI does not let us store this type in DataField
+        MPI_Type_vector(field.rows(), 1, field.cols(), type, &coltype);
+        MPI_Type_commit(&coltype);
 
         if constexpr (direction == Direction::Left) {
             i = field.beginI();
             j = field.beginJ();
-            type = field.getMPIColType();
+            type = coltype;
             count = 1;
         } else if constexpr (direction == Direction::Right) {
             i = field.endI() - 1;
             j = field.beginJ();
-            type = field.getMPIColType();
+            type = coltype;
             count = 1;
         } else if constexpr (direction == Direction::Bottom) {
             i = field.beginI();
@@ -148,11 +163,14 @@ public:
         }
 
         if (neighborRankNo(direction) != MPI_PROC_NULL) {
-            std::cout << "[" << ownRankNo_ << "] recv " << dirToStr(direction) << " to [" << neighborRankNo(direction) << "]: ";
-            std::cout << "n=" << count << ", size=[" << field.cols() << ", " << field.rows() << "]" << ", start i=" << i << ",j=" << j << ", id=" << field.getID() << "\n";
+            //std::cout << "[" << ownRankNo_ << "] recv " << dirToStr(direction) << " to [" << neighborRankNo(direction) << "]: ";
+            //std::cout << "n=" << count << ", size=[" << field.cols() << ", " << field.rows() << "]" << ", start i=" << i << ",j=" << j << ", id=" << field.getID() << "\n";
         }
         
         MPI_Irecv(&field(i, j), count, type, neighborRankNo(direction), field.getID(), cartComm_, &recvReq);
+        
+        MPI_Type_free(&coltype);
+        
         return recvReq;
     }
 

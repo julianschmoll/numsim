@@ -1,8 +1,6 @@
 #pragma once
 #include "simulation.h"
 #include "partitioning.h"
-#include "outputWriter/outputWriterParaviewParallel.h"
-#include "outputWriter/outputWriterTextParallel.h"
 #include "pressureSolver/redBlack.h"
 
 // ToDo: Do we really want/need inheritance here?
@@ -38,8 +36,6 @@ private:
      * Exchanges u and v values
      */
     void exchangeVelocities();
-
-     void exchange(std::vector<DataField*> &fields);
 
     std::shared_ptr<Partitioning> partitioning_;
 

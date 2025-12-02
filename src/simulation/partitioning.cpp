@@ -115,15 +115,8 @@ void Partitioning::printPartitioningInfo() const {
 void Partitioning::exchange(std::vector<DataField*> &fields) const {
     std::vector<MPI_Request> requests;
 
+    // TODO: kann das kombiniert werden?
     for (DataField* field : fields) {
-        if (!ownPartitionContainsBoundary(Direction::Left)) {
-            requests.emplace_back(sendBorder<Direction::Left>(*field));
-            requests.emplace_back(recvBorder<Direction::Left>(*field));
-        }
-        if (!ownPartitionContainsBoundary(Direction::Right)) {
-            requests.emplace_back(sendBorder<Direction::Right>(*field));
-            requests.emplace_back(recvBorder<Direction::Right>(*field));
-        }
         if (!ownPartitionContainsBoundary(Direction::Top)) {
             requests.emplace_back(sendBorder<Direction::Top>(*field));
             requests.emplace_back(recvBorder<Direction::Top>(*field));
@@ -133,5 +126,17 @@ void Partitioning::exchange(std::vector<DataField*> &fields) const {
             requests.emplace_back(recvBorder<Direction::Bottom>(*field));
         }
     }
-    MPI_Waitall(requests.size(), requests.data(), MPI_STATUS_IGNORE);
+    MPI_Waitall(static_cast<int>(requests.size()), requests.data(), MPI_STATUS_IGNORE);
+    requests.clear();
+    for (DataField* field : fields) {
+        if (!ownPartitionContainsBoundary(Direction::Left)) {
+            requests.emplace_back(sendBorder<Direction::Left>(*field));
+            requests.emplace_back(recvBorder<Direction::Left>(*field));
+        }
+        if (!ownPartitionContainsBoundary(Direction::Right)) {
+            requests.emplace_back(sendBorder<Direction::Right>(*field));
+            requests.emplace_back(recvBorder<Direction::Right>(*field));
+        }
+    }
+    MPI_Waitall(static_cast<int>(requests.size()), requests.data(), MPI_STATUS_IGNORE);
 }

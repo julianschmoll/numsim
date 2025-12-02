@@ -25,7 +25,7 @@ public:
     /**
      * Destructor for DataField.
      */
-    ~DataField() override;
+    ~DataField() override = default;
 
     /**
      * Interpolates the value at a given coordinate (x, y).
@@ -69,9 +69,6 @@ public:
     void setToZero();
 
     int getID() const;
-
-    MPI_Datatype getMPIColType() const;
-    MPI_Datatype getMPIRowType() const;
 
     int rows() const;
     int cols() const;

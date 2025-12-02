@@ -99,15 +99,15 @@ void ParallelSimulation::run() {
         pressureSolver_->solve();
 
         setVelocities();
-
         DEBUG(std::cout << "Set velocities" << std::endl);
 
         partitioning_->exchange(uv);
 
         if (true) {
-            outputWriterParaview_->writeFile(currentTime);
+            //outputWriterParaview_->writeFile(currentTime);
             outputWriterText_->writeFile(currentTime);
         }
+        break;
     }
 
     auto end = std::chrono::high_resolution_clock::now();
@@ -119,6 +119,30 @@ void ParallelSimulation::run() {
 void ParallelSimulation::setBoundaryUV() {
     auto &u = discOps_->u();
     auto &v = discOps_->v();
+
+    if (partitioning_->ownPartitionContainsBoundary(Direction::Bottom)) {
+        const auto uBottom = settings_.dirichletBcBottom[0];
+        const auto vBottom = settings_.dirichletBcBottom[1];
+
+        for (int i = u.beginI(); i < u.endI(); ++i) {
+            u(i, u.beginJ()) = 2.0 * uBottom - u(i, u.beginJ() + 1);
+        }
+        for (int i = v.beginI(); i < v.endI(); ++i) {
+            v(i, v.beginJ()) = vBottom;
+        }
+    }
+
+    if (partitioning_->ownPartitionContainsBoundary(Direction::Top)) {
+        const auto uTop = settings_.dirichletBcTop[0];
+        const auto vTop = settings_.dirichletBcTop[1];
+
+        for (int i = u.beginI(); i < u.endI(); ++i) {
+            u(i, u.endJ() - 1) = 2.0 * uTop - u(i, u.endJ() - 2);
+        }
+        for (int i = v.beginI(); i < v.endI(); ++i) {
+            v(i, v.endJ() - 1) = vTop;
+        }
+    }
 
     if (partitioning_->ownPartitionContainsBoundary(Direction::Left)) {
         const auto uLeft = settings_.dirichletBcLeft[0];
@@ -143,35 +167,35 @@ void ParallelSimulation::setBoundaryUV() {
             v(v.endI() - 1, j) = 2.0 * vRight - v(v.endI() - 2, j);
         }
     }
-
-    if (partitioning_->ownPartitionContainsBoundary(Direction::Top)) {
-        const auto uTop = settings_.dirichletBcTop[0];
-        const auto vTop = settings_.dirichletBcTop[1];
-
-        for (int i = u.beginI(); i < u.endI(); ++i) {
-            u(i, u.endJ() - 1) = 2.0 * uTop - u(i, u.endJ() - 2);
-        }
-        for (int i = v.beginI(); i < v.endI(); ++i) {
-            v(i, v.endJ() - 1) = vTop;
-        }
-    }
-
-    if (partitioning_->ownPartitionContainsBoundary(Direction::Bottom)) {
-        const auto uBottom = settings_.dirichletBcBottom[0];
-        const auto vBottom = settings_.dirichletBcBottom[1];
-
-        for (int i = u.beginI(); i < u.endI(); ++i) {
-            u(i, u.beginJ()) = 2.0 * uBottom - u(i, u.beginJ() + 1);
-        }
-        for (int i = v.beginI(); i < v.endI(); ++i) {
-            v(i, v.beginJ()) = vBottom;
-        }
-    }
 }
 
 void ParallelSimulation::setBoundaryFG() {
     auto &f = discOps_->f();
     auto &g = discOps_->g();
+
+    if (partitioning_->ownPartitionContainsBoundary(Direction::Bottom)) {
+        const auto fBottom = settings_.dirichletBcBottom[0];
+        const auto gBottom = settings_.dirichletBcBottom[1];
+
+        for (int i = f.beginI(); i< f.endI(); ++i) {
+            f(i, f.beginJ()) = fBottom;
+        }
+        for (int i = g.beginI(); i < g.endI(); ++i) {
+            g(i, g.beginJ()) = gBottom;
+        }
+    }
+
+    if (partitioning_->ownPartitionContainsBoundary(Direction::Top)) {
+        const auto fTop = settings_.dirichletBcTop[0];
+        const auto gTop = settings_.dirichletBcTop[1];
+
+        for (int i = f.beginI(); i< f.endI(); ++i) {
+            f(i, f.endJ()-1) = fTop;
+        }
+        for (int i = g.beginI(); i < g.endI(); ++i) {
+            g(i, g.endJ()-1) = gTop;
+        }
+    }
 
     if (partitioning_->ownPartitionContainsBoundary(Direction::Left)) {
         const auto fLeft = settings_.dirichletBcLeft[0];
@@ -194,30 +218,6 @@ void ParallelSimulation::setBoundaryFG() {
         }
         for (int j = g.beginJ(); j < g.endJ(); ++j) {
             g(g.endI() - 1, j) = gRight;
-        }
-    }
-
-    if (partitioning_->ownPartitionContainsBoundary(Direction::Top)) {
-        const auto fTop = settings_.dirichletBcTop[0];
-        const auto gTop = settings_.dirichletBcTop[1];
-
-        for (int i = f.beginI(); i< f.endI(); ++i) {
-            f(i, f.endJ()-1) = fTop;
-        }
-        for (int i = g.beginI(); i < g.endI(); ++i) {
-            g(i, g.endJ()-1) = gTop;
-        }
-    }
-
-    if (partitioning_->ownPartitionContainsBoundary(Direction::Bottom)) {
-        const auto fBottom = settings_.dirichletBcBottom[0];
-        const auto gBottom = settings_.dirichletBcBottom[1];
-
-        for (int i = f.beginI(); i< f.endI(); ++i) {
-            f(i, f.beginJ()) = fBottom;
-        }
-        for (int i = g.beginI(); i < g.endI(); ++i) {
-            g(i, g.beginJ()) = gBottom;
         }
     }
 }
