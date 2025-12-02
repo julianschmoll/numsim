@@ -111,3 +111,27 @@ void Partitioning::printPartitioningInfo() const {
     << "left = " << neighborRankNo(Direction::Left);
     std::cout << std::endl;
 }
+
+void Partitioning::exchange(std::vector<DataField*> &fields) const {
+    std::vector<MPI_Request> requests;
+
+    for (DataField* field : fields) {
+        if (!ownPartitionContainsBoundary(Direction::Left)) {
+            requests.emplace_back(sendBorder<Direction::Left>(*field));
+            requests.emplace_back(recvBorder<Direction::Left>(*field));
+        }
+        if (!ownPartitionContainsBoundary(Direction::Right)) {
+            requests.emplace_back(sendBorder<Direction::Right>(*field));
+            requests.emplace_back(recvBorder<Direction::Right>(*field));
+        }
+        if (!ownPartitionContainsBoundary(Direction::Top)) {
+            requests.emplace_back(sendBorder<Direction::Top>(*field));
+            requests.emplace_back(recvBorder<Direction::Top>(*field));
+        }
+        if (!ownPartitionContainsBoundary(Direction::Bottom)) {
+            requests.emplace_back(sendBorder<Direction::Bottom>(*field));
+            requests.emplace_back(recvBorder<Direction::Bottom>(*field));
+        }
+    }
+    MPI_Waitall(requests.size(), requests.data(), MPI_STATUS_IGNORE);
+}

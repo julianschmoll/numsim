@@ -3,6 +3,7 @@
 #include "simulation/partitioning.h"
 #include <array>
 #include <iostream>
+#include <string>
 
 //TODO: Rename meshWidth -> meshResolution
 StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, const Partitioning &partitioning)

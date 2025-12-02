@@ -55,10 +55,18 @@ void ParallelSimulation::run() {
 
     partitioning_->printPartitioningInfo();
 
+    std::vector uv = {&discOps_->u(), &discOps_->v()};
+    std::vector fg = {&discOps_->f(), &discOps_->g()};
+
     setBoundaryFG();
 
+    partitioning_->exchange(fg);
+
     while (currentTime < settings_.endTime) {
+        //setBoundaryFG();
         setBoundaryUV();
+
+        partitioning_->exchange(uv);
 
         computeTimeStepWidth();
 
@@ -83,6 +91,9 @@ void ParallelSimulation::run() {
         DEBUG(std::cout << " (" << std::fixed << std::setprecision(2) << progress << "%)" << std::endl);
 
         setPreliminaryVelocities();
+
+        partitioning_->exchange(fg);
+
         setRightHandSide();
 
         pressureSolver_->solve();
@@ -91,13 +102,12 @@ void ParallelSimulation::run() {
 
         DEBUG(std::cout << "Set velocities" << std::endl);
 
-        exchangeVelocities();
+        partitioning_->exchange(uv);
 
         if (true) {
             outputWriterParaview_->writeFile(currentTime);
             outputWriterText_->writeFile(currentTime);
         }
-        break;
     }
 
     auto end = std::chrono::high_resolution_clock::now();
@@ -235,138 +245,4 @@ void ParallelSimulation::computeTimeStepWidth() {
     const double dt = std::min({diffusive, convectiveU, convectiveV}) * settings_.tau;
 
     timeStepWidth_ = std::min(dt, settings_.maximumDt);
-}
-
-void ParallelSimulation::exchangeVelocities() {
-    //ToDo: Use MPI_comm from partitioning
-
-    int leftRankNo = partitioning_->neighborRankNo(Direction::Left);
-    int rightRankNo = partitioning_->neighborRankNo(Direction::Right);
-    int bottomRankNo = partitioning_->neighborRankNo(Direction::Bottom);
-    int topRankNo = partitioning_->neighborRankNo(Direction::Top);
-
-    DataField &u = discOps_->u();
-    DataField &v = discOps_->v();
-    DataField &f = discOps_->f();
-    DataField &g = discOps_->g();
-
-    int uWidth = u.endI() - u.beginI(); // TODO: implement DataField::cols(), DataField::rows(), innerCols, innerRows
-    int uHeight = u.endJ() - u.beginJ();
-
-    int vWidth = v.endI() - v.beginI();
-    int vHeight = v.endJ() - v.beginJ();
-
-    int ownRankNumber = partitioning_->ownRankNo();
-
-
-    //Receive requests should cancel automatically if source rank is MPI_PROC_NULL
-
-    std::vector<double> leftVSendBuffer(vHeight), leftVRecvBuffer(vHeight); //TODO Eckrandwerte?
-    std::vector<double> rightVSendBuffer(vHeight),  rightVRecvBuffer(vHeight);
-    std::vector<double> topVSendBuffer(vWidth), topVRecvBuffer(vWidth);
-    std::vector<double> bottomVSendBuffer(vWidth), bottomVRecvBuffer(vWidth);
-
-    for (int i = u.beginI(); i < u.endI(); i++) {
-        for (int j = u.beginJ(); j < u.endJ(); j++) {
-            u(i, j) = ownRankNumber;
-        }
-    }
-    for (int i = v.beginI(); i < v.endI(); i++) {
-        for (int j = v.beginJ(); j < v.endJ(); j++) {
-            v(i, j) = ownRankNumber;
-        }
-    }
-
-    // TODO: no raw ptr
-    std::array<DataField*, 4> fields {&u, &v, &f, &g};
-    std::array<MPI_Request, 8> requests {};
-
-    for (DataField* field : fields) {
-        requests[0] = partitioning_->sendBorder<Direction::Left>(*field);
-        requests[1] = partitioning_->sendBorder<Direction::Right>(*field);
-
-        requests[2] = partitioning_->recvBorder<Direction::Left>(*field);
-        requests[3] = partitioning_->recvBorder<Direction::Right>(*field);
-    
-        requests[4] = partitioning_->sendBorder<Direction::Top>(*field);
-        requests[5] = partitioning_->sendBorder<Direction::Bottom>(*field);
-
-        requests[6] = partitioning_->recvBorder<Direction::Top>(*field);
-        requests[7] = partitioning_->recvBorder<Direction::Bottom>(*field);
-
-        MPI_Waitall(requests.size(), requests.data(), MPI_STATUS_IGNORE);
-    }
-
-    /*
-
-
-    //u: bottom <--> top
-    std::vector<double> bottomUSendBuffer(uWidth), bottomURecvBuffer(uWidth);
-    std::vector<double> topUSendBuffer(uWidth), topURecvBuffer(uWidth);
-
-    for (int i = u.beginI(); i < u.endI(); i++) {
-        bottomUSendBuffer[i + 1] = u(i, u.beginJ() + 1);
-        topUSendBuffer[i + 1] = u(i, u.endJ() - 2);
-    }
-
-    MPI_Request requestUBottomSend, requestUTopSend, requestUBottomRecv, requestUTopRecv;
-    MPI_Isend(bottomUSendBuffer.data(), bottomUSendBuffer.size(), MPI_DOUBLE, bottomRankNo, u.getID(), MPI_COMM_WORLD, &requestUBottomSend);
-    MPI_Irecv(bottomURecvBuffer.data(), bottomURecvBuffer.size(), MPI_DOUBLE, bottomRankNo, u.getID(), MPI_COMM_WORLD, &requestUBottomRecv);
-
-    MPI_Isend(topUSendBuffer.data(), topUSendBuffer.size(), MPI_DOUBLE, topRankNo, u.getID(), MPI_COMM_WORLD, &requestUTopSend);
-    MPI_Irecv(topURecvBuffer.data(), topURecvBuffer.size(), MPI_DOUBLE, topRankNo, u.getID(), MPI_COMM_WORLD, &requestUTopRecv);
-
-
-    //u: right <--> left
-    std::vector<double> rightUSendBuffer(uHeight), leftUSendBuffer(uHeight), leftURecvBuffer(uHeight), rightURecvBuffer(uHeight);
-
-    for (int j = u.beginJ(); j < u.endJ(); j++) {
-        rightUSendBuffer[j + 1] = u(u.endI() - 2, j);
-        leftUSendBuffer[j + 1] = u(u.beginI() + 1 , j);
-    }
-
-    MPI_Request requestURightSend, requestULeftRecv, requestULeftSend, requestURightRecv;
-    MPI_Isend(rightUSendBuffer.data(), rightUSendBuffer.size(), MPI_DOUBLE, rightRankNo, u.getID(), MPI_COMM_WORLD, &requestURightSend);
-    MPI_Irecv(leftURecvBuffer.data(), leftURecvBuffer.size(), MPI_DOUBLE, leftRankNo, u.getID(), MPI_COMM_WORLD, &requestULeftRecv);
-    MPI_Isend(leftUSendBuffer.data(), leftUSendBuffer.size(), MPI_DOUBLE, leftRankNo, u.getID(), MPI_COMM_WORLD, &requestULeftSend);
-    MPI_Irecv(rightURecvBuffer.data(), rightURecvBuffer.size(), MPI_DOUBLE, rightRankNo, u.getID(), MPI_COMM_WORLD, &requestURightRecv);
-
-    //We need to waitall before pasting the values, since the left side of the current partition is the right side of the left  neighbor partition.
-    //Hence, we can't do the directions sequentially like "complete left, then go on with right" etc.
-    std::array<MPI_Request, 16> requests = {
-        requestVLeftSend, requestVLeftRecv, 
-        requestVRightSend, requestVRightRecv,
-        requestVTopSend, requestVTopRecv,
-        requestVBottomSend, requestVBottomRecv,
-        requestULeftSend, requestULeftRecv, 
-        requestURightSend, requestURightRecv,
-        requestUTopSend, requestUTopRecv,
-        requestUBottomSend, requestUBottomRecv
-    };
-    MPI_Waitall(requests.size(), requests.data(), MPI_STATUS_IGNORE);
-
-    //Put received values into grid
-    if (leftRankNo != MPI_PROC_NULL) {
-        for (int j = u.beginJ(); j < u.endJ(); j++) {
-            u(-1, j) = leftURecvBuffer[j + 1];
-        }
-    }
-    if (rightRankNo != MPI_PROC_NULL) {
-        for (int j = u.beginJ(); j < u.endJ(); j++) {
-            u(u.endI() - 1, j) = rightURecvBuffer[j + 1];
-        }
-    }
-    if (bottomRankNo != MPI_PROC_NULL) {
-        for (int i = u.beginI(); i < u.endI(); i++) {
-            u(i, -1) = bottomURecvBuffer[i + 1];
-        }
-    }
-    if (topRankNo != MPI_PROC_NULL) {
-        for (int i = u.beginI(); i < u.endI(); i++) {
-            u(i, u.endJ() - 1) = topURecvBuffer[i + 1];
-        }
-    }
-
-    //ToDo (Bene): Fix errors and refactor this huge duplicating piece of sh*t so it becomes less ugly
-    */
 }

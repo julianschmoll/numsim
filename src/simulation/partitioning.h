@@ -2,6 +2,8 @@
 
 #include <array>
 #include <cassert>
+#include <string>
+#include <iostream>
 #include <mpi.h>
 #include "../grid/dataField.h"
 
@@ -71,6 +73,8 @@ public:
 
   std::array<int,2> getCurrentRankCoords() const;
 
+    void exchange(std::vector<DataField*> &fields) const;
+
   inline std::string dirToStr(Direction dir) const {
     if (dir == Direction::Left) return "Left";
     else if (dir == Direction::Right) return "Right";
@@ -86,18 +90,15 @@ public:
 
         int i = 0, j = 0;
         MPI_Datatype type = field.getMPIRowType();
-        int count = field.cols();
 
         if constexpr (direction == Direction::Left) {
             i = field.beginI() + 1;
             j = field.beginJ();
             type = field.getMPIColType();
-            count = 1;
         } else if constexpr (direction == Direction::Right) {
             i = field.endI() - 2;
             j = field.beginJ();
             type = field.getMPIColType();
-            count = 1;
         } else if constexpr (direction == Direction::Bottom) {
             i = field.beginI();
             j = field.beginJ() + 1;
@@ -110,10 +111,10 @@ public:
 
         if (neighborRankNo(direction) != MPI_PROC_NULL) {
             std::cout << "[" << ownRankNo_ << "] send " << dirToStr(direction) << " to [" << neighborRankNo(direction) << "]: ";
-            std::cout << "n=" << count << ", size=[" << field.cols() << ", " << field.rows() << "]" << ", start i=" << i << ",j=" << j << ", id=" << field.getID() << "\n";
+            std::cout << "n=" << 1 << ", size=[" << field.cols() << ", " << field.rows() << "]" << ", start i=" << i << ",j=" << j << ", id=" << field.getID() << "\n";
         }
         
-        MPI_Isend(&field(i, j), count, type, neighborRankNo(direction), field.getID(), cartComm_, &sendReq);
+        MPI_Isend(&field(i, j), 1, type, neighborRankNo(direction), field.getID(), cartComm_, &sendReq);
 
         return sendReq;
     }
@@ -124,7 +125,7 @@ public:
         
         int i = 0, j = 0;
         MPI_Datatype type = field.getMPIRowType();
-        int count = field.cols();
+        int count = 1;
 
         if constexpr (direction == Direction::Left) {
             i = field.beginI();

@@ -14,18 +14,22 @@ DataField::DataField() :
 
 
 DataField::DataField(const std::array<int, 2> size, const std::array<double, 2> meshWidth, const std::array<double, 2> offset, int fieldID)
-    : Array2d(size), meshWidth_(meshWidth), offset_(offset), mpiColType_(nullptr), fieldID_(fieldID)
+    : Array2d(size), meshWidth_(meshWidth), offset_(offset), mpiColType_(nullptr), mpiRowType_(nullptr), fieldID_(fieldID) // Initialize new member
 {
     int cols = size[0], rows = size[1];
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    std::cout << "[" << rank << "] field: " << fieldID << ", stride = " << cols << ", count = " << rows << std::endl;
+
+    //Column
     MPI_Type_vector(rows, 1, cols, MPI_DOUBLE, &mpiColType_);
     MPI_Type_commit(&mpiColType_);
+
+    //Row
+    MPI_Type_contiguous(cols, MPI_DOUBLE, &mpiRowType_);
+    MPI_Type_commit(&mpiRowType_);
 }
 
 DataField::~DataField() {
     MPI_Type_free(&mpiColType_);
+    MPI_Type_free(&mpiRowType_);
 }
 
 int DataField::rows() const {
@@ -66,7 +70,7 @@ MPI_Datatype DataField::getMPIColType() const {
 }
 
 MPI_Datatype DataField::getMPIRowType() const {
-    return MPI_DOUBLE;
+    return mpiRowType_;
 }
 
 double DataField::interpolateAt(double x, double y) const {

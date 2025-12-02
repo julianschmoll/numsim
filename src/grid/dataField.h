@@ -2,6 +2,7 @@
 
 #include "grid/array2d.h"
 #include "mpi.h"
+#include <iostream>
 
 /**
  * @class DataField
@@ -94,6 +95,8 @@ private:
     std::array<double, 2> offset_;
 
     MPI_Datatype mpiColType_;
+
+    MPI_Datatype mpiRowType_;
 
     int fieldID_;
 };

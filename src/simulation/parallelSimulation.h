@@ -39,6 +39,8 @@ private:
      */
     void exchangeVelocities();
 
+     void exchange(std::vector<DataField*> &fields);
+
     std::shared_ptr<Partitioning> partitioning_;
 
     // Solver for the pressure
