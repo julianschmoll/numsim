@@ -103,11 +103,11 @@ void ParallelSimulation::run() {
 
         partitioning_->exchange(uv);
 
-        if (true) {
-            //outputWriterParaview_->writeFile(currentTime);
-            outputWriterText_->writeFile(currentTime);
+        if (writeOutput) {
+            outputWriterParaview_->writeFile(currentTime);
+            DEBUG(outputWriterText_->writeFile(currentTime));
         }
-        break;
+        //break;
     }
 
     auto end = std::chrono::high_resolution_clock::now();

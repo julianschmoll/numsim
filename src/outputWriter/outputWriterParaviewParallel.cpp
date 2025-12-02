@@ -14,18 +14,19 @@ OutputWriterParaviewParallel::OutputWriterParaviewParallel(std::shared_ptr<Stagg
       nCellsGlobal_(partitioning_.nCellsGlobal()),
 
       // ToDo: Why are we doing this?
-      nPointsGlobal_{nCellsGlobal_[0] + 1, nCellsGlobal_[1] + 1}, // we have one point more than cells in every coordinate direction
+      // because we use it as a 2d array with no connection whatsoever to the original indexing
+      nPointsGlobal_{nCellsGlobal_[0] + 2, nCellsGlobal_[1] + 2}, // we have one point more than cells in every coordinate direction
 
       // TODO: Does this make sense, what about ghost cells?
       // create field variables for resulting values, only for local data as send buffer
-      u_({nPointsGlobal_[0] + 1, nPointsGlobal_[1] + 2}, grid_->meshWidth(), {0.0, 0.5}),
-      v_({nPointsGlobal_[0] + 2, nPointsGlobal_[1] + 1}, grid_->meshWidth(), {0.5, 0.0}),
-      p_({nPointsGlobal_[0] + 2, nPointsGlobal_[1] + 2}, grid_->meshWidth(), {0.5, 0.5}),
+      u_(nPointsGlobal_, grid_->meshWidth(), {0.0, 0.5}),
+      v_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.0}),
+      p_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.5}),
 
       // create field variables for resulting values, after MPI communication
-      uGlobal_({nPointsGlobal_[0] + 1, nPointsGlobal_[1] + 2}, grid_->meshWidth(), {0.0, 0.5}),
-      vGlobal_({nPointsGlobal_[0] + 2, nPointsGlobal_[1] + 1}, grid_->meshWidth(), {0.5, 0.0}),
-      pGlobal_({nPointsGlobal_[0] + 2, nPointsGlobal_[1] + 2}, grid_->meshWidth(), {0.5, 0.5}) {
+      uGlobal_(nPointsGlobal_, grid_->meshWidth(), {0.0, 0.5}),
+      vGlobal_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.0}),
+      pGlobal_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.5}) {
     // Create a vtkWriter_
     vtkWriter_ = vtkSmartPointer<vtkXMLImageDataWriter>::New();
 }
@@ -53,11 +54,18 @@ void OutputWriterParaviewParallel::gatherData() {
     if (partitioning_.ownPartitionContainsBoundary(Direction::Top))
         jEnd += 1;
 
-    const std::array<int, 2> nodeOffset = partitioning_.nodeOffset();
+    std::array<int, 2> nodeOffset = partitioning_.nodeOffset();
 
     u_.setToZero(); // TODO: necessary?
     v_.setToZero();
     p_.setToZero();
+
+    std::cout << "Rank " << partitioning_.ownRankNo() << "\n";
+    std::cout << "nPointsGlobalTotal = " << nPointsGlobalTotal << "\n";
+    std::cout << "nPointsGlobal_ = " << nPointsGlobal_[0] << ", " << nPointsGlobal_[1] << "\n";
+    std::cout << "nodeOffset = " << nodeOffset[0] << ", " << nodeOffset[1] << "\n";
+    std::cout << "u_ = " << u_.cols() << ", " << u_.rows() << "\n";
+    std::cout << "iEnd = " << iEnd << ", jEnd = " << jEnd << std::endl;
 
     for (int j = 0; j < jEnd; j++) {
         for (int i = 0; i < iEnd; i++) {
