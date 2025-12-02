@@ -1,16 +1,17 @@
 #include "parallelSimulation.h"
 
 #include "grid/dataField.h"
-#include "settings.h"
-#include "simulation/discreteOperators.h"
 #include "macros.h"
 #include "outputWriter/outputWriterParaviewParallel.h"
 #include "outputWriter/outputWriterTextParallel.h"
 #include "pressureSolver/redBlack.h"
+#include "settings.h"
+#include "simulation/discreteOperators.h"
 #include "simulation/partitioning.h"
 
-#include <memory>
 #include <chrono>
+#include <iostream>
+#include <memory>
 #include <ostream>
 
 void ParallelSimulation::initialize(const Settings &settings) {
@@ -34,7 +35,8 @@ void ParallelSimulation::initialize(const Settings &settings) {
 
     if (settings_.pressureSolver == IterSolverType::SOR) {
         std::cout << "Using SOR solver." << std::endl;
-        pressureSolver_ = std::make_unique<RedBlack>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, settings_.omega, partitioning_);
+        pressureSolver_ =
+            std::make_unique<RedBlack>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, settings_.omega, partitioning_);
     } else {
         pressureSolver_ = std::make_unique<RedBlack>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, 1, partitioning_);
     }
@@ -51,7 +53,7 @@ void ParallelSimulation::run() {
 
     DEBUG(unsigned int counter = 0);
 
-    //ToDo: Exchange velocity halo cells (necessary only if we do not always start with 0-velocities for inner, non-boundary cells)
+    // ToDo: Exchange velocity halo cells (necessary only if we do not always start with 0-velocities for inner, non-boundary cells)
 
     partitioning_->printPartitioningInfo();
 
@@ -68,54 +70,62 @@ void ParallelSimulation::run() {
 
         partitioning_->exchange(uv);
 
-        computeTimeStepWidth();
+        TimeSteppingInfo timeSteppingInfo = computeTimeStepWidth(currentTime);
+        timeStepWidth_ = timeSteppingInfo.timeStepWidth;
 
-        DEBUG(std::cout << "**************************************" << std::endl);
-        DEBUG(std::cout << "Computing Timestep " << counter++);
-        DEBUG(const auto expectedTimesteps = static_cast<unsigned int>(counter + (settings_.endTime - currentTime) / timeStepWidth_ - 1));
-        DEBUG(std::cout << " of " << expectedTimesteps << " estimated Timesteps." << std::endl);
-
-        if (currentTime + timeStepWidth_ > settings_.endTime) {
-            timeStepWidth_ = settings_.endTime - currentTime;
-        }
-
-        // ToDo: Do we want to snap to integer values or just write when we crossed one
+        setPreliminaryVelocities();
+        partitioning_->exchange(fg);
+        
+        setRightHandSide();
+        pressureSolver_->solve();
+        
+        setVelocities();
+        partitioning_->exchange(uv);
+        
+        // Console and file outputs
+        
+        // TODO: Do we want to snap to integer values or just write when we crossed one
         const int lastSec = static_cast<int>(currentTime);
         currentTime += timeStepWidth_;
         const int currentSec = static_cast<int>(currentTime);
         const bool writeOutput = (currentSec > lastSec);
+        
+        printConsoleInfo(currentTime, timeSteppingInfo);
 
-        DEBUG(std::cout << "Current Time: " << currentTime << "s");
-        DEBUG(std::cout << "/" << settings_.endTime << "s");
-        DEBUG(const double progress = (currentTime / settings_.endTime) * 100.0);
-        DEBUG(std::cout << " (" << std::fixed << std::setprecision(2) << progress << "%)" << std::endl);
-
-        setPreliminaryVelocities();
-
-        partitioning_->exchange(fg);
-
-        setRightHandSide();
-
-        pressureSolver_->solve();
-
-        setVelocities();
-        DEBUG(std::cout << "Set velocities" << std::endl);
-
-        partitioning_->exchange(uv);
-
+        DEBUG(outputWriterText_->writeFile(currentTime));
         if (writeOutput) {
             outputWriterParaview_->writeFile(currentTime);
-            DEBUG(outputWriterText_->writeFile(currentTime));
         }
-        //break;
     }
 
-    auto end = std::chrono::high_resolution_clock::now();
-    uint64_t ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    partitioning_->barrier();
 
-    std::cout << "Simulation finished in " << ms << "ms" << std::endl;
+    if (partitioning_->onPrimaryRank()) {
+        auto end = std::chrono::high_resolution_clock::now();
+        uint64_t ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+        std::cout << "Simulation finished in " << ms << "ms" << std::endl;
+    }
 }
 
+void ParallelSimulation::printConsoleInfo(double currentTime, const TimeSteppingInfo &timeSteppingInfo) const {
+    static double lastProgress10th = 0;
+    if (partitioning_->onPrimaryRank()) {
+        double progress = currentTime / settings_.endTime * 100;
+        if (progress >= lastProgress10th) {
+            std::cout << "Progress: ";
+            std::cout << std::fixed << std::setw(5) << std::setprecision(1) << progress << "%: ";
+            std::cout << std::fixed << std::setw(5) << std::setprecision(2) << currentTime << "s / ";
+            std::cout << std::fixed << std::setprecision(2) << settings_.endTime << "s\n";
+            DEBUG(std::cout << " -- max(u,v) = " << std::fixed << std::setprecision(2) << timeSteppingInfo.maxVelocity << ", ")
+            DEBUG(std::cout << "dt = " << std::fixed << std::setprecision(4) << timeSteppingInfo.timeStepWidth << "\n")
+            DEBUG(std::cout << " -- div constraint = " << std::fixed << std::setprecision(2) << timeSteppingInfo.convectiveConstraint << ", ")
+            DEBUG(std::cout << "conectivity constraint = " << std::fixed << std::setprecision(2) << timeSteppingInfo.convectiveConstraint << "\n");
+            lastProgress10th += 10;
+        }
+    }
+}
+
+// TODO: Check if these are correct!
 void ParallelSimulation::setBoundaryUV() {
     auto &u = discOps_->u();
     auto &v = discOps_->v();
@@ -169,6 +179,7 @@ void ParallelSimulation::setBoundaryUV() {
     }
 }
 
+// TODO: Check if these are correct!
 void ParallelSimulation::setBoundaryFG() {
     auto &f = discOps_->f();
     auto &g = discOps_->g();
@@ -180,7 +191,7 @@ void ParallelSimulation::setBoundaryFG() {
         const auto fBottom = settings_.dirichletBcBottom[0];
         const auto gBottom = settings_.dirichletBcBottom[1];
 
-        for (int i = f.beginI(); i< f.endI(); ++i) {
+        for (int i = f.beginI(); i < f.endI(); ++i) {
             f(i, f.beginJ()) = u(i, f.beginJ());
         }
         for (int i = g.beginI(); i < g.endI(); ++i) {
@@ -192,11 +203,11 @@ void ParallelSimulation::setBoundaryFG() {
         const auto fTop = settings_.dirichletBcTop[0];
         const auto gTop = settings_.dirichletBcTop[1];
 
-        for (int i = f.beginI(); i< f.endI(); ++i) {
-            f(i, f.endJ()-1) = u(i, f.endJ()-1);
+        for (int i = f.beginI(); i < f.endI(); ++i) {
+            f(i, f.endJ() - 1) = u(i, f.endJ() - 1);
         }
         for (int i = g.beginI(); i < g.endI(); ++i) {
-            g(i, g.endJ()-1) = v(i, g.endJ()-1);
+            g(i, g.endJ() - 1) = v(i, g.endJ() - 1);
         }
     }
 
@@ -225,12 +236,12 @@ void ParallelSimulation::setBoundaryFG() {
     }
 }
 
-void ParallelSimulation::computeTimeStepWidth() {
+TimeSteppingInfo ParallelSimulation::computeTimeStepWidth(double currentTime) {
     const double uMaxLocal = discOps_->u().absMax();
     const double vMaxLocal = discOps_->v().absMax();
 
-    double uMaxGlobal;
-    double vMaxGlobal;
+    double uMaxGlobal{};
+    double vMaxGlobal{};
     MPI_Allreduce(&uMaxLocal, &uMaxGlobal, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
     MPI_Allreduce(&vMaxLocal, &vMaxGlobal, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
@@ -245,7 +256,18 @@ void ParallelSimulation::computeTimeStepWidth() {
     const double convectiveU = (uMaxGlobal > 0) ? hx / uMaxGlobal : std::numeric_limits<double>::max();
     const double convectiveV = (vMaxGlobal > 0) ? hy / vMaxGlobal : std::numeric_limits<double>::max();
 
-    const double dt = std::min({diffusive, convectiveU, convectiveV}) * settings_.tau;
+    double dt = std::min({diffusive, convectiveU, convectiveV}) * settings_.tau;
 
-    timeStepWidth_ = std::min(dt, settings_.maximumDt);
+    dt = std::min(dt, settings_.maximumDt);
+
+    if (currentTime + timeStepWidth_ > settings_.endTime) {
+        timeStepWidth_ = settings_.endTime - currentTime;
+    }
+
+    TimeSteppingInfo info{.convectiveConstraint = std::min(convectiveU, convectiveV),
+                          .diffusiveConstraint = diffusive,
+                          .maxVelocity = std::max(uMaxGlobal, vMaxGlobal),
+                          .timeStepWidth = dt};
+
+    return info;
 }

@@ -59,6 +59,14 @@ std::array<int, 2> Partitioning::getCurrentRankCoords() const {
     return coordinates;
 }
 
+void Partitioning::barrier() const {
+    MPI_Barrier(cartComm_);
+}
+
+bool Partitioning::onPrimaryRank() const {
+    return ownRankNo_ == 0;
+}
+
 // TODO: make template: replace switch case with consexpr based solution
 bool Partitioning::ownPartitionContainsBoundary(const Direction direction) const {
     switch (direction) {

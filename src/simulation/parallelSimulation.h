@@ -3,6 +3,13 @@
 #include "partitioning.h"
 #include "pressureSolver/redBlack.h"
 
+struct TimeSteppingInfo {
+    double convectiveConstraint;
+    double diffusiveConstraint;
+    double maxVelocity;
+    double timeStepWidth;
+};
+
 // ToDo: Do we really want/need inheritance here?
 class ParallelSimulation final : public Simulation {
 public:
@@ -30,7 +37,9 @@ private:
     /**
     * Computes the time step width dt from maximum velocities.
     */
-    void computeTimeStepWidth();
+    TimeSteppingInfo computeTimeStepWidth(double currentTime);
+
+    void printConsoleInfo(double currentTime, const TimeSteppingInfo &timeSteppingInfo) const;
 
     /**
      * Exchanges u and v values

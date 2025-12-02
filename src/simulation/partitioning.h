@@ -71,6 +71,10 @@ public:
 
     void exchange(const std::vector<DataField *> &fields) const;
 
+    void barrier() const;
+
+    bool onPrimaryRank() const;
+
     inline std::string dirToStr(Direction dir) const {
         if (dir == Direction::Left)
             return "Left";

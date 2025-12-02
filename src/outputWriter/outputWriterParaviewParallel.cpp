@@ -60,13 +60,6 @@ void OutputWriterParaviewParallel::gatherData() {
     v_.setToZero();
     p_.setToZero();
 
-    std::cout << "Rank " << partitioning_.ownRankNo() << "\n";
-    std::cout << "nPointsGlobalTotal = " << nPointsGlobalTotal << "\n";
-    std::cout << "nPointsGlobal_ = " << nPointsGlobal_[0] << ", " << nPointsGlobal_[1] << "\n";
-    std::cout << "nodeOffset = " << nodeOffset[0] << ", " << nodeOffset[1] << "\n";
-    std::cout << "u_ = " << u_.cols() << ", " << u_.rows() << "\n";
-    std::cout << "iEnd = " << iEnd << ", jEnd = " << jEnd << std::endl;
-
     for (int j = 0; j < jEnd; j++) {
         for (int i = 0; i < iEnd; i++) {
             const double x = i * dx;
