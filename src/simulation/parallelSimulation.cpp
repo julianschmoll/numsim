@@ -20,27 +20,28 @@ ParallelSimulation::ParallelSimulation(const Settings &settings) // TODO: remove
     settings_ = settings;
     partitioning_ = std::make_shared<Partitioning>(settings_.nCells);
 
-    std::cout << "Initializing parallel Simulation on" << partitioning_->nRanks() << " ranks." << std::endl;
+    if (partitioning_->onPrimaryRank()) std::cout << "Initializing parallel Simulation on" << partitioning_->nRanks() << " ranks." << std::endl;
     
     for (int i = 0; i < 2; ++i) {
         meshWidth_[i] = settings_.physicalSize[i] / settings_.nCells[i];
     }
     
     if (settings_.useDonorCell) {
-        std::cout << " -- Using Donor Cell." << std::endl;
+        if (partitioning_->onPrimaryRank()) std::cout << " -- Using Donor Cell." << std::endl;
         discOps_ = std::make_unique<DiscreteOperators>(partitioning_->nCellsLocal(), meshWidth_, *partitioning_, settings_.alpha);
     } else {
-        std::cout << " -- Using Central Differences." << std::endl;
+        if (partitioning_->onPrimaryRank()) std::cout << " -- Using Central Differences." << std::endl;
         discOps_ = std::make_unique<DiscreteOperators>(partitioning_->nCellsLocal(), meshWidth_, *partitioning_, 0.0);
     }
     
     if (settings_.pressureSolver == IterSolverType::SOR) {
-        std::cout << " -- Using SOR solver." << std::endl;
+        if (partitioning_->onPrimaryRank()) std::cout << " -- Using SOR solver." << std::endl;
         pressureSolver_ = std::make_unique<RedBlack>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, settings_.omega, partitioning_);
     } else {
         pressureSolver_ = std::make_unique<RedBlack>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, 1, partitioning_);
     }
 
+    partitioning_->barrier();
     partitioning_->printPartitioningInfo();
 
     outputWriterParaview_ = std::make_unique<OutputWriterParaviewParallel>(discOps_, *partitioning_);
