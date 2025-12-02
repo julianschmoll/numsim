@@ -110,10 +110,10 @@ public:
 
         if (neighborRankNo(direction) != MPI_PROC_NULL) {
             std::cout << "[" << ownRankNo_ << "] send " << dirToStr(direction) << " to [" << neighborRankNo(direction) << "]: ";
-            std::cout << "n=" << count << ", start i=" << i << ",j=" << j << ", id=" << field.getID() << "\n";
+            std::cout << "n=" << count << ", size=[" << field.cols() << ", " << field.rows() << "]" << ", start i=" << i << ",j=" << j << ", id=" << field.getID() << "\n";
         }
         
-        MPI_Isend(&field(i, j), count, type, neighborRankNo(direction), field.getID(), MPI_COMM_WORLD, &sendReq);
+        MPI_Isend(&field(i, j), count, type, neighborRankNo(direction), field.getID(), cartComm_, &sendReq);
 
         return sendReq;
     }
@@ -148,10 +148,10 @@ public:
 
         if (neighborRankNo(direction) != MPI_PROC_NULL) {
             std::cout << "[" << ownRankNo_ << "] recv " << dirToStr(direction) << " to [" << neighborRankNo(direction) << "]: ";
-            std::cout << "n=" << count << ", start i=" << i << ",j=" << j << ", id=" << field.getID() << "\n";
+            std::cout << "n=" << count << ", size=[" << field.cols() << ", " << field.rows() << "]" << ", start i=" << i << ",j=" << j << ", id=" << field.getID() << "\n";
         }
         
-        MPI_Irecv(&field(i, j), count, type, neighborRankNo(direction), field.getID(), MPI_COMM_WORLD, &recvReq);
+        MPI_Irecv(&field(i, j), count, type, neighborRankNo(direction), field.getID(), cartComm_, &recvReq);
         return recvReq;
     }
 

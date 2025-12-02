@@ -17,6 +17,9 @@ DataField::DataField(const std::array<int, 2> size, const std::array<double, 2> 
     : Array2d(size), meshWidth_(meshWidth), offset_(offset), mpiColType_(nullptr), fieldID_(fieldID)
 {
     int cols = size[0], rows = size[1];
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    std::cout << "[" << rank << "] field: " << fieldID << ", stride = " << cols << ", count = " << rows << std::endl;
     MPI_Type_vector(rows, 1, cols, MPI_DOUBLE, &mpiColType_);
     MPI_Type_commit(&mpiColType_);
 }
