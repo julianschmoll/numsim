@@ -3,7 +3,7 @@
 #include <array>
 #include <iostream>
 
-enum class IterSolverType { SOR, GaussSeidel };
+enum class IterSolverType { SOR, GaussSeidel, CG };
 
 /**
  * All settings that parametrize a simulation run.

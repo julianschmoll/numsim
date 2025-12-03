@@ -107,3 +107,9 @@ void Partitioning::exchange(const std::vector<DataField *> &fields) const {
         MPI_Waitall(static_cast<int>(requests.size()), requests.data(), MPI_STATUS_IGNORE);
     }
 }
+
+double Partitioning::collectSum(double localSum) const {
+    double globalSum = 0;
+    MPI_Allreduce(&localSum, &globalSum, 1, MPI_DOUBLE, MPI_SUM, cartComm_);
+    return globalSum;
+}

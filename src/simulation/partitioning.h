@@ -68,6 +68,8 @@ public:
 
     void printPartitioningInfo() const;
 
+    double collectSum(double localSum) const;
+
     //! if the own partition has part of the bottom boundary of the whole domain
     template <Direction direction> bool ownContainsBoundary() const {
         if constexpr (direction == Direction::Left) {

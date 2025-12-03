@@ -3,6 +3,8 @@
 #include "outputWriter/outputWriterTextParallel.h"
 #include "macros.h"
 #include "settings.h"
+#include "simulation/pressureSolver/conjugateGradientSolver.h"
+#include "simulation/pressureSolver/redBlackSolver.h"
 #include <chrono>
 #include <iostream>
 #include <ostream>
@@ -30,11 +32,17 @@ Simulation::Simulation(const Settings &settings) {
 
     if (settings_.pressureSolver == IterSolverType::SOR) {
         if (partitioning_->onPrimaryRank())
-            std::cout << " -- Using SOR solver." << std::endl;
+            std::cout << " -- Using (Red-Black) SOR solver." << std::endl;
         pressureSolver_ =
             std::make_unique<RedBlackSolver>(discOps_, partitioning_, settings_.epsilon, settings_.maximumNumberOfIterations, settings_.omega);
-    } else {
+    } else if (settings_.pressureSolver == IterSolverType::GaussSeidel) {
+        if (partitioning_->onPrimaryRank())
+            std::cout << " -- Using (Red-Black) Gauss-Seidel solver." << std::endl;
         pressureSolver_ = std::make_unique<RedBlackSolver>(discOps_, partitioning_, settings_.epsilon, settings_.maximumNumberOfIterations, 1);
+    } else {
+        if (partitioning_->onPrimaryRank())
+            std::cout << " -- Using Conjugate Gradient solver." << std::endl;
+        pressureSolver_ = std::make_unique<ConjugateGradientSolver>(discOps_, partitioning_, settings_.epsilon, settings_.maximumNumberOfIterations);
     }
 
     partitioning_->barrier();
