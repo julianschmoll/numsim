@@ -32,9 +32,9 @@ Simulation::Simulation(const Settings &settings) {
         if (partitioning_->onPrimaryRank())
             std::cout << " -- Using SOR solver." << std::endl;
         pressureSolver_ =
-            std::make_unique<RedBlackSolver>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, settings_.omega, partitioning_);
+            std::make_unique<RedBlackSolver>(discOps_, partitioning_, settings_.epsilon, settings_.maximumNumberOfIterations, settings_.omega);
     } else {
-        pressureSolver_ = std::make_unique<RedBlackSolver>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, 1, partitioning_);
+        pressureSolver_ = std::make_unique<RedBlackSolver>(discOps_, partitioning_, settings_.epsilon, settings_.maximumNumberOfIterations, 1);
     }
 
     partitioning_->barrier();

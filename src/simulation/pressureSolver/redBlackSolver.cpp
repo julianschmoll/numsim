@@ -5,9 +5,14 @@
 #include <limits>
 #include <vector>
 
-RedBlackSolver::RedBlackSolver(const std::shared_ptr<StaggeredGrid> &grid, const double epsilon, const int maximumNumberOfIterations, const double omega,
-                   const std::shared_ptr<Partitioning> &partitioning)
-    : partitioning_(partitioning), grid_(grid), epsilon_(epsilon), maxNumberOfIterations_(maximumNumberOfIterations), omega_(omega) {}
+RedBlackSolver::RedBlackSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning,
+        double epsilon, int maximumNumberOfIterations, double omega) : 
+    grid_(std::move(grid)),
+    partitioning_(std::move(partitioning)), 
+    epsilon_(epsilon), 
+    maxNumberOfIterations_(maximumNumberOfIterations), 
+    omega_(omega) 
+{}
 
 void RedBlackSolver::solve() {
     int it = 0;

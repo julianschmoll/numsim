@@ -6,18 +6,14 @@
 
 class RedBlackSolver {
 public:
-    RedBlackSolver(const std::shared_ptr<StaggeredGrid> &grid, double epsilon, int maximumNumberOfIterations, double omega,
-             const std::shared_ptr<Partitioning> &partitioning);
-
-    ~RedBlackSolver() = default;
+    RedBlackSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning,
+        double epsilon, int maximumNumberOfIterations, double omega);
 
     void solve();
 
 private:
     void setBoundaryValues();
 
-    // TODO: remove old MPI clutter
-protected:
     std::shared_ptr<Partitioning> partitioning_;
 
     // object holding the needed field variables for rhs and p
@@ -32,12 +28,6 @@ protected:
     // Relaxation factor
     double omega_;
 
-    // MPI Requests buffer
-    std::vector<MPI_Request> requests_;
-
     double localPressureError_ = 0;
-
     double globalPressureError_ = 0;
-
-    MPI_Datatype mpiColumn_;
 };
