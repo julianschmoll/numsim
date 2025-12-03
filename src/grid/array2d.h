@@ -3,7 +3,7 @@
 #include <array>
 #include <vector>
 
-//TODO: merge this and DataField
+// TODO: merge this and DataField
 
 /**
  * @class Array2d

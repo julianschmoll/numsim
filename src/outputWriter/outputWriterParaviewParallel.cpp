@@ -3,10 +3,10 @@
 #include "grid/dataField.h"
 #include "grid/staggeredGrid.h"
 
-#include <vtkImageData.h>
-#include <vtkDoubleArray.h>
-#include <vtkPointData.h>
 #include <mpi.h>
+#include <vtkDoubleArray.h>
+#include <vtkImageData.h>
+#include <vtkPointData.h>
 
 OutputWriterParaviewParallel::OutputWriterParaviewParallel(std::shared_ptr<StaggeredGrid> grid, const Partitioning &partitioning)
     : OutputWriter(grid, partitioning),
@@ -19,13 +19,11 @@ OutputWriterParaviewParallel::OutputWriterParaviewParallel(std::shared_ptr<Stagg
 
       // TODO: Does this make sense, what about ghost cells?
       // create field variables for resulting values, only for local data as send buffer
-      u_(nPointsGlobal_, grid_->meshWidth(), {0.0, 0.5}),
-      v_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.0}),
+      u_(nPointsGlobal_, grid_->meshWidth(), {0.0, 0.5}), v_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.0}),
       p_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.5}),
 
       // create field variables for resulting values, after MPI communication
-      uGlobal_(nPointsGlobal_, grid_->meshWidth(), {0.0, 0.5}),
-      vGlobal_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.0}),
+      uGlobal_(nPointsGlobal_, grid_->meshWidth(), {0.0, 0.5}), vGlobal_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.0}),
       pGlobal_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.5}) {
     // Create a vtkWriter_
     vtkWriter_ = vtkSmartPointer<vtkXMLImageDataWriter>::New();
@@ -189,7 +187,7 @@ void OutputWriterParaviewParallel::writeFile(double currentTime) {
     // Write the data
     vtkWriter_->SetInputData(dataSet);
 
-    //vtkWriter_->SetDataModeToAscii();     // comment this in to get ascii text files: those can be checked in an editor
+    // vtkWriter_->SetDataModeToAscii();     // comment this in to get ascii text files: those can be checked in an editor
     vtkWriter_->SetDataModeToBinary(); // set file mode to binary files: smaller file sizes
 
     // finally write out the data

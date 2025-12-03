@@ -23,7 +23,7 @@ class Partitioning {
     std::array<int, 2> partitions_{};
 
     std::array<int, 2> rankCoordinates_;
-    
+
     /// MPI communicator with cartesian coordinate information attached.
     MPI_Comm cartComm_ = nullptr;
 
@@ -32,7 +32,6 @@ class Partitioning {
     int offsetY_ = 0;
 
     Rank ownRank_ = 0;
-
 
 public:
     Partitioning() = delete;
@@ -58,20 +57,19 @@ public:
     //! (i_local,j_local) + nodeOffset = (i_global,j_global)
     //! used in OutputWriterParaviewParallel
     std::array<int, 2> nodeOffset() const;
-    
+
     std::array<int, 2> getCurrentRankCoords() const;
-    
+
     void exchange(const std::vector<DataField *> &fields) const;
-    
+
     void barrier() const;
-    
+
     bool onPrimaryRank() const;
-    
+
     void printPartitioningInfo() const;
 
     //! if the own partition has part of the bottom boundary of the whole domain
-    template<Direction direction>
-    bool ownContainsBoundary() const {
+    template <Direction direction> bool ownContainsBoundary() const {
         if constexpr (direction == Direction::Left) {
             return rankCoordinates_[0] == 0;
         }
@@ -86,10 +84,9 @@ public:
         }
         return false;
     }
-        
+
     //! get the rank no of the left neighbouring rank
-    template <Direction direction>
-    Rank neighborRank() const {
+    template <Direction direction> Rank neighborRank() const {
         Rank destRank{};
         Rank srcRank = ownRank_;
         if constexpr (direction == Direction::Left) {
@@ -107,8 +104,7 @@ public:
         return destRank;
     }
 
-    template <Direction direction>
-    MPI_Request sendBorder(DataField &field) const {
+    template <Direction direction> MPI_Request sendBorder(DataField &field) const {
         MPI_Request sendReq{};
 
         int i = 0, j = 0;
@@ -140,8 +136,7 @@ public:
         return sendReq;
     }
 
-    template <Direction direction>
-    MPI_Request recvBorder(DataField &field) const {
+    template <Direction direction> MPI_Request recvBorder(DataField &field) const {
         MPI_Request recvReq{};
 
         int i = 0, j = 0;

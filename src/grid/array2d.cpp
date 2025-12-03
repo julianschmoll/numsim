@@ -8,8 +8,7 @@ Array2d::Array2d(const std::array<int, 2> size) : size_(size) {
     data_.resize(size_[0] * size_[1], 0.0);
 }
 
-Array2d::Array2d() : size_({0, 0}) {
-}
+Array2d::Array2d() : size_({0, 0}) {}
 
 std::array<int, 2> Array2d::size() const {
     return size_;
@@ -34,4 +33,3 @@ double Array2d::absMax() const {
 double *Array2d::data() {
     return data_.data();
 }
-

@@ -2,10 +2,7 @@
 #include <iostream>
 #include <mpi.h>
 
-
-Partitioning::Partitioning(std::array<int, 2> nCellsGlobal)
-    : nCellsGlobal_(nCellsGlobal), rankCoordinates_({0, 0})
-{
+Partitioning::Partitioning(std::array<int, 2> nCellsGlobal) : nCellsGlobal_(nCellsGlobal), rankCoordinates_({0, 0}) {
     MPI_Comm_rank(MPI_COMM_WORLD, &ownRank_);
 
     const int numberRanks = nRanks();

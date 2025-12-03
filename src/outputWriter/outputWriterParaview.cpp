@@ -1,6 +1,5 @@
 #include "outputWriterParaview.h"
 
-
 OutputWriterParaview::OutputWriterParaview(const std::shared_ptr<StaggeredGrid> grid, const Partitioning &partitioning)
     : OutputWriter(grid, partitioning) {
     // Create a vtkWriter_
@@ -111,7 +110,7 @@ void OutputWriterParaview::writeFile(const double currentTime) {
     // Write the data
     vtkWriter_->SetInputData(dataSet);
 
-    //vtkWriter_->SetDataModeToAscii();     // comment this in to get ascii text files: those can be checked in an editor
+    // vtkWriter_->SetDataModeToAscii();     // comment this in to get ascii text files: those can be checked in an editor
     vtkWriter_->SetDataModeToBinary(); // set file mode to binary files: smaller file sizes
 
     // finally write out the data

@@ -1,9 +1,9 @@
+#include "macros.h"
 #include "settings.h"
 #include "simulation/simulation.h"
-#include "macros.h"
 
-#include <mpi.h>
 #include <iostream>
+#include <mpi.h>
 
 int main(int argc, char *argv[]) {
     // we need an input file being specified

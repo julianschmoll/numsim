@@ -4,12 +4,7 @@
 #include <cmath>
 #include <mpi.h>
 
-
-DataField::DataField()
-    : meshWidth_({0, 0}),
-      offset_({0, 0}),
-      fieldID_(-1) {}
-
+DataField::DataField() : meshWidth_({0, 0}), offset_({0, 0}), fieldID_(-1) {}
 
 DataField::DataField(const std::array<int, 2> size, const std::array<double, 2> meshWidth, const std::array<double, 2> offset, int fieldID)
     : Array2d(size), meshWidth_(meshWidth), offset_(offset), fieldID_(fieldID) {
@@ -21,11 +16,7 @@ DataField::DataField(const std::array<int, 2> size, const std::array<double, 2> 
 }
 
 DataField::DataField(DataField &&other) noexcept
-    : Array2d(std::move(other)),
-      mpiColType_(other.mpiColType_),
-      meshWidth_(other.meshWidth_),
-      offset_(other.offset_),
-      fieldID_(other.fieldID_) {
+    : Array2d(std::move(other)), mpiColType_(other.mpiColType_), meshWidth_(other.meshWidth_), offset_(other.offset_), fieldID_(other.fieldID_) {
     other.mpiColType_ = MPI_DATATYPE_NULL;
 }
 

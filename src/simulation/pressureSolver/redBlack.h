@@ -1,24 +1,19 @@
 #pragma once
 
-#include "simulation/partitioning.h"
 #include "grid/staggeredGrid.h"
+#include "simulation/partitioning.h"
 #include <memory>
-
 
 class RedBlack final {
 public:
-    RedBlack(const std::shared_ptr<StaggeredGrid> &grid,
-        double epsilon,
-        int maximumNumberOfIterations,
-        double omega,
-        const std::shared_ptr<Partitioning> &partitioning);
+    RedBlack(const std::shared_ptr<StaggeredGrid> &grid, double epsilon, int maximumNumberOfIterations, double omega,
+             const std::shared_ptr<Partitioning> &partitioning);
 
     ~RedBlack() = default;
 
     void solve();
 
 private:
-
     void setBoundaryValues();
 
 protected:

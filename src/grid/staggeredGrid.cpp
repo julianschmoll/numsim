@@ -4,10 +4,9 @@
 #include <array>
 #include <iostream>
 
-//TODO: Rename meshWidth -> meshResolution
+// TODO: Rename meshWidth -> meshResolution
 StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, const Partitioning &partitioning)
-    : meshWidth_(meshWidth), nCells_(nCells)
-{   
+    : meshWidth_(meshWidth), nCells_(nCells) {
     int vWidth = nCells[0] + 2;
     int vHeight = nCells[1] + 1;
 
@@ -17,7 +16,8 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
     const int pWidth = nCells[0] + 2;
     const int pHeight = nCells[1] + 2;
 
-    // Add additional row/col as a new boundary to the top/right, otherwise the owner of the cells on the partition boundary cannot compute new values.
+    // Add additional row/col as a new boundary to the top/right, otherwise the owner of the cells on the partition boundary cannot compute new
+    // values.
     bool topBoundaryPartition = partitioning.ownContainsBoundary<Direction::Top>();
     bool rightBoundaryPartition = partitioning.ownContainsBoundary<Direction::Right>();
     if (!topBoundaryPartition) {
@@ -27,7 +27,7 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
         uWidth += 1;
     }
 
-    p_   = DataField({pWidth, pHeight}, meshWidth, {0.5, 0.5}, 1); // TODO maybe macros
+    p_ = DataField({pWidth, pHeight}, meshWidth, {0.5, 0.5}, 1); // TODO maybe macros
     rhs_ = DataField({pWidth, pHeight}, meshWidth, {0.5, 0.5}, 2);
 
     u_ = DataField({uWidth, uHeight}, meshWidth, {0.0, 0.5}, 3);

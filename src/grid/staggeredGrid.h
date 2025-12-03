@@ -1,8 +1,8 @@
 #pragma once
 
+#include "../simulation/partitioning.h"
 #include "grid/dataField.h"
 #include <array>
-#include "../simulation/partitioning.h"
 
 class StaggeredGrid {
     const std::array<double, 2> meshWidth_;

@@ -1,9 +1,9 @@
 #pragma once
-#include "settings.h"
+#include "outputWriter/outputWriter.h"
 #include "partitioning.h"
 #include "pressureSolver/redBlack.h"
+#include "settings.h"
 #include "simulation/discreteOperators.h"
-#include "outputWriter/outputWriter.h"
 
 struct TimeSteppingInfo {
     double convectiveConstraint;
@@ -13,7 +13,7 @@ struct TimeSteppingInfo {
 };
 
 // ToDo: Do we really want/need inheritance here?
-class Simulation  {
+class Simulation {
 public:
     /**
      * Runs the simulation.
@@ -41,7 +41,7 @@ private:
     // Time step size used in the simulation loop
     double timeStepWidth_ = 0.1;
     /**
-    * Sets boundary values of u and v.
+     * Sets boundary values of u and v.
      */
     void setBoundaryUV();
 
@@ -51,8 +51,8 @@ private:
     void setBoundaryFG();
 
     /**
-    * Computes the time step width dt from maximum velocities.
-    */
+     * Computes the time step width dt from maximum velocities.
+     */
     TimeSteppingInfo computeTimeStepWidth(double currentTime);
     void setPreliminaryVelocities();
     void setRightHandSide();
@@ -64,5 +64,4 @@ private:
 
     // Solver for the pressure
     std::unique_ptr<RedBlack> pressureSolver_;
-
 };

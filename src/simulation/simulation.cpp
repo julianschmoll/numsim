@@ -39,8 +39,8 @@ Simulation::Simulation(const Settings &settings) // TODO: remove inheritance?
     if (settings_.pressureSolver == IterSolverType::SOR) {
         if (partitioning_->onPrimaryRank())
             std::cout << " -- Using SOR solver." << std::endl;
-        pressureSolver_ = std::make_unique<RedBlack>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, settings_.omega,
-                                                     partitioning_);
+        pressureSolver_ =
+            std::make_unique<RedBlack>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, settings_.omega, partitioning_);
     } else {
         pressureSolver_ = std::make_unique<RedBlack>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, 1, partitioning_);
     }
@@ -352,4 +352,3 @@ void Simulation::setVelocities() {
         }
     }
 }
-

@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 ARGS=("-D" "CMAKE_EXPORT_COMPILE_COMMANDS=ON" "-D" "CMAKE_BUILD_TYPE=Debug" "-D" "CMAKE_CXX_FLAGS=\"-fno-caret-diagnostics\"")
