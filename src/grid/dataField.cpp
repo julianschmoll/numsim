@@ -16,7 +16,7 @@ DataField::DataField(const std::array<int, 2> size, const std::array<double, 2> 
 }
 
 DataField::DataField(DataField &&other) noexcept
-    : Array2d(std::move(other)), mpiColType_(other.mpiColType_), meshWidth_(other.meshWidth_), offset_(other.offset_), fieldID_(other.fieldID_) {
+    : Array2d(std::move(other)), meshWidth_(other.meshWidth_), offset_(other.offset_), fieldID_(other.fieldID_), mpiColType_(other.mpiColType_) {
     other.mpiColType_ = MPI_DATATYPE_NULL;
 }
 
