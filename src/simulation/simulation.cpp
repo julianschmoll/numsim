@@ -14,8 +14,7 @@
 #include <memory>
 #include <ostream>
 
-Simulation::Simulation(const Settings &settings) // TODO: remove inheritance?
-{
+Simulation::Simulation(const Settings &settings) {
     settings_ = settings;
     partitioning_ = std::make_shared<Partitioning>(settings_.nCells);
 
@@ -129,12 +128,10 @@ void Simulation::setBoundaryUV() {
         const auto uBottom = settings_.dirichletBcBottom[0];
         const auto vBottom = settings_.dirichletBcBottom[1];
 
-#pragma omp simd
         for (int i = u.beginI(); i < u.endI(); ++i) {
             u(i, u.beginJ()) = 2.0 * uBottom - u(i, u.beginJ() + 1);
         }
 
-#pragma omp simd
         for (int i = v.beginI(); i < v.endI(); ++i) {
             v(i, v.beginJ()) = vBottom;
         }
@@ -144,12 +141,10 @@ void Simulation::setBoundaryUV() {
         const auto uTop = settings_.dirichletBcTop[0];
         const auto vTop = settings_.dirichletBcTop[1];
 
-#pragma omp simd
         for (int i = u.beginI(); i < u.endI(); ++i) {
             u(i, u.endJ() - 1) = 2.0 * uTop - u(i, u.endJ() - 2);
         }
 
-#pragma omp simd
         for (int i = v.beginI(); i < v.endI(); ++i) {
             v(i, v.endJ() - 1) = vTop;
         }
@@ -159,12 +154,10 @@ void Simulation::setBoundaryUV() {
         const auto uLeft = settings_.dirichletBcLeft[0];
         const auto vLeft = settings_.dirichletBcLeft[1];
 
-#pragma omp simd
         for (int j = u.beginJ(); j < u.endJ(); ++j) {
             u(u.beginI(), j) = uLeft;
         }
 
-#pragma omp simd
         for (int j = v.beginJ(); j < v.endJ(); ++j) {
             v(v.beginI(), j) = 2.0 * vLeft - v(v.beginI() + 1, j);
         }
@@ -174,12 +167,10 @@ void Simulation::setBoundaryUV() {
         const auto uRight = settings_.dirichletBcRight[0];
         const auto vRight = settings_.dirichletBcRight[1];
 
-#pragma omp simd
         for (int j = u.beginJ(); j < u.endJ(); ++j) {
             u(u.endI() - 1, j) = uRight;
         }
 
-#pragma omp simd
         for (int j = v.beginJ(); j < v.endJ(); ++j) {
             v(v.endI() - 1, j) = 2.0 * vRight - v(v.endI() - 2, j);
         }
@@ -194,45 +185,44 @@ void Simulation::setBoundaryFG() {
     auto &v = discOps_->v();
 
     if (partitioning_->ownContainsBoundary<Direction::Bottom>()) {
-#pragma omp simd
+
         for (int i = f.beginI(); i < f.endI(); ++i) {
             f(i, f.beginJ()) = u(i, f.beginJ());
         }
 
-#pragma omp simd
         for (int i = g.beginI(); i < g.endI(); ++i) {
             g(i, g.beginJ()) = v(i, g.beginJ());
         }
     }
 
     if (partitioning_->ownContainsBoundary<Direction::Top>()) {
-#pragma omp simd
+
         for (int i = f.beginI(); i < f.endI(); ++i) {
             f(i, f.endJ() - 1) = u(i, f.endJ() - 1);
         }
-#pragma omp simd
+
         for (int i = g.beginI(); i < g.endI(); ++i) {
             g(i, g.endJ() - 1) = v(i, g.endJ() - 1);
         }
     }
 
     if (partitioning_->ownContainsBoundary<Direction::Left>()) {
-#pragma omp simd
+
         for (int j = f.beginJ(); j < f.endJ(); ++j) {
             f(f.beginI(), j) = u(f.beginI(), j);
         }
-#pragma omp simd
+
         for (int j = g.beginJ(); j < g.endJ(); ++j) {
             g(g.beginI(), j) = v(g.beginI(), j);
         }
     }
 
     if (partitioning_->ownContainsBoundary<Direction::Right>()) {
-#pragma omp simd
+
         for (int j = f.beginJ(); j < f.endJ(); ++j) {
             f(f.endI() - 1, j) = u(f.endI() - 1, j);
         }
-#pragma omp simd
+
         for (int j = g.beginJ(); j < g.endJ(); ++j) {
             g(g.endI() - 1, j) = v(g.endI() - 1, j);
         }
