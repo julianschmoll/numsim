@@ -69,16 +69,18 @@ double ConjugateGradientSolver::calculateAlpha() {
     DataField &rhs = grid_->rhs();
     DataField &d = direction_;
 
-    double rdDot = 0;
-    double dAdDot = 0;
+    double rdDotLocal = 0;
+    double dAdDotLocal = 0;
 
     // paralleisierbar
     for (int j = d.beginJ() + 1; j < d.endJ() - 1; ++j) {
         for (int i = d.beginI() + 1; i < d.endI() - 1; ++i) {
-            rdDot += rhs(i, j) * d(i, j);
-            dAdDot += d(i, j) * applyDiffusionOperator(d, i, j);
+            rdDotLocal += rhs(i, j) * d(i, j);
+            dAdDotLocal += d(i, j) * applyDiffusionOperator(d, i, j);
         }
     }
+    double rdDot = partitioning_->collectSum(rdDotLocal);
+    double dAdDot = partitioning_->collectSum(dAdDotLocal);
     return rdDot / dAdDot;
 }
 
