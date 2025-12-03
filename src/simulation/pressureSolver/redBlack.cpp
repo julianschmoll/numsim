@@ -52,7 +52,7 @@ void RedBlack::solve() {
         MPI_Allreduce(&localPressureError_, &globalPressureError_, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
         // DEBUG(std::cout << "Local pressure Error: " << localPressureError_ << ", global pressure error: " << globalPressureError_ << std::endl;)
-        if (globalPressureError_ < epsilon_ * epsilon_) {
+        if (globalPressureError_ < epsilon_ * epsilon_) [[unlikely]] {
             break;
         }
         it++;

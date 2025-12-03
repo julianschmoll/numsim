@@ -85,7 +85,7 @@ void Simulation::run() {
         DEBUG(printConsoleInfo(currentTime, timeSteppingInfo));
 
         DEBUG(outputWriterText_->writeFile(currentTime));
-        if (writeOutput) {
+        if (writeOutput) [[unlikely]] {
             outputWriterParaview_->writeFile(currentTime);
         }
 
@@ -253,7 +253,7 @@ TimeSteppingInfo Simulation::computeTimeStepWidth(double currentTime) {
 
     dt = std::min(dt, settings_.maximumDt);
 
-    if (currentTime + dt > settings_.endTime) {
+    if (currentTime + dt > settings_.endTime) [[unlikely]] {
         dt = settings_.endTime - currentTime;
     }
 
