@@ -83,7 +83,7 @@ void Simulation::run() {
         const int currentSec = static_cast<int>(currentTime);
         const bool writeOutput = (currentSec > lastSec);
 
-        DEBUG(printConsoleInfo(currentTime, timeSteppingInfo));
+        printConsoleInfo(currentTime, timeSteppingInfo);
 
         DEBUG(outputWriterText_->writeFile(currentTime));
         if (writeOutput) {

@@ -86,7 +86,6 @@ double ConjugateGradientSolver::calculateAlpha() {
 
 // alpha = gradient descent strength
 // beta = direction update parameter
-
 void ConjugateGradientSolver::solve() {
 
     DataField &p = grid_->p();
@@ -94,8 +93,7 @@ void ConjugateGradientSolver::solve() {
     DataField &d = direction_;
 
     // initial residual: r = rhs - Δp
-    double r0 = decreaseResidual(p, 1);
-    double rOld = r0;
+    const double r0 = decreaseResidual(p, 1);
     double rNew = r0;
 
     // initial descent direction equals residual
@@ -104,15 +102,14 @@ void ConjugateGradientSolver::solve() {
             d(i, j) = rhs(i, j);
         }
     }
+    partitioning_->exchange({&d});
 
     while (rNew > epsilon_ * epsilon_) {
-        double alpha = calculateAlpha();
+        const double alpha = calculateAlpha();
         updatePressure(alpha);
+        const double rOld = rNew;
         rNew = decreaseResidual(d, alpha);
-        double beta = std::sqrt(rNew / rOld);
+        const double beta = rNew / rOld;
         updateDirection(beta);
-        rOld = rNew;
-
-        std::cout << rNew << std::endl;
     }
 }
