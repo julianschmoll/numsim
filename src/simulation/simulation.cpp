@@ -263,8 +263,8 @@ TimeSteppingInfo Simulation::computeTimeStepWidth(double currentTime) {
 
     dt = std::min(dt, settings_.maximumDt);
 
-    if (currentTime + timeStepWidth_ > settings_.endTime) {
-        timeStepWidth_ = settings_.endTime - currentTime;
+    if (currentTime + dt > settings_.endTime) {
+        dt = settings_.endTime - currentTime;
     }
 
     TimeSteppingInfo info{.convectiveConstraint = std::min(convectiveU, convectiveV),
