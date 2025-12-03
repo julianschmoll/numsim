@@ -1,41 +1,28 @@
 #pragma once
-
-#include "grid/staggeredGrid.h"
-#include "outputWriter/outputWriterParaview.h"
-#include "outputWriter/outputWriterText.h"
 #include "settings.h"
+#include "partitioning.h"
+#include "pressureSolver/redBlack.h"
 #include "simulation/discreteOperators.h"
-#include "pressureSolver/pressureSolverSerial.h"
-#include <memory>
+#include "outputWriter/outputWriter.h"
 
-/**
- * @class Simulation
- * @brief Class responsible for running the simulation.
- *
- * This class contains the simulation loop and calls all the necessary
- * functions to compute velocities and pressure.
- *
- */
-class Simulation {
+struct TimeSteppingInfo {
+    double convectiveConstraint;
+    double diffusiveConstraint;
+    double maxVelocity;
+    double timeStepWidth;
+};
+
+// ToDo: Do we really want/need inheritance here?
+class Simulation  {
 public:
-    /**
-     * Constructs a Simulation object.
-     */
-    explicit Simulation(const Settings &settings);
-
-    Simulation() = default;
-
-    /**
-     * Destructs Simulation object.
-     */
-    ~Simulation() = default;
-
     /**
      * Runs the simulation.
      */
     void run();
 
-protected:
+    Simulation(const Settings &settings);
+
+private:
     // Grid width in x and y directions
     std::array<double, 2> meshWidth_{};
 
@@ -53,9 +40,8 @@ protected:
 
     // Time step size used in the simulation loop
     double timeStepWidth_ = 0.1;
-
     /**
-     * Sets boundary values of u and v.
+    * Sets boundary values of u and v.
      */
     void setBoundaryUV();
 
@@ -65,26 +51,18 @@ protected:
     void setBoundaryFG();
 
     /**
-     * Computes the preliminary velocities, F and G.
-     */
+    * Computes the time step width dt from maximum velocities.
+    */
+    TimeSteppingInfo computeTimeStepWidth(double currentTime);
     void setPreliminaryVelocities();
-
-    /**
-     * Computes the right hand side of the Poisson equation.
-     */
     void setRightHandSide();
-
-    /**
-     * Computes the time step width dt from maximum velocities.
-     */
-    void computeTimeStepWidth();
-
-    /**
-     * computes the new velocities, u,v, from the preliminary velocities, F,G and the pressure, p.
-     */
     void setVelocities();
 
-private:
+    void printConsoleInfo(double currentTime, const TimeSteppingInfo &timeSteppingInfo) const;
+
+    std::shared_ptr<Partitioning> partitioning_;
+
     // Solver for the pressure
-    std::unique_ptr<PressureSolverSerial> pressureSolver_;
+    std::unique_ptr<RedBlack> pressureSolver_;
+
 };

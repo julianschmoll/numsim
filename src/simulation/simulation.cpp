@@ -1,39 +1,55 @@
 #include "simulation.h"
 
+#include "grid/dataField.h"
 #include "macros.h"
-#include "partitioning.h"
+#include "outputWriter/outputWriterParaviewParallel.h"
+#include "outputWriter/outputWriterTextParallel.h"
+#include "pressureSolver/redBlack.h"
+#include "settings.h"
+#include "simulation/discreteOperators.h"
+#include "simulation/partitioning.h"
 
 #include <chrono>
-#include <mpi.h>
+#include <iostream>
+#include <memory>
+#include <ostream>
 
-Simulation::Simulation(const Settings &settings) 
-    : settings_(settings)
+Simulation::Simulation(const Settings &settings) // TODO: remove inheritance?
 {
-    std::cout << "Initializing Simulation..." << std::endl;
+    settings_ = settings;
+    partitioning_ = std::make_shared<Partitioning>(settings_.nCells);
+
+    if (partitioning_->onPrimaryRank())
+        std::cout << "Initializing parallel Simulation on" << partitioning_->nRanks() << " ranks." << std::endl;
 
     for (int i = 0; i < 2; ++i) {
         meshWidth_[i] = settings_.physicalSize[i] / settings_.nCells[i];
     }
 
     if (settings_.useDonorCell) {
-        std::cout << "Using Donor Cell." << std::endl;
-        discOps_ = std::make_unique<DiscreteOperators>(settings_.nCells, meshWidth_, Partitioning{settings_.nCells}, settings_.alpha);
+        if (partitioning_->onPrimaryRank())
+            std::cout << " -- Using Donor Cell." << std::endl;
+        discOps_ = std::make_unique<DiscreteOperators>(partitioning_->nCellsLocal(), meshWidth_, *partitioning_, settings_.alpha);
     } else {
-        std::cout << "Using Central Differences." << std::endl;
-        discOps_ = std::make_unique<DiscreteOperators>(settings_.nCells, meshWidth_, Partitioning{settings_.nCells}, 0.0);
+        if (partitioning_->onPrimaryRank())
+            std::cout << " -- Using Central Differences." << std::endl;
+        discOps_ = std::make_unique<DiscreteOperators>(partitioning_->nCellsLocal(), meshWidth_, *partitioning_, 0.0);
     }
 
     if (settings_.pressureSolver == IterSolverType::SOR) {
-        std::cout << "Using SOR solver." << std::endl;
-        pressureSolver_ = std::make_unique<PressureSolverSerial>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, settings_.omega);
+        if (partitioning_->onPrimaryRank())
+            std::cout << " -- Using SOR solver." << std::endl;
+        pressureSolver_ = std::make_unique<RedBlack>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, settings_.omega,
+                                                     partitioning_);
     } else {
-        pressureSolver_ = std::make_unique<PressureSolverSerial>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, 1);
+        pressureSolver_ = std::make_unique<RedBlack>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, 1, partitioning_);
     }
 
-    // TODO: we wouldn't actually need a partitioning here as this is the single threaded simulation
-    Partitioning partitioning{settings_.nCells};
-    outputWriterParaview_ = std::make_unique<OutputWriterParaview>(discOps_, partitioning);
-    outputWriterText_ = std::make_unique<OutputWriterText>(discOps_, partitioning);
+    partitioning_->barrier();
+    partitioning_->printPartitioningInfo();
+
+    outputWriterParaview_ = std::make_unique<OutputWriterParaviewParallel>(discOps_, *partitioning_);
+    outputWriterText_ = std::make_unique<OutputWriterTextParallel>(discOps_, *partitioning_);
 }
 
 void Simulation::run() {
@@ -42,120 +58,195 @@ void Simulation::run() {
 
     double currentTime = 0.0;
 
-    DEBUG(unsigned int counter = 0);
+    std::vector uv = {&discOps_->u(), &discOps_->v()};
+    std::vector fg = {&discOps_->f(), &discOps_->g()};
 
+    setBoundaryUV();
     setBoundaryFG();
 
     while (currentTime < settings_.endTime) {
-        setBoundaryUV();
-
-        computeTimeStepWidth();
-
-        DEBUG(std::cout << "**************************************" << std::endl);
-        DEBUG(std::cout << "Computing Timestep " << counter++);
-        DEBUG(const auto expectedTimesteps = static_cast<unsigned int>(counter + (settings_.endTime - currentTime) / timeStepWidth_ - 1));
-        DEBUG(std::cout << " of " << expectedTimesteps << " estimated Timesteps." << std::endl);
-
-        if (currentTime + timeStepWidth_ > settings_.endTime) {
-            timeStepWidth_ = settings_.endTime - currentTime;
-        }
-        currentTime += timeStepWidth_;
-
-        DEBUG(std::cout << "Current Time: " << currentTime << "s");
-        DEBUG(std::cout << "/" << settings_.endTime << "s");
-        DEBUG(const double progress = (currentTime / settings_.endTime) * 100.0);
-        DEBUG(std::cout << " (" << std::fixed << std::setprecision(2) << progress << "%)" << std::endl);
+        TimeSteppingInfo timeSteppingInfo = computeTimeStepWidth(currentTime);
+        timeStepWidth_ = timeSteppingInfo.timeStepWidth;
 
         setPreliminaryVelocities();
-        setRightHandSide();
+        partitioning_->exchange(fg);
 
+        setRightHandSide();
         pressureSolver_->solve();
 
         setVelocities();
+        partitioning_->exchange(uv);
 
-        outputWriterParaview_->writeFile(currentTime);
-        outputWriterText_->writeFile(currentTime);
+        // TODO: Do we want to snap to integer values or just write when we crossed one
+        const int lastSec = static_cast<int>(currentTime);
+        currentTime += timeStepWidth_;
+        const int currentSec = static_cast<int>(currentTime);
+        const bool writeOutput = (currentSec > lastSec);
+
+        DEBUG(printConsoleInfo(currentTime, timeSteppingInfo));
+
+        DEBUG(outputWriterText_->writeFile(currentTime));
+        if (writeOutput) {
+            outputWriterParaview_->writeFile(currentTime);
+        }
+
+        setBoundaryUV();
     }
 
-    auto end = std::chrono::high_resolution_clock::now();
-    uint64_t ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    partitioning_->barrier();
 
-    std::cout << "Simulation finished in " << ms << "ms" << std::endl;
+    if (partitioning_->onPrimaryRank()) {
+        auto end = std::chrono::high_resolution_clock::now();
+        uint64_t ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+        std::cout << "Simulation finished in " << ms << "ms" << std::endl;
+    }
 }
 
+void Simulation::printConsoleInfo(double currentTime, const TimeSteppingInfo &timeSteppingInfo) const {
+    static double lastProgress10th = 0;
+    if (partitioning_->onPrimaryRank()) {
+        double progress = currentTime / settings_.endTime * 100;
+        if (progress >= lastProgress10th) {
+            std::cout << "Progress: ";
+            std::cout << std::fixed << std::setw(5) << std::setprecision(1) << progress << "%: ";
+            std::cout << std::fixed << std::setw(5) << std::setprecision(2) << currentTime << "s / ";
+            std::cout << std::fixed << std::setprecision(2) << settings_.endTime << "s\n";
+            DEBUG(std::cout << " -- max(u,v) = " << std::fixed << std::setprecision(2) << timeSteppingInfo.maxVelocity << ", ")
+            DEBUG(std::cout << "dt = " << std::fixed << std::setprecision(4) << timeSteppingInfo.timeStepWidth << "\n")
+            DEBUG(std::cout << " -- div constraint = " << std::fixed << std::setprecision(2) << timeSteppingInfo.convectiveConstraint << ", ")
+            DEBUG(std::cout << "conectivity constraint = " << std::fixed << std::setprecision(2) << timeSteppingInfo.convectiveConstraint << "\n");
+            lastProgress10th += 10;
+        }
+    }
+}
+
+// TODO: Check if these are correct!
 void Simulation::setBoundaryUV() {
-    const auto uBottom = settings_.dirichletBcBottom[0];
-    const auto uTop = settings_.dirichletBcTop[0];
-    const auto uLeft = settings_.dirichletBcLeft[0];
-    const auto uRight = settings_.dirichletBcRight[0];
-
-    const auto vBottom = settings_.dirichletBcBottom[1];
-    const auto vTop = settings_.dirichletBcTop[1];
-    const auto vLeft = settings_.dirichletBcLeft[1];
-    const auto vRight = settings_.dirichletBcRight[1];
-
     auto &u = discOps_->u();
     auto &v = discOps_->v();
 
-    for (int i = u.beginI(); i < u.endI(); ++i) {
-        u(i, u.beginJ()) = 2.0 * uBottom - u(i, u.beginJ() + 1);
-        u(i, u.endJ() - 1) = 2.0 * uTop - u(i, u.endJ() - 2);
+    if (partitioning_->ownContainsBoundary<Direction::Bottom>()) {
+        const auto uBottom = settings_.dirichletBcBottom[0];
+        const auto vBottom = settings_.dirichletBcBottom[1];
+
+#pragma omp simd
+        for (int i = u.beginI(); i < u.endI(); ++i) {
+            u(i, u.beginJ()) = 2.0 * uBottom - u(i, u.beginJ() + 1);
+        }
+
+#pragma omp simd
+        for (int i = v.beginI(); i < v.endI(); ++i) {
+            v(i, v.beginJ()) = vBottom;
+        }
     }
 
-    for (int i = v.beginI(); i < v.endI(); ++i) {
-        v(i, v.beginJ()) = vBottom;
-        v(i, v.endJ() - 1) = vTop;
+    if (partitioning_->ownContainsBoundary<Direction::Top>()) {
+        const auto uTop = settings_.dirichletBcTop[0];
+        const auto vTop = settings_.dirichletBcTop[1];
+
+#pragma omp simd
+        for (int i = u.beginI(); i < u.endI(); ++i) {
+            u(i, u.endJ() - 1) = 2.0 * uTop - u(i, u.endJ() - 2);
+        }
+
+#pragma omp simd
+        for (int i = v.beginI(); i < v.endI(); ++i) {
+            v(i, v.endJ() - 1) = vTop;
+        }
     }
 
-    for (int j = u.beginJ(); j < u.endJ(); ++j) {
-        u(u.beginI(), j) = uLeft;
-        u(u.endI() - 1, j) = uRight;
+    if (partitioning_->ownContainsBoundary<Direction::Left>()) {
+        const auto uLeft = settings_.dirichletBcLeft[0];
+        const auto vLeft = settings_.dirichletBcLeft[1];
+
+#pragma omp simd
+        for (int j = u.beginJ(); j < u.endJ(); ++j) {
+            u(u.beginI(), j) = uLeft;
+        }
+
+#pragma omp simd
+        for (int j = v.beginJ(); j < v.endJ(); ++j) {
+            v(v.beginI(), j) = 2.0 * vLeft - v(v.beginI() + 1, j);
+        }
     }
 
-    for (int j = v.beginJ(); j < v.endJ(); ++j) {
-        v(v.beginI(), j) = 2.0 * vLeft - v(v.beginI() + 1, j);
-        v(v.endI() - 1, j) = 2.0 * vRight - v(v.endI() - 2, j);
+    if (partitioning_->ownContainsBoundary<Direction::Right>()) {
+        const auto uRight = settings_.dirichletBcRight[0];
+        const auto vRight = settings_.dirichletBcRight[1];
+
+#pragma omp simd
+        for (int j = u.beginJ(); j < u.endJ(); ++j) {
+            u(u.endI() - 1, j) = uRight;
+        }
+
+#pragma omp simd
+        for (int j = v.beginJ(); j < v.endJ(); ++j) {
+            v(v.endI() - 1, j) = 2.0 * vRight - v(v.endI() - 2, j);
+        }
     }
 }
 
 void Simulation::setBoundaryFG() {
-    const auto fBottom = settings_.dirichletBcBottom[0];
-    const auto fTop = settings_.dirichletBcTop[0];
-    const auto fLeft = settings_.dirichletBcLeft[0];
-    const auto fRight = settings_.dirichletBcRight[0];
-
-    const auto gBottom = settings_.dirichletBcBottom[1];
-    const auto gTop = settings_.dirichletBcTop[1];
-    const auto gLeft = settings_.dirichletBcLeft[1];
-    const auto gRight = settings_.dirichletBcRight[1];
-
     auto &f = discOps_->f();
     auto &g = discOps_->g();
 
-    for (int i = f.beginI(); i< f.endI(); ++i) {
-        f(i, f.beginJ()) = fBottom;
-        f(i, f.endJ()-1) = fTop;
+    auto &u = discOps_->u();
+    auto &v = discOps_->v();
+
+    if (partitioning_->ownContainsBoundary<Direction::Bottom>()) {
+#pragma omp simd
+        for (int i = f.beginI(); i < f.endI(); ++i) {
+            f(i, f.beginJ()) = u(i, f.beginJ());
+        }
+
+#pragma omp simd
+        for (int i = g.beginI(); i < g.endI(); ++i) {
+            g(i, g.beginJ()) = v(i, g.beginJ());
+        }
     }
 
-    for (int i = g.beginI(); i < g.endI(); ++i) {
-        g(i, g.beginJ()) = gBottom;
-        g(i, g.endJ()-1) = gTop;
+    if (partitioning_->ownContainsBoundary<Direction::Top>()) {
+#pragma omp simd
+        for (int i = f.beginI(); i < f.endI(); ++i) {
+            f(i, f.endJ() - 1) = u(i, f.endJ() - 1);
+        }
+#pragma omp simd
+        for (int i = g.beginI(); i < g.endI(); ++i) {
+            g(i, g.endJ() - 1) = v(i, g.endJ() - 1);
+        }
     }
 
-    for (int j = f.beginJ(); j < f.endJ(); ++j) {
-        f(f.beginI(), j) = fLeft;
-        f(f.endI() -1, j) = fRight;
+    if (partitioning_->ownContainsBoundary<Direction::Left>()) {
+#pragma omp simd
+        for (int j = f.beginJ(); j < f.endJ(); ++j) {
+            f(f.beginI(), j) = u(f.beginI(), j);
+        }
+#pragma omp simd
+        for (int j = g.beginJ(); j < g.endJ(); ++j) {
+            g(g.beginI(), j) = v(g.beginI(), j);
+        }
     }
 
-    for (int j = g.beginJ(); j < g.endJ(); ++j) {
-        g(g.beginI(), j) = gLeft;
-        g(g.endI() - 1, j) = gRight;
+    if (partitioning_->ownContainsBoundary<Direction::Right>()) {
+#pragma omp simd
+        for (int j = f.beginJ(); j < f.endJ(); ++j) {
+            f(f.endI() - 1, j) = u(f.endI() - 1, j);
+        }
+#pragma omp simd
+        for (int j = g.beginJ(); j < g.endJ(); ++j) {
+            g(g.endI() - 1, j) = v(g.endI() - 1, j);
+        }
     }
 }
 
-void Simulation::computeTimeStepWidth() {
-    const double uMax = discOps_->u().absMax();
-    const double vMax = discOps_->v().absMax();
+TimeSteppingInfo Simulation::computeTimeStepWidth(double currentTime) {
+    const double uMaxLocal = discOps_->u().absMax();
+    const double vMaxLocal = discOps_->v().absMax();
+
+    double uMaxGlobal{};
+    double vMaxGlobal{};
+    MPI_Allreduce(&uMaxLocal, &uMaxGlobal, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    MPI_Allreduce(&vMaxLocal, &vMaxGlobal, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
     const double hx = discOps_->dx();
     const double hy = discOps_->dy();
@@ -165,12 +256,23 @@ void Simulation::computeTimeStepWidth() {
     const double diffusive = (settings_.re / 2.0) * ((dx2 * dy2) / (dx2 + dy2));
 
     // we need to handle velocities being 0
-    const double convectiveU = (uMax > 0) ? hx / uMax : std::numeric_limits<double>::max();
-    const double convectiveV = (vMax > 0) ? hy / vMax : std::numeric_limits<double>::max();
+    const double convectiveU = (uMaxGlobal > 0) ? hx / uMaxGlobal : std::numeric_limits<double>::max();
+    const double convectiveV = (vMaxGlobal > 0) ? hy / vMaxGlobal : std::numeric_limits<double>::max();
 
-    const double dt = std::min({diffusive, convectiveU, convectiveV}) * settings_.tau;
+    double dt = std::min({diffusive, convectiveU, convectiveV}) * settings_.tau;
 
-    timeStepWidth_ = std::min(dt, settings_.maximumDt);
+    dt = std::min(dt, settings_.maximumDt);
+
+    if (currentTime + timeStepWidth_ > settings_.endTime) {
+        timeStepWidth_ = settings_.endTime - currentTime;
+    }
+
+    TimeSteppingInfo info{.convectiveConstraint = std::min(convectiveU, convectiveV),
+                          .diffusiveConstraint = diffusive,
+                          .maxVelocity = std::max(uMaxGlobal, vMaxGlobal),
+                          .timeStepWidth = dt};
+
+    return info;
 }
 
 void Simulation::setPreliminaryVelocities() {
@@ -250,3 +352,4 @@ void Simulation::setVelocities() {
         }
     }
 }
+

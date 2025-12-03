@@ -1,5 +1,5 @@
 #include "settings.h"
-#include "simulation/parallelSimulation.h"
+#include "simulation/simulation.h"
 #include "macros.h"
 
 #include <mpi.h>
@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &nRanks);
 
     {
-        ParallelSimulation simulation{settings};
+        Simulation simulation{settings};
         simulation.run();
     }
 
