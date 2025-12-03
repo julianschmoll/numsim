@@ -5,16 +5,51 @@
 #include <mpi.h>
 
 
-DataField::DataField() : 
-    meshWidth_({0, 0}),
-    offset_({0, 0}),
-    fieldID_(-1)
-{}
+DataField::DataField()
+    : meshWidth_({0, 0}),
+      offset_({0, 0}),
+      fieldID_(-1) {}
 
 
 DataField::DataField(const std::array<int, 2> size, const std::array<double, 2> meshWidth, const std::array<double, 2> offset, int fieldID)
-    : Array2d(size), meshWidth_(meshWidth), offset_(offset), fieldID_(fieldID)
-{}
+    : Array2d(size), meshWidth_(meshWidth), offset_(offset), fieldID_(fieldID) {
+    const int numberX = endI() - beginI();
+    const int numberY = endJ() - beginJ();
+
+    MPI_Type_vector(numberY, 1, numberX, MPI_DOUBLE, &mpiColType_);
+    MPI_Type_commit(&mpiColType_);
+}
+
+DataField::DataField(DataField &&other) noexcept
+    : Array2d(std::move(other)),
+      mpiColType_(other.mpiColType_),
+      meshWidth_(other.meshWidth_),
+      offset_(other.offset_),
+      fieldID_(other.fieldID_) {
+    other.mpiColType_ = MPI_DATATYPE_NULL;
+}
+
+DataField &DataField::operator=(DataField &&other) noexcept {
+    if (this == &other) {
+        return *this;
+    }
+    if (mpiColType_ != MPI_DATATYPE_NULL) {
+        MPI_Type_free(&mpiColType_);
+    }
+    Array2d::operator=(std::move(other));
+    meshWidth_ = other.meshWidth_;
+    offset_ = other.offset_;
+    fieldID_ = other.fieldID_;
+    mpiColType_ = other.mpiColType_;
+    other.mpiColType_ = MPI_DATATYPE_NULL;
+    return *this;
+}
+
+DataField::~DataField() {
+    if (mpiColType_ != MPI_DATATYPE_NULL) {
+        MPI_Type_free(&mpiColType_);
+    }
+}
 
 int DataField::rows() const {
     return size_[1];
@@ -28,7 +63,6 @@ int DataField::beginJ() const {
     return -1;
 }
 
-// TODO: end hat mich jetzt schon mehrfach verarscht...
 int DataField::endJ() const {
     return size_[1] - 1; // size = cells + 2
 }
@@ -42,7 +76,8 @@ int DataField::endI() const {
 }
 
 void DataField::setToZero() {
-    for (auto &entry : data_) entry = 0;
+    for (auto &entry : data_)
+        entry = 0;
 }
 
 int DataField::getID() const {
@@ -83,4 +118,8 @@ double DataField::interpolateAt(double x, double y) const {
     const double dx2 = (1 - alpha) * d12 + alpha * d22;
 
     return (1 - beta) * dx1 + beta * dx2;
+}
+
+MPI_Datatype DataField::mpiColType() const {
+    return mpiColType_;
 }

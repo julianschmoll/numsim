@@ -13,7 +13,7 @@ public:
         double omega,
         const std::shared_ptr<Partitioning> &partitioning);
 
-    ~RedBlack();
+    ~RedBlack() = default;
 
     void solve();
 

@@ -10,21 +10,9 @@ RedBlack::RedBlack(const std::shared_ptr<StaggeredGrid> &grid,
                    const int maximumNumberOfIterations,
                    const double omega,
                    const std::shared_ptr<Partitioning> &partitioning)
-    : partitioning_(partitioning), grid_(grid), epsilon_(epsilon), maxNumberOfIterations_(maximumNumberOfIterations), omega_(omega) {
-    const DataField &p = grid_->p();
-    const int numberX = p.endI() - p.beginI();
-    const int numberY = p.endJ() - p.beginJ();
-
-    MPI_Type_vector(numberY, 1, numberX, MPI_DOUBLE, &mpiColumn_);
-    MPI_Type_commit(&mpiColumn_);
-}
-
-RedBlack::~RedBlack() {
-    MPI_Type_free(&mpiColumn_);
-}
+    : partitioning_(partitioning), grid_(grid), epsilon_(epsilon), maxNumberOfIterations_(maximumNumberOfIterations), omega_(omega) {}
 
 
-// ToDo: I think the residual is still fucked up a little
 void RedBlack::solve() {
     int it = 0;
 
@@ -48,9 +36,9 @@ void RedBlack::solve() {
     while (it < maxNumberOfIterations_) {
         localPressureError_ = 0.0;
         // rb = 0 is red, rb=1 is black pass
-        // #pragma omp parallel for reduction(+:localPressureError_)
+        #pragma omp parallel for reduction(+:localPressureError_)
         for (int rb = 0; rb < 2; ++rb) {
-            // #pragma omp simd reduction(+:localPressureError_)
+            #pragma omp simd reduction(+:localPressureError_)
             for (int j = beginJ; j < endJ; ++j) {
                 // ((beginI + j + rb) & 1) calculates offset 0 or 1
                 for (int i = beginI + ((beginI + j + rb) & 1); i < endI; i += 2) {
@@ -62,7 +50,7 @@ void RedBlack::solve() {
                 }
             }
             setBoundaryValues();
-            partitioning_->exchange(std::vector<DataField *>{&p});
+            partitioning_->exchange(std::vector{&p});
         }
 
         MPI_Allreduce(&localPressureError_, &globalPressureError_, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);

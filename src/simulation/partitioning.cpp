@@ -88,7 +88,6 @@ void Partitioning::printPartitioningInfo() const {
 void Partitioning::exchange(const std::vector<DataField *> &fields) const {
     std::vector<MPI_Request> requests;
 
-    // TODO: kann das kombiniert werden?
     for (DataField *field : fields) {
         if (!ownContainsBoundary<Direction::Top>()) {
             requests.emplace_back(sendBorder<Direction::Top>(*field));
@@ -98,10 +97,6 @@ void Partitioning::exchange(const std::vector<DataField *> &fields) const {
             requests.emplace_back(sendBorder<Direction::Bottom>(*field));
             requests.emplace_back(recvBorder<Direction::Bottom>(*field));
         }
-    }
-    MPI_Waitall(static_cast<int>(requests.size()), requests.data(), MPI_STATUS_IGNORE);
-    requests.clear();
-    for (DataField *field : fields) {
         if (!ownContainsBoundary<Direction::Left>()) {
             requests.emplace_back(sendBorder<Direction::Left>(*field));
             requests.emplace_back(recvBorder<Direction::Left>(*field));
@@ -111,5 +106,7 @@ void Partitioning::exchange(const std::vector<DataField *> &fields) const {
             requests.emplace_back(recvBorder<Direction::Right>(*field));
         }
     }
-    MPI_Waitall(static_cast<int>(requests.size()), requests.data(), MPI_STATUS_IGNORE);
+    if (!requests.empty()) {
+        MPI_Waitall(static_cast<int>(requests.size()), requests.data(), MPI_STATUS_IGNORE);
+    }
 }

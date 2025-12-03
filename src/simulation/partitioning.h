@@ -113,22 +113,17 @@ public:
 
         int i = 0, j = 0;
         int count = field.cols();
-        MPI_Datatype type = MPI_DOUBLE;
-        MPI_Datatype coltype{};
-
-        // For some reason MPI does not let us store this type in DataField
-        MPI_Type_vector(field.rows(), 1, field.cols(), type, &coltype);
-        MPI_Type_commit(&coltype);
+        auto type = MPI_DOUBLE;
 
         if constexpr (direction == Direction::Left) {
             i = field.beginI() + 1;
             j = field.beginJ();
-            type = coltype;
+            type = field.mpiColType();
             count = 1;
         } else if constexpr (direction == Direction::Right) {
             i = field.endI() - 2;
             j = field.beginJ();
-            type = coltype;
+            type = field.mpiColType();
             count = 1;
         } else if constexpr (direction == Direction::Bottom) {
             i = field.beginI();
@@ -142,8 +137,6 @@ public:
 
         MPI_Isend(&field(i, j), count, type, neighborRank<direction>(), field.getID(), cartComm_, &sendReq);
 
-        MPI_Type_free(&coltype);
-
         return sendReq;
     }
 
@@ -153,22 +146,17 @@ public:
 
         int i = 0, j = 0;
         int count = field.cols();
-        MPI_Datatype type = MPI_DOUBLE;
-        MPI_Datatype coltype{};
-
-        // For some reason MPI does not let us store this type in DataField
-        MPI_Type_vector(field.rows(), 1, field.cols(), type, &coltype);
-        MPI_Type_commit(&coltype);
+        auto type = MPI_DOUBLE;
 
         if constexpr (direction == Direction::Left) {
             i = field.beginI();
             j = field.beginJ();
-            type = coltype;
+            type = field.mpiColType();
             count = 1;
         } else if constexpr (direction == Direction::Right) {
             i = field.endI() - 1;
             j = field.beginJ();
-            type = coltype;
+            type = field.mpiColType();
             count = 1;
         } else if constexpr (direction == Direction::Bottom) {
             i = field.beginI();
@@ -181,8 +169,6 @@ public:
         }
 
         MPI_Irecv(&field(i, j), count, type, neighborRank<direction>(), field.getID(), cartComm_, &recvReq);
-
-        MPI_Type_free(&coltype);
 
         return recvReq;
     }

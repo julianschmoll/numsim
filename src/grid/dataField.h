@@ -19,13 +19,15 @@ public:
      */
      //TODO: should parameters be const references?
     explicit DataField(std::array<int, 2> size, std::array<double, 2> meshWidth, std::array<double, 2> offset, int fieldID = 0);
+    DataField(DataField &&other) noexcept;
 
     DataField();
 
+    DataField &operator=(DataField &&other) noexcept;
     /**
      * Destructor for DataField.
      */
-    ~DataField() override = default;
+    ~DataField() override;
 
     /**
      * Interpolates the value at a given coordinate (x, y).
@@ -71,7 +73,10 @@ public:
     int getID() const;
 
     int rows() const;
+
     int cols() const;
+
+    MPI_Datatype mpiColType() const;
 
 private:
     // Grid Spacing
@@ -91,9 +96,7 @@ private:
      */
     std::array<double, 2> offset_;
 
-    MPI_Datatype mpiColType_;
-
-    MPI_Datatype mpiRowType_;
-
     int fieldID_;
+
+    MPI_Datatype mpiColType_ = MPI_DATATYPE_NULL;
 };
