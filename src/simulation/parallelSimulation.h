@@ -41,11 +41,6 @@ private:
 
     void printConsoleInfo(double currentTime, const TimeSteppingInfo &timeSteppingInfo) const;
 
-    /**
-     * Exchanges u and v values
-     */
-    void exchangeVelocities();
-
     std::shared_ptr<Partitioning> partitioning_;
 
     // Solver for the pressure

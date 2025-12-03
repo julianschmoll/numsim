@@ -57,16 +57,10 @@ void ParallelSimulation::run() {
     std::vector uv = {&discOps_->u(), &discOps_->v()};
     std::vector fg = {&discOps_->f(), &discOps_->g()};
 
+    setBoundaryUV();
     setBoundaryFG();
 
-    partitioning_->exchange(fg);
-
     while (currentTime < settings_.endTime) {
-        setBoundaryUV();
-        setBoundaryFG(); // TODO: not every iteration but after u, v
-
-        partitioning_->exchange(uv);
-
         TimeSteppingInfo timeSteppingInfo = computeTimeStepWidth(currentTime);
         timeStepWidth_ = timeSteppingInfo.timeStepWidth;
 
@@ -79,20 +73,20 @@ void ParallelSimulation::run() {
         setVelocities();
         partitioning_->exchange(uv);
         
-        // Console and file outputs
-        
         // TODO: Do we want to snap to integer values or just write when we crossed one
         const int lastSec = static_cast<int>(currentTime);
         currentTime += timeStepWidth_;
         const int currentSec = static_cast<int>(currentTime);
         const bool writeOutput = (currentSec > lastSec);
         
-        printConsoleInfo(currentTime, timeSteppingInfo);
+        DEBUG(printConsoleInfo(currentTime, timeSteppingInfo));
 
         DEBUG(outputWriterText_->writeFile(currentTime));
         if (writeOutput) {
             outputWriterParaview_->writeFile(currentTime);
         }
+
+        setBoundaryUV();
     }
 
     partitioning_->barrier();
@@ -176,7 +170,6 @@ void ParallelSimulation::setBoundaryUV() {
     }
 }
 
-// TODO: Check if these are correct!
 void ParallelSimulation::setBoundaryFG() {
     auto &f = discOps_->f();
     auto &g = discOps_->g();
@@ -185,9 +178,6 @@ void ParallelSimulation::setBoundaryFG() {
     auto &v = discOps_->v();
 
     if (partitioning_->ownContainsBoundary<Direction::Bottom>()) {
-        const auto fBottom = settings_.dirichletBcBottom[0];
-        const auto gBottom = settings_.dirichletBcBottom[1];
-
         for (int i = f.beginI(); i < f.endI(); ++i) {
             f(i, f.beginJ()) = u(i, f.beginJ());
         }
@@ -197,9 +187,6 @@ void ParallelSimulation::setBoundaryFG() {
     }
 
     if (partitioning_->ownContainsBoundary<Direction::Top>()) {
-        const auto fTop = settings_.dirichletBcTop[0];
-        const auto gTop = settings_.dirichletBcTop[1];
-
         for (int i = f.beginI(); i < f.endI(); ++i) {
             f(i, f.endJ() - 1) = u(i, f.endJ() - 1);
         }
@@ -209,9 +196,6 @@ void ParallelSimulation::setBoundaryFG() {
     }
 
     if (partitioning_->ownContainsBoundary<Direction::Left>()) {
-        const auto fLeft = settings_.dirichletBcLeft[0];
-        const auto gLeft = settings_.dirichletBcLeft[1];
-
         for (int j = f.beginJ(); j < f.endJ(); ++j) {
             f(f.beginI(), j) = u(f.beginI(), j);
         }
@@ -221,9 +205,6 @@ void ParallelSimulation::setBoundaryFG() {
     }
 
     if (partitioning_->ownContainsBoundary<Direction::Right>()) {
-        const auto fRight = settings_.dirichletBcRight[0];
-        const auto gRight = settings_.dirichletBcRight[1];
-
         for (int j = f.beginJ(); j < f.endJ(); ++j) {
             f(f.endI() - 1, j) = u(f.endI() - 1, j);
         }
