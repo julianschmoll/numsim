@@ -1,17 +1,10 @@
 #include "simulation.h"
-
-#include "grid/dataField.h"
-#include "macros.h"
 #include "outputWriter/outputWriterParaviewParallel.h"
 #include "outputWriter/outputWriterTextParallel.h"
-#include "pressureSolver/redBlack.h"
+#include "macros.h"
 #include "settings.h"
-#include "simulation/discreteOperators.h"
-#include "simulation/partitioning.h"
-
 #include <chrono>
 #include <iostream>
-#include <memory>
 #include <ostream>
 
 Simulation::Simulation(const Settings &settings) {
@@ -39,9 +32,9 @@ Simulation::Simulation(const Settings &settings) {
         if (partitioning_->onPrimaryRank())
             std::cout << " -- Using SOR solver." << std::endl;
         pressureSolver_ =
-            std::make_unique<RedBlack>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, settings_.omega, partitioning_);
+            std::make_unique<RedBlackSolver>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, settings_.omega, partitioning_);
     } else {
-        pressureSolver_ = std::make_unique<RedBlack>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, 1, partitioning_);
+        pressureSolver_ = std::make_unique<RedBlackSolver>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, 1, partitioning_);
     }
 
     partitioning_->barrier();

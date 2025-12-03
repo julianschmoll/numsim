@@ -1,7 +1,7 @@
 #pragma once
 #include "outputWriter/outputWriter.h"
 #include "partitioning.h"
-#include "pressureSolver/redBlack.h"
+#include "pressureSolver/redBlackSolver.h"
 #include "settings.h"
 #include "simulation/discreteOperators.h"
 
@@ -63,5 +63,5 @@ private:
     std::shared_ptr<Partitioning> partitioning_;
 
     // Solver for the pressure
-    std::unique_ptr<RedBlack> pressureSolver_;
+    std::unique_ptr<RedBlackSolver> pressureSolver_;
 };

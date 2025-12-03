@@ -4,18 +4,19 @@
 #include "simulation/partitioning.h"
 #include <memory>
 
-class RedBlack final {
+class RedBlackSolver {
 public:
-    RedBlack(const std::shared_ptr<StaggeredGrid> &grid, double epsilon, int maximumNumberOfIterations, double omega,
+    RedBlackSolver(const std::shared_ptr<StaggeredGrid> &grid, double epsilon, int maximumNumberOfIterations, double omega,
              const std::shared_ptr<Partitioning> &partitioning);
 
-    ~RedBlack() = default;
+    ~RedBlackSolver() = default;
 
     void solve();
 
 private:
     void setBoundaryValues();
 
+    // TODO: remove old MPI clutter
 protected:
     std::shared_ptr<Partitioning> partitioning_;
 

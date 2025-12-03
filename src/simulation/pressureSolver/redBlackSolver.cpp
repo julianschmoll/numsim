@@ -1,15 +1,15 @@
-#include "redBlack.h"
+#include "redBlackSolver.h"
 #include "grid/dataField.h"
 #include "macros.h"
 #include "simulation/partitioning.h"
 #include <limits>
 #include <vector>
 
-RedBlack::RedBlack(const std::shared_ptr<StaggeredGrid> &grid, const double epsilon, const int maximumNumberOfIterations, const double omega,
+RedBlackSolver::RedBlackSolver(const std::shared_ptr<StaggeredGrid> &grid, const double epsilon, const int maximumNumberOfIterations, const double omega,
                    const std::shared_ptr<Partitioning> &partitioning)
     : partitioning_(partitioning), grid_(grid), epsilon_(epsilon), maxNumberOfIterations_(maximumNumberOfIterations), omega_(omega) {}
 
-void RedBlack::solve() {
+void RedBlackSolver::solve() {
     int it = 0;
 
     DataField &p = grid_->p();
@@ -31,10 +31,10 @@ void RedBlack::solve() {
 
     while (it < maxNumberOfIterations_) {
         localPressureError_ = 0.0;
-// rb = 0 is red, rb=1 is black pass
-#pragma omp parallel for reduction(+ : localPressureError_)
+        // rb = 0 is red, rb=1 is black pass
+        #pragma omp parallel for reduction(+ : localPressureError_)
         for (int rb = 0; rb < 2; ++rb) {
-#pragma omp simd reduction(+ : localPressureError_)
+            #pragma omp simd reduction(+ : localPressureError_)
             for (int j = beginJ; j < endJ; ++j) {
                 // ((beginI + j + rb) & 1) calculates offset 0 or 1
                 for (int i = beginI + ((beginI + j + rb) & 1); i < endI; i += 2) {
@@ -59,7 +59,7 @@ void RedBlack::solve() {
     }
 }
 
-void RedBlack::setBoundaryValues() {
+void RedBlackSolver::setBoundaryValues() {
     DataField &p = grid_->p();
 
     if (partitioning_->ownContainsBoundary<Direction::Bottom>()) {
