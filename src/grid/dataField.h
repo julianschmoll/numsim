@@ -18,7 +18,7 @@ public:
      * @param offset Offset from the lower-left cell corner to the data point location.
      */
     // TODO: should parameters be const references?
-    explicit DataField(std::array<int, 2> size, std::array<double, 2> meshWidth, std::array<double, 2> offset, int fieldID = 0);
+    explicit DataField(std::array<int, 2> size, std::array<double, 2> meshWidth, std::array<double, 2> offset = {0, 0}, int fieldID = 0);
     DataField(DataField &&other) noexcept;
 
     DataField();

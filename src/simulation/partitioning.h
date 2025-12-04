@@ -60,13 +60,22 @@ public:
 
     std::array<int, 2> getCurrentRankCoords() const;
 
-    void exchange(const std::vector<DataField *> &fields) const;
+    void exchange(const std::vector<DataField *> &fields);
+
+    void exchange(DataField &field);
+
+    void nonBlockingExchange(const std::vector<DataField *> &fields);
+
+    void nonBlockingExchange(DataField &field);
 
     void barrier() const;
 
     bool onPrimaryRank() const;
 
     void printPartitioningInfo() const;
+
+    void waitForAllMPIRequests();
+    double collectSum(double localSum) const;
 
     //! if the own partition has part of the bottom boundary of the whole domain
     template <Direction direction> bool ownContainsBoundary() const {
@@ -108,7 +117,7 @@ public:
         MPI_Request sendReq{};
 
         int i = 0, j = 0;
-        int count = field.cols();
+        int count = field.cols() - 2;
         auto type = MPI_DOUBLE;
 
         if constexpr (direction == Direction::Left) {
@@ -122,10 +131,10 @@ public:
             type = field.mpiColType();
             count = 1;
         } else if constexpr (direction == Direction::Bottom) {
-            i = field.beginI();
+            i = field.beginI() + 1;
             j = field.beginJ() + 1;
         } else if constexpr (direction == Direction::Top) {
-            i = field.beginI();
+            i = field.beginI() + 1;
             j = field.endJ() - 2;
         } else {
             assert(false);
@@ -140,7 +149,7 @@ public:
         MPI_Request recvReq{};
 
         int i = 0, j = 0;
-        int count = field.cols();
+        int count = field.cols() - 2;
         auto type = MPI_DOUBLE;
 
         if constexpr (direction == Direction::Left) {
@@ -154,10 +163,10 @@ public:
             type = field.mpiColType();
             count = 1;
         } else if constexpr (direction == Direction::Bottom) {
-            i = field.beginI();
+            i = field.beginI() + 1;
             j = field.beginJ();
         } else if constexpr (direction == Direction::Top) {
-            i = field.beginI();
+            i = field.beginI() + 1;
             j = field.endJ() - 1;
         } else {
             assert(false);
@@ -167,4 +176,7 @@ public:
 
         return recvReq;
     }
+
+private:
+    mutable std::vector<MPI_Request> requests_;
 };

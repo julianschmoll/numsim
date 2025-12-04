@@ -16,8 +16,9 @@ add_executable(${PROJECT_NAME}
 
     # solver stuff
     simulation/simulation.cpp
-    simulation/pressureSolver/redBlack.cpp
-    simulation/pressureSolver/conjugateGradient.cpp
+    simulation/pressureSolver/pressureSolver.cpp
+    simulation/pressureSolver/redBlackSolver.cpp
+    simulation/pressureSolver/conjugateGradientSolver.cpp
     simulation/discreteOperators.cpp
     simulation/partitioning.cpp
 

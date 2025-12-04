@@ -1,9 +1,9 @@
 #pragma once
 #include "outputWriter/outputWriter.h"
 #include "partitioning.h"
-#include "pressureSolver/redBlack.h"
 #include "settings.h"
 #include "simulation/discreteOperators.h"
+#include "simulation/pressureSolver/pressureSolver.h"
 
 struct TimeSteppingInfo {
     double convectiveConstraint;
@@ -63,5 +63,5 @@ private:
     std::shared_ptr<Partitioning> partitioning_;
 
     // Solver for the pressure
-    std::unique_ptr<RedBlack> pressureSolver_;
+    std::unique_ptr<PressureSolver> pressureSolver_;
 };

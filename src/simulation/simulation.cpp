@@ -1,17 +1,12 @@
 #include "simulation.h"
-
-#include "grid/dataField.h"
 #include "macros.h"
 #include "outputWriter/outputWriterParaviewParallel.h"
 #include "outputWriter/outputWriterTextParallel.h"
-#include "pressureSolver/redBlack.h"
 #include "settings.h"
-#include "simulation/discreteOperators.h"
-#include "simulation/partitioning.h"
-
+#include "simulation/pressureSolver/conjugateGradientSolver.h"
+#include "simulation/pressureSolver/redBlackSolver.h"
 #include <chrono>
 #include <iostream>
-#include <memory>
 #include <ostream>
 
 Simulation::Simulation(const Settings &settings) {
@@ -37,11 +32,17 @@ Simulation::Simulation(const Settings &settings) {
 
     if (settings_.pressureSolver == IterSolverType::SOR) {
         if (partitioning_->onPrimaryRank())
-            std::cout << " -- Using SOR solver." << std::endl;
+            std::cout << " -- Using (Red-Black) SOR solver." << std::endl;
         pressureSolver_ =
-            std::make_unique<RedBlack>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, settings_.omega, partitioning_);
+            std::make_unique<RedBlackSolver>(discOps_, partitioning_, settings_.epsilon, settings_.maximumNumberOfIterations, settings_.omega);
+    } else if (settings_.pressureSolver == IterSolverType::GaussSeidel) {
+        if (partitioning_->onPrimaryRank())
+            std::cout << " -- Using (Red-Black) Gauss-Seidel solver." << std::endl;
+        pressureSolver_ = std::make_unique<RedBlackSolver>(discOps_, partitioning_, settings_.epsilon, settings_.maximumNumberOfIterations, 1);
     } else {
-        pressureSolver_ = std::make_unique<RedBlack>(discOps_, settings_.epsilon, settings_.maximumNumberOfIterations, 1, partitioning_);
+        if (partitioning_->onPrimaryRank())
+            std::cout << " -- Using Conjugate Gradient solver." << std::endl;
+        pressureSolver_ = std::make_unique<ConjugateGradientSolver>(discOps_, partitioning_, settings_.epsilon, settings_.maximumNumberOfIterations);
     }
 
     partitioning_->barrier();
@@ -64,17 +65,21 @@ void Simulation::run() {
     setBoundaryFG();
 
     while (currentTime < settings_.endTime) {
+        setPreliminaryVelocities();
+        partitioning_->nonBlockingExchange(fg);
+        setBoundaryUV();
+
         TimeSteppingInfo timeSteppingInfo = computeTimeStepWidth(currentTime);
         timeStepWidth_ = timeSteppingInfo.timeStepWidth;
 
-        setPreliminaryVelocities();
-        partitioning_->exchange(fg);
-
+        partitioning_->waitForAllMPIRequests();
         setRightHandSide();
+        partitioning_->exchange(discOps_->rhs());
+
         pressureSolver_->solve();
 
         setVelocities();
-        partitioning_->exchange(uv);
+        partitioning_->nonBlockingExchange(uv);
 
         // TODO: Do we want to snap to integer values or just write when we crossed one
         const int lastSec = static_cast<int>(currentTime);
@@ -82,14 +87,13 @@ void Simulation::run() {
         const int currentSec = static_cast<int>(currentTime);
         const bool writeOutput = (currentSec > lastSec);
 
-        DEBUG(printConsoleInfo(currentTime, timeSteppingInfo));
+        printConsoleInfo(currentTime, timeSteppingInfo);
 
+        partitioning_->waitForAllMPIRequests();
         DEBUG(outputWriterText_->writeFile(currentTime));
         if (writeOutput) [[unlikely]] {
             outputWriterParaview_->writeFile(currentTime);
         }
-
-        setBoundaryUV();
     }
 
     partitioning_->barrier();
@@ -119,7 +123,6 @@ void Simulation::printConsoleInfo(double currentTime, const TimeSteppingInfo &ti
     }
 }
 
-// TODO: Check if these are correct!
 void Simulation::setBoundaryUV() {
     auto &u = discOps_->u();
     auto &v = discOps_->v();
