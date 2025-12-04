@@ -65,21 +65,18 @@ void Simulation::run() {
     setBoundaryFG();
 
     while (currentTime < settings_.endTime) {
-        setPreliminaryVelocities();
-        partitioning_->nonBlockingExchange(fg);
-        setBoundaryUV();
-
         TimeSteppingInfo timeSteppingInfo = computeTimeStepWidth(currentTime);
         timeStepWidth_ = timeSteppingInfo.timeStepWidth;
 
-        partitioning_->waitForAllMPIRequests();
-        setRightHandSide();
-        partitioning_->exchange(discOps_->rhs());
+        setPreliminaryVelocities();
+        partitioning_->exchange(fg);
 
+        setRightHandSide();
         pressureSolver_->solve();
 
         setVelocities();
-        partitioning_->nonBlockingExchange(uv);
+        partitioning_->exchange(uv);
+
 
         const int lastSec = static_cast<int>(currentTime);
         currentTime += timeStepWidth_;
@@ -87,12 +84,13 @@ void Simulation::run() {
         const bool writeOutput = (currentSec > lastSec);
 
         printConsoleInfo(currentTime, timeSteppingInfo);
-
-        partitioning_->waitForAllMPIRequests();
         DEBUG(outputWriterText_->writeFile(currentTime));
+
         if (writeOutput) [[unlikely]] {
             outputWriterParaview_->writeFile(currentTime);
         }
+        setBoundaryUV();
+
     }
 
     partitioning_->barrier();
@@ -255,7 +253,7 @@ TimeSteppingInfo Simulation::computeTimeStepWidth(double currentTime) {
 
     dt = std::min(dt, settings_.maximumDt);
 
-    if (currentTime + dt > settings_.endTime) [[unlikely]] {
+    if (currentTime + dt > settings_.endTime) {
         dt = settings_.endTime - currentTime;
     }
 

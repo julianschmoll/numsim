@@ -99,23 +99,22 @@ void Partitioning::exchange(DataField &field) {
 void Partitioning::nonBlockingExchange(const std::vector<DataField *> &fields) {
     requests_.clear();
 
-    // Apply your required logic here, ensuring receive is posted before send (best practice)
     for (DataField *field : fields) {
         if (!ownContainsBoundary<Direction::Top>()) {
-            requests_.push_back(recvBorder<Direction::Top>(*field));
-            requests_.push_back(sendBorder<Direction::Top>(*field));
+            requests_.emplace_back(sendBorder<Direction::Top>(*field));
+            requests_.emplace_back(recvBorder<Direction::Top>(*field));
         }
         if (!ownContainsBoundary<Direction::Bottom>()) {
-            requests_.push_back(recvBorder<Direction::Bottom>(*field));
-            requests_.push_back(sendBorder<Direction::Bottom>(*field));
+            requests_.emplace_back(recvBorder<Direction::Bottom>(*field));
+            requests_.emplace_back(sendBorder<Direction::Bottom>(*field));
         }
         if (!ownContainsBoundary<Direction::Left>()) {
-            requests_.push_back(recvBorder<Direction::Left>(*field));
-            requests_.push_back(sendBorder<Direction::Left>(*field));
+            requests_.emplace_back(recvBorder<Direction::Left>(*field));
+            requests_.emplace_back(sendBorder<Direction::Left>(*field));
         }
         if (!ownContainsBoundary<Direction::Right>()) {
-            requests_.push_back(recvBorder<Direction::Right>(*field));
-            requests_.push_back(sendBorder<Direction::Right>(*field));
+            requests_.emplace_back(recvBorder<Direction::Right>(*field));
+            requests_.emplace_back(sendBorder<Direction::Right>(*field));
         }
     }
 }
@@ -124,20 +123,20 @@ void Partitioning::nonBlockingExchange(DataField &field) {
     requests_.clear();
 
     if (!ownContainsBoundary<Direction::Top>()) {
-        requests_.push_back(recvBorder<Direction::Top>(field));
-        requests_.push_back(sendBorder<Direction::Top>(field));
+        requests_.emplace_back(recvBorder<Direction::Top>(field));
+        requests_.emplace_back(sendBorder<Direction::Top>(field));
     }
     if (!ownContainsBoundary<Direction::Bottom>()) {
-        requests_.push_back(recvBorder<Direction::Bottom>(field));
-        requests_.push_back(sendBorder<Direction::Bottom>(field));
+        requests_.emplace_back(recvBorder<Direction::Bottom>(field));
+        requests_.emplace_back(sendBorder<Direction::Bottom>(field));
     }
     if (!ownContainsBoundary<Direction::Left>()) {
-        requests_.push_back(recvBorder<Direction::Left>(field));
-        requests_.push_back(sendBorder<Direction::Left>(field));
+        requests_.emplace_back(recvBorder<Direction::Left>(field));
+        requests_.emplace_back(sendBorder<Direction::Left>(field));
     }
     if (!ownContainsBoundary<Direction::Right>()) {
-        requests_.push_back(recvBorder<Direction::Right>(field));
-        requests_.push_back(sendBorder<Direction::Right>(field));
+        requests_.emplace_back(recvBorder<Direction::Right>(field));
+        requests_.emplace_back(sendBorder<Direction::Right>(field));
     }
 }
 
