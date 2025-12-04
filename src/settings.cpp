@@ -100,7 +100,7 @@ void Settings::loadFromFile(const std::string &filename) {
             pressureSolver = IterSolverType::GaussSeidel;
         } else if (settings["pressureSolver"] == "CG") {
             pressureSolver = IterSolverType::CG;
-        }  else {
+        } else {
             throw std::runtime_error("Unnknown solver type for \"pressureSolver\": use \"SOR\" or \"GaussSeidel\".");
         }
     }
