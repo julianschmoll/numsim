@@ -1,19 +1,18 @@
 #pragma once
 
 #include "grid/staggeredGrid.h"
-#include "simulation/partitioning.h"
 #include "pressureSolver.h"
+#include "simulation/partitioning.h"
 #include <memory>
 
-class RedBlackSolver : public PressureSolver {
+class RedBlackSolver final : public PressureSolver {
 public:
-    RedBlackSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning,
-        double epsilon, int maximumNumberOfIterations, double omega);
+    RedBlackSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning, double epsilon, int maximumNumberOfIterations,
+                   double omega);
 
-    void solve() final;
+    void solve() override;
 
 private:
-
     // Relaxation factor
     double omega_;
 
