@@ -17,13 +17,32 @@ public:
      * @param meshWidth Physical size of the grid.
      * @param offset Offset from the lower-left cell corner to the data point location.
      */
-    // TODO: should parameters be const references?
     explicit DataField(std::array<int, 2> size, std::array<double, 2> meshWidth, std::array<double, 2> offset = {0, 0}, int fieldID = 0);
+
+    /**
+     * Move constructor for DataField.
+     *
+     * Needed to handle MPI Datatype.
+     *
+     * @param other The DataField object to move resources from.
+     */
     DataField(DataField &&other) noexcept;
 
+    /**
+     * Default constructor.
+     */
     DataField();
 
+    /**
+     * Move assignment operator for DataField.
+     *
+     * Needed for MPI Datatype.
+     *
+     * @param other The DataField object to move resources from.
+     * @return Reference to the current object.
+     */
     DataField &operator=(DataField &&other) noexcept;
+
     /**
      * Destructor for DataField.
      */
@@ -68,18 +87,37 @@ public:
      */
     int endI() const;
 
+    /**
+     * Sets all values on DataField to 0.
+     */
     void setToZero();
 
+    /**
+     * Gets ID of the DataField.
+     *
+     * @return ID of the DataField.
+     */
     int getID() const;
 
+    /**
+     * Gets number of rows.
+     *
+     * @return Number of rows of the DataField.
+     */
     int rows() const;
 
+    /**
+     * Gets number of columns.
+     *
+     * @return Number of columns of the DataField.
+     */
     int cols() const;
 
+    /// MPI Datatype to exchange columns.
     MPI_Datatype mpiColType() const;
 
 private:
-    // Grid Spacing
+    /// Grid Spacing
     std::array<double, 2> meshWidth_;
 
     /**
@@ -96,7 +134,9 @@ private:
      */
     std::array<double, 2> offset_;
 
+    /// ID of the DataField.
     int fieldID_;
 
+    /// DataType to correctly exchange columns of DataField.
     MPI_Datatype mpiColType_ = MPI_DATATYPE_NULL;
 };

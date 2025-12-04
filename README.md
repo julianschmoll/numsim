@@ -1,19 +1,12 @@
-# numsim
+# Fluid Solver
 
-## Build
-Either install vtk with something like `sudo apt install libvtk7-dev libvtk7.1`, or (since the equivalent `sudo pacman -S vtk` seems to miss some dependencies on arch and therefore makes a build impossible) use vcpkg:
-```
-git clone https://github.com/microsoft/vcpkg.git
-cd vcpkg
-./bootstrap-vcpkg.sh (you can disable telemetry here)
-./vcpkg install vtk
-```
-Clone numsim with `git@github.com:julianschmoll/numsim.git`, then proceed to build:
+A parallel fluid solver written from scratch using navier stokes equations.
 
-```
-cd numsim
-rm -rf build
-cd build
-cmake .. (-DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake)
-make
-```
+## Installation
+
+In addition to a compiler and cmake you need `libvtk` to output simulation data which can be viewed with `paraview`.
+
+## Usage
+
+After building the program can be run with one of the scenarios in `./scenarios`. The output will be next to the executable.
+The results of the simulation are saved in the output folder and can be visualized in Paraview.

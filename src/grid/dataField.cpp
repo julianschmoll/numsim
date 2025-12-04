@@ -1,10 +1,12 @@
 #include "grid/dataField.h"
 
+#include "macros.h"
+
 #include <cassert>
 #include <cmath>
 #include <mpi.h>
 
-DataField::DataField() : meshWidth_({0, 0}), offset_({0, 0}), fieldID_(-1) {}
+DataField::DataField() : meshWidth_({0, 0}), offset_({0, 0}), fieldID_(EMPTY_ID) {}
 
 DataField::DataField(const std::array<int, 2> size, const std::array<double, 2> meshWidth, const std::array<double, 2> offset, int fieldID)
     : Array2d(size), meshWidth_(meshWidth), offset_(offset), fieldID_(fieldID) {

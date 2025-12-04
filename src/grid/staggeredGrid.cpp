@@ -1,10 +1,10 @@
 #include "grid/staggeredGrid.h"
 #include "grid/dataField.h"
+#include "macros.h"
 #include "simulation/partitioning.h"
 #include <array>
 #include <iostream>
 
-// TODO: Rename meshWidth -> meshResolution
 StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, const Partitioning &partitioning)
     : meshWidth_(meshWidth), nCells_(nCells) {
     int vWidth = nCells[0] + 2;
@@ -27,14 +27,14 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
         uWidth += 1;
     }
 
-    p_ = DataField({pWidth, pHeight}, meshWidth, {0.5, 0.5}, 1); // TODO maybe macros
-    rhs_ = DataField({pWidth, pHeight}, meshWidth, {0.5, 0.5}, 2);
+    p_ = DataField({pWidth, pHeight}, meshWidth, {0.5, 0.5}, P_ID);
+    rhs_ = DataField({pWidth, pHeight}, meshWidth, {0.5, 0.5}, RHS_ID);
 
-    u_ = DataField({uWidth, uHeight}, meshWidth, {0.0, 0.5}, 3);
-    f_ = DataField({uWidth, uHeight}, meshWidth, {0.0, 0.5}, 4);
+    u_ = DataField({uWidth, uHeight}, meshWidth, {0.0, 0.5}, U_ID);
+    f_ = DataField({uWidth, uHeight}, meshWidth, {0.0, 0.5}, F_ID);
 
-    v_ = DataField({vWidth, vHeight}, meshWidth, {0.5, 0.0}, 5);
-    g_ = DataField({vWidth, vHeight}, meshWidth, {0.5, 0.0}, 6);
+    v_ = DataField({vWidth, vHeight}, meshWidth, {0.5, 0.0}, V_ID);
+    g_ = DataField({vWidth, vHeight}, meshWidth, {0.5, 0.0}, G_ID);
 
     Rank rank = partitioning.ownRank();
     auto rankCoords = partitioning.getCurrentRankCoords();

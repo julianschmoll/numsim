@@ -13,11 +13,9 @@ OutputWriterParaviewParallel::OutputWriterParaviewParallel(std::shared_ptr<Stagg
 
       nCellsGlobal_(partitioning_.nCellsGlobal()),
 
-      // ToDo: Why are we doing this?
       // because we use it as a 2d array with no connection whatsoever to the original indexing
       nPointsGlobal_{nCellsGlobal_[0] + 2, nCellsGlobal_[1] + 2}, // we have one point more than cells in every coordinate direction
 
-      // TODO: Does this make sense, what about ghost cells?
       // create field variables for resulting values, only for local data as send buffer
       u_(nPointsGlobal_, grid_->meshWidth(), {0.0, 0.5}), v_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.0}),
       p_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.5}),
@@ -43,7 +41,6 @@ void OutputWriterParaviewParallel::gatherData() {
     int jEnd = nCells[1];
     int iEnd = nCells[0];
 
-    // ToDo: This is weird as we already should have boundary in the index range
     // add right-most points at ranks with right boundary
     if (partitioning_.ownContainsBoundary<Direction::Right>())
         iEnd += 1;
@@ -54,7 +51,7 @@ void OutputWriterParaviewParallel::gatherData() {
 
     std::array<int, 2> nodeOffset = partitioning_.nodeOffset();
 
-    u_.setToZero(); // TODO: necessary?
+    u_.setToZero();
     v_.setToZero();
     p_.setToZero();
 

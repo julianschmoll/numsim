@@ -6,58 +6,59 @@
 enum class IterSolverType { SOR, GaussSeidel, CG };
 
 /**
- * All settings that parametrize a simulation run.
+ * @class Settings
+ * @brief All settings that parametrize a simulation run.
  */
 struct Settings {
-    // number of cells in x and y direction
+    /// number of cells in x and y direction
     std::array<int, 2> nCells;
 
-    // physical size of the domain
+    /// physical size of the domain
     std::array<double, 2> physicalSize;
 
-    // reynolds number
+    /// reynolds number
     double re = 1000;
 
-    // end time of the simulation
+    /// end time of the simulation
     double endTime = 10.0;
 
-    // safety factor for time step width
+    /// safety factor for time step width
     double tau = 0.5;
 
-    // maximum time step width
+    /// maximum time step width
     double maximumDt = 0.1;
 
-    // external forces
+    /// external forces
     std::array<double, 2> g{0., 0.};
 
-    // if the donor cell scheme should be used
+    /// if the donor cell scheme should be used
     bool useDonorCell = false;
 
-    // factor for donor-cell scheme
+    /// factor for donor-cell scheme
     double alpha = 0.5;
 
-    // prescribed values of u,v at bottom of domain
+    /// prescribed values of u,v at bottom of domain
     std::array<double, 2> dirichletBcBottom;
 
-    // prescribed values of u,v at top of domain
+    /// prescribed values of u,v at top of domain
     std::array<double, 2> dirichletBcTop;
 
-    // prescribed values of u,v at left of domain
+    /// prescribed values of u,v at left of domain
     std::array<double, 2> dirichletBcLeft;
 
-    // prescribed values of u,v at right of domain
+    /// prescribed values of u,v at right of domain
     std::array<double, 2> dirichletBcRight;
 
-    // which pressure solver to use, "GaussSeidel" or "SOR"
+    /// which pressure solver to use, "GaussSeidel" or "SOR"
     IterSolverType pressureSolver = IterSolverType::SOR;
 
-    // overrelaxation factor
+    /// overrelaxation factor
     double omega = 1.0;
 
-    // tolerance for the residual in the pressure solver
+    /// tolerance for the residual in the pressure solver
     double epsilon = 1e-5;
 
-    // maximum number of iterations in the solver
+    /// maximum number of iterations in the solver
     int maximumNumberOfIterations = 1e5;
 
     /**

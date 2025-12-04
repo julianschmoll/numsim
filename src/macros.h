@@ -5,7 +5,10 @@
 #define DEBUG(command)
 #endif
 
-#define ROOT_RANK 0
-#define U_TAG 100
-#define V_TAG 101
-#define P_TAG 102
+#define EMPTY_ID -1 // empty field ID
+#define P_ID 1      // field ID for pressure data fields
+#define RHS_ID 2    // field ID for rhs data fields
+#define U_ID 3      // field ID for u data fields
+#define F_ID 4      // field ID for f data fields
+#define V_ID 5      // field ID for v data fields
+#define G_ID 6      // field ID for g data fields
