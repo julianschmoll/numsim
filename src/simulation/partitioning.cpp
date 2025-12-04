@@ -82,33 +82,73 @@ void Partitioning::printPartitioningInfo() const {
     std::cout << std::endl;
 }
 
-void Partitioning::exchange(const std::vector<DataField *> &fields) const {
-    std::vector<MPI_Request> requests;
-
-    for (DataField *field : fields) {
-        if (!ownContainsBoundary<Direction::Top>()) {
-            requests.emplace_back(sendBorder<Direction::Top>(*field));
-            requests.emplace_back(recvBorder<Direction::Top>(*field));
-        }
-        if (!ownContainsBoundary<Direction::Bottom>()) {
-            requests.emplace_back(sendBorder<Direction::Bottom>(*field));
-            requests.emplace_back(recvBorder<Direction::Bottom>(*field));
-        }
-        if (!ownContainsBoundary<Direction::Left>()) {
-            requests.emplace_back(sendBorder<Direction::Left>(*field));
-            requests.emplace_back(recvBorder<Direction::Left>(*field));
-        }
-        if (!ownContainsBoundary<Direction::Right>()) {
-            requests.emplace_back(sendBorder<Direction::Right>(*field));
-            requests.emplace_back(recvBorder<Direction::Right>(*field));
-        }
-    }
-    if (!requests.empty()) {
-        MPI_Waitall(static_cast<int>(requests.size()), requests.data(), MPI_STATUS_IGNORE);
+void Partitioning::exchange(const std::vector<DataField *> &fields) {
+    nonBlockingExchange(fields);
+    if (!requests_.empty()) {
+        MPI_Waitall(static_cast<int>(requests_.size()), requests_.data(), MPI_STATUS_IGNORE);
     }
 }
 
-double Partitioning::collectSum(double localSum) const {
+void Partitioning::exchange(DataField &field) {
+    nonBlockingExchange(field);
+    if (!requests_.empty()) {
+        MPI_Waitall(static_cast<int>(requests_.size()), requests_.data(), MPI_STATUS_IGNORE);
+    }
+}
+
+void Partitioning::nonBlockingExchange(const std::vector<DataField *> &fields) {
+    requests_.clear();
+
+    // Apply your required logic here, ensuring receive is posted before send (best practice)
+    for (DataField *field : fields) {
+        if (!ownContainsBoundary<Direction::Top>()) {
+            requests_.push_back(recvBorder<Direction::Top>(*field));
+            requests_.push_back(sendBorder<Direction::Top>(*field));
+        }
+        if (!ownContainsBoundary<Direction::Bottom>()) {
+            requests_.push_back(recvBorder<Direction::Bottom>(*field));
+            requests_.push_back(sendBorder<Direction::Bottom>(*field));
+        }
+        if (!ownContainsBoundary<Direction::Left>()) {
+            requests_.push_back(recvBorder<Direction::Left>(*field));
+            requests_.push_back(sendBorder<Direction::Left>(*field));
+        }
+        if (!ownContainsBoundary<Direction::Right>()) {
+            requests_.push_back(recvBorder<Direction::Right>(*field));
+            requests_.push_back(sendBorder<Direction::Right>(*field));
+        }
+    }
+}
+
+void Partitioning::nonBlockingExchange(DataField &field) {
+    requests_.clear();
+
+    if (!ownContainsBoundary<Direction::Top>()) {
+        requests_.push_back(recvBorder<Direction::Top>(field));
+        requests_.push_back(sendBorder<Direction::Top>(field));
+    }
+    if (!ownContainsBoundary<Direction::Bottom>()) {
+        requests_.push_back(recvBorder<Direction::Bottom>(field));
+        requests_.push_back(sendBorder<Direction::Bottom>(field));
+    }
+    if (!ownContainsBoundary<Direction::Left>()) {
+        requests_.push_back(recvBorder<Direction::Left>(field));
+        requests_.push_back(sendBorder<Direction::Left>(field));
+    }
+    if (!ownContainsBoundary<Direction::Right>()) {
+        requests_.push_back(recvBorder<Direction::Right>(field));
+        requests_.push_back(sendBorder<Direction::Right>(field));
+    }
+}
+
+void Partitioning::waitForAllMPIRequests() {
+    if (!requests_.empty()) {
+        MPI_Waitall(static_cast<int>(requests_.size()), requests_.data(), MPI_STATUSES_IGNORE);
+        requests_.clear();
+    }
+}
+
+double Partitioning::collectSum(const double localSum) const {
     double globalSum = 0;
     MPI_Allreduce(&localSum, &globalSum, 1, MPI_DOUBLE, MPI_SUM, cartComm_);
     return globalSum;
