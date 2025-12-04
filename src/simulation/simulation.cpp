@@ -1,7 +1,7 @@
 #include "simulation.h"
+#include "macros.h"
 #include "outputWriter/outputWriterParaviewParallel.h"
 #include "outputWriter/outputWriterTextParallel.h"
-#include "macros.h"
 #include "settings.h"
 #include "simulation/pressureSolver/conjugateGradientSolver.h"
 #include "simulation/pressureSolver/redBlackSolver.h"
@@ -65,17 +65,21 @@ void Simulation::run() {
     setBoundaryFG();
 
     while (currentTime < settings_.endTime) {
+        setPreliminaryVelocities();
+        partitioning_->nonBlockingExchange(fg);
+        setBoundaryUV();
+
         TimeSteppingInfo timeSteppingInfo = computeTimeStepWidth(currentTime);
         timeStepWidth_ = timeSteppingInfo.timeStepWidth;
 
-        setPreliminaryVelocities();
-        partitioning_->exchange(fg);
-
+        partitioning_->waitForAllMPIRequests();
         setRightHandSide();
+        partitioning_->exchange(discOps_->rhs());
+
         pressureSolver_->solve();
 
         setVelocities();
-        partitioning_->exchange(uv);
+        partitioning_->nonBlockingExchange(uv);
 
         // TODO: Do we want to snap to integer values or just write when we crossed one
         const int lastSec = static_cast<int>(currentTime);
@@ -85,12 +89,11 @@ void Simulation::run() {
 
         printConsoleInfo(currentTime, timeSteppingInfo);
 
+        partitioning_->waitForAllMPIRequests();
         DEBUG(outputWriterText_->writeFile(currentTime));
         if (writeOutput) {
             outputWriterParaview_->writeFile(currentTime);
         }
-
-        setBoundaryUV();
     }
 
     partitioning_->barrier();
@@ -120,7 +123,6 @@ void Simulation::printConsoleInfo(double currentTime, const TimeSteppingInfo &ti
     }
 }
 
-// TODO: Check if these are correct!
 void Simulation::setBoundaryUV() {
     auto &u = discOps_->u();
     auto &v = discOps_->v();
