@@ -2,20 +2,15 @@
 #include "grid/dataField.h"
 #include <cmath>
 
-ConjugateGradientSolver::ConjugateGradientSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning,
-        double epsilon, int maximumNumberOfIterations) : 
-    PressureSolver(std::move(grid), std::move(partitioning), epsilon, maximumNumberOfIterations),
-    direction_(grid_->p().size(), grid_->meshWidth()),
-    dx2(grid_->dx() * grid_->dx()),
-    dy2(grid_->dy() * grid_->dy()),
-    invDx2(1.0 / dx2),
-    invDy2(1.0 / dy2)
-{}
+ConjugateGradientSolver::ConjugateGradientSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning, double epsilon,
+                                                 int maximumNumberOfIterations)
+    : PressureSolver(std::move(grid), std::move(partitioning), epsilon, maximumNumberOfIterations), direction_(grid_->p().size(), grid_->meshWidth()),
+      dx2_(grid_->dx() * grid_->dx()), dy2_(grid_->dy() * grid_->dy()), invDx2_(1.0 / dx2_), invDy2_(1.0 / dy2_) {}
 
 double ConjugateGradientSolver::applyDiffusionOperator(const DataField &d, int i, int j) const {
     const double pij = d(i, j);
-    const double pDxx = (d(i - 1, j) - 2.0 * pij + d(i + 1, j)) * invDx2;
-    const double pDyy = (d(i, j - 1) - 2.0 * pij + d(i, j + 1)) * invDy2;
+    const double pDxx = (d(i - 1, j) - 2.0 * pij + d(i + 1, j)) * invDx2_;
+    const double pDyy = (d(i, j - 1) - 2.0 * pij + d(i, j + 1)) * invDy2_;
     return pDxx + pDyy;
 }
 
@@ -30,7 +25,7 @@ void ConjugateGradientSolver::updatePressure(double alpha) {
         }
     }
     setBoundaryValues();
-    partitioning_->exchange({&p});
+    partitioning_->exchange(p);
 }
 
 void ConjugateGradientSolver::updateDirection(double beta) {
@@ -43,7 +38,7 @@ void ConjugateGradientSolver::updateDirection(double beta) {
             d(i, j) = rhs(i, j) + beta * d(i, j);
         }
     }
-    partitioning_->exchange({&d});
+    partitioning_->exchange(d);
 }
 
 double ConjugateGradientSolver::decreaseResidual(const DataField &d, double alpha) {
@@ -58,7 +53,7 @@ double ConjugateGradientSolver::decreaseResidual(const DataField &d, double alph
             localSquareResidual += rhs(i, j) * rhs(i, j);
         }
     }
-    partitioning_->exchange({&rhs});
+    partitioning_->exchange(rhs);
     double squareResidual = partitioning_->collectSum(localSquareResidual);
 
     return squareResidual;
@@ -102,7 +97,7 @@ void ConjugateGradientSolver::solve() {
             d(i, j) = rhs(i, j);
         }
     }
-    partitioning_->exchange({&d});
+    partitioning_->exchange(d);
 
     while (rNew > epsilon_ * epsilon_) {
         const double alpha = calculateAlpha();
