@@ -5,18 +5,15 @@
 #include <memory>
 
 class PressureSolver {
-    
+
 public:
-    PressureSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning,
-        double epsilon, int maximumNumberOfIterations);
+    PressureSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning, double epsilon, int maximumNumberOfIterations);
 
     virtual ~PressureSolver() = default;
 
-    PressureSolver(const PressureSolver&) = delete;
-    PressureSolver(PressureSolver&&) = delete;
+    PressureSolver(const PressureSolver &) = delete;
 
-    PressureSolver operator=(const PressureSolver&) = delete;
-    PressureSolver operator=(PressureSolver&&) = delete;
+    PressureSolver(PressureSolver &&) = delete;
 
     virtual void solve() = 0;
 

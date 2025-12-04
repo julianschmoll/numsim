@@ -1,12 +1,9 @@
 
 #include "simulation/pressureSolver/pressureSolver.h"
 
-PressureSolver::PressureSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning, double epsilon, int maximumNumberOfIterations) : 
-    grid_(std::move(grid)),
-    partitioning_(std::move(partitioning)),
-    epsilon_(epsilon), 
-    maxNumberOfIterations_(maximumNumberOfIterations)
-{}
+PressureSolver::PressureSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning, double epsilon,
+                               int maximumNumberOfIterations)
+    : partitioning_(std::move(partitioning)), grid_(std::move(grid)), epsilon_(epsilon), maxNumberOfIterations_(maximumNumberOfIterations) {}
 
 void PressureSolver::setBoundaryValues() {
     DataField &p = grid_->p();
