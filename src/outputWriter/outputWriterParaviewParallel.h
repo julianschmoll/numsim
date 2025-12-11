@@ -14,13 +14,13 @@
  *  All values are given for the nodes of the mesh, i.e., the corners of each cell.
  *  This means, values will be interpolated because the values are stored at positions given by the staggered grid.
  */
-class OutputWriterParaviewParallel : public OutputWriter {
+class OutputWriterParaviewParallel final : public OutputWriter {
 public:
     //! constructor
-    OutputWriterParaviewParallel(std::shared_ptr<StaggeredGrid> discretization, const Partitioning &partitioning);
+    OutputWriterParaviewParallel(std::shared_ptr<StaggeredGrid> discretization, const Partitioning &partitioning, const std::string &folderName);
 
     //! write current velocities to file, filename is output_<count>.vti
-    void writeFile(double currentTime);
+    void writeFile(double currentTime) override;
 
 private:
     //! gather u,v and p values from all ranks to rank 0 and store them in the global field variables

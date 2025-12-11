@@ -9,7 +9,7 @@
 #include <iostream>
 #include <ostream>
 
-Simulation::Simulation(const Settings &settings) {
+Simulation::Simulation(const Settings &settings, const std::string &folderName) {
     settings_ = settings;
     partitioning_ = std::make_shared<Partitioning>(settings_.nCells);
 
@@ -48,13 +48,13 @@ Simulation::Simulation(const Settings &settings) {
     partitioning_->barrier();
     partitioning_->printPartitioningInfo();
 
-    outputWriterParaview_ = std::make_unique<OutputWriterParaviewParallel>(discOps_, *partitioning_);
-    outputWriterText_ = std::make_unique<OutputWriterTextParallel>(discOps_, *partitioning_);
+    outputWriterParaview_ = std::make_unique<OutputWriterParaviewParallel>(discOps_, *partitioning_, folderName);
+    outputWriterText_ = std::make_unique<OutputWriterTextParallel>(discOps_, *partitioning_, folderName);
 }
 
 void Simulation::run() {
 
-    auto start = std::chrono::high_resolution_clock::now();
+    const auto start = std::chrono::high_resolution_clock::now();
 
     double currentTime = 0.0;
 

@@ -1,7 +1,7 @@
 #include "outputWriterParaview.h"
 
-OutputWriterParaview::OutputWriterParaview(const std::shared_ptr<StaggeredGrid> grid, const Partitioning &partitioning)
-    : OutputWriter(grid, partitioning) {
+OutputWriterParaview::OutputWriterParaview(const std::shared_ptr<StaggeredGrid> grid, const Partitioning &partitioning, const std::string &folderName)
+    : OutputWriter(grid, partitioning, folderName) {
     // Create a vtkWriter_
     vtkWriter_ = vtkSmartPointer<vtkXMLImageDataWriter>::New();
 }
@@ -9,7 +9,7 @@ OutputWriterParaview::OutputWriterParaview(const std::shared_ptr<StaggeredGrid> 
 void OutputWriterParaview::writeFile(const double currentTime) {
     // Assemble the filename
     std::stringstream fileName;
-    fileName << "out/output_" << std::setw(4) << setfill('0') << fileNo_ << "." << vtkWriter_->GetDefaultFileExtension();
+    fileName << folderName_ << "/output_" << std::setw(4) << setfill('0') << fileNo_ << "." << vtkWriter_->GetDefaultFileExtension();
 
     // increment file no.
     fileNo_++;

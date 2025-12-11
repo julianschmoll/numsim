@@ -16,8 +16,9 @@
  */
 class OutputWriter {
 public:
+    virtual ~OutputWriter() = default;
     //! constructor
-    OutputWriter(std::shared_ptr<StaggeredGrid> grid, const Partitioning &partitioning);
+    OutputWriter(std::shared_ptr<StaggeredGrid> grid, const Partitioning &partitioning, const std::string &folderName);
 
     //! write current velocities to file, filename is output_<count>.vti
     virtual void writeFile(double currentTime) = 0;
@@ -27,4 +28,5 @@ protected:
     const Partitioning partitioning_;
     //< the partitioning object that knowns about the domain decomposition, only significant when executing in parallel
     int fileNo_; //< a counter that increments for every file, this number is part of the file name of output files
+    const std::string folderName_;
 };

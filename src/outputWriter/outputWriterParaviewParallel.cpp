@@ -8,8 +8,8 @@
 #include <vtkImageData.h>
 #include <vtkPointData.h>
 
-OutputWriterParaviewParallel::OutputWriterParaviewParallel(std::shared_ptr<StaggeredGrid> grid, const Partitioning &partitioning)
-    : OutputWriter(grid, partitioning),
+OutputWriterParaviewParallel::OutputWriterParaviewParallel(std::shared_ptr<StaggeredGrid> grid, const Partitioning &partitioning, const std::string &folderName)
+    : OutputWriter(grid, partitioning, folderName),
 
       nCellsGlobal_(partitioning_.nCellsGlobal()),
 
@@ -87,7 +87,7 @@ void OutputWriterParaviewParallel::writeFile(double currentTime) {
 
     // Assemble the filename
     std::stringstream fileName;
-    fileName << "out/output_" << std::setw(4) << setfill('0') << fileNo_ << "." << vtkWriter_->GetDefaultFileExtension();
+    fileName << folderName_ <<"/output_" << std::setw(4) << setfill('0') << fileNo_ << "." << vtkWriter_->GetDefaultFileExtension();
 
     // increment file no.
     fileNo_++;

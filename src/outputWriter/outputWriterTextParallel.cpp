@@ -8,7 +8,7 @@
 void OutputWriterTextParallel::writeFile(double currentTime) {
     // Assemble the filename
     std::stringstream fileName;
-    fileName << "out/output_" << std::setw(4) << std::setfill('0') << fileNo_ << "." << partitioning_.ownRank() << ".txt";
+    fileName << folderName_ << "/output_" << std::setw(4) << std::setfill('0') << fileNo_ << "." << partitioning_.ownRank() << ".txt";
 
     // increment file no.
     fileNo_++;

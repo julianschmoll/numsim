@@ -32,7 +32,7 @@ public:
      *
      * @param settings Settings to run simulation with.
      */
-    explicit Simulation(const Settings &settings);
+    explicit Simulation(const Settings &settings, const std::string &folderName);
 
 private:
     // Grid width in x and y directions
