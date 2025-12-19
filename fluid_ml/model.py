@@ -1,5 +1,6 @@
 from torch import nn
 
+
 class FluidCNN(nn.Module):
     def __init__(self, config):
         super().__init__()

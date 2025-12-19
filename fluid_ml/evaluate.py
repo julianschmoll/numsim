@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 
+
 def visualize(inputs, labels):
     """Visualizes the input and label channels
 
@@ -9,9 +10,9 @@ def visualize(inputs, labels):
     """
     fig = plt.figure(figsize=(15, 5))
 
-    _plot(fig, inputs[0,0], "Input $u$", (1,3,1))
-    _plot(fig, labels[0,0], "Output $u$", (1,3,2))
-    _plot(fig, labels[0,1], "Output $v$", (1,3,3))
+    _plot(fig, inputs[0, 0], "Input $u$", (1, 3, 1))
+    _plot(fig, labels[0, 0], "Output $u$", (1, 3, 2))
+    _plot(fig, labels[0, 1], "Output $v$", (1, 3, 3))
 
     plt.tight_layout()
     plt.show()
