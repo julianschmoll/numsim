@@ -55,11 +55,23 @@ struct Settings {
     /// overrelaxation factor
     double omega = 1.0;
 
-    /// tolerance for the residual in the pressure solver
+    /// tolerance forer the residual in the pressure solver
     double epsilon = 1e-5;
 
     /// maximum number of iterations in the solver
     int maximumNumberOfIterations = 1e5;
+
+    /// bool stating if we run a normal simulation or prepare training data
+    bool generateTrainingData = false;
+
+    /// number of samples for ML
+    int nSamples;
+
+    /// range of reynolds number for training
+    std::array<double, 2>  reynoldsRange;
+
+    /// range of velocity for training
+    std::array<double, 2> velocityRange;
 
     /**
      * Parses a text file with settings.

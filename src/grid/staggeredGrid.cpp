@@ -35,15 +35,6 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
 
     v_ = DataField({vWidth, vHeight}, meshWidth, {0.5, 0.0}, V_ID);
     g_ = DataField({vWidth, vHeight}, meshWidth, {0.5, 0.0}, G_ID);
-
-    Rank rank = partitioning.ownRank();
-    auto rankCoords = partitioning.getCurrentRankCoords();
-
-    std::cout << "rank " << rank << ": (" << rankCoords[0] << ", " << rankCoords[1] << ")\n";
-    std::cout << " -- p_: size = [" << pWidth << ", " << pHeight << "]\n";
-    std::cout << " -- v_: size = [" << vWidth << ", " << vHeight << "]\n";
-    std::cout << " -- u_: size = [" << uWidth << ", " << uHeight << "]\n";
-    std::cout << std::endl;
 }
 
 const std::array<double, 2> &StaggeredGrid::meshWidth() const {

@@ -110,6 +110,26 @@ void Settings::loadFromFile(const std::string &filename) {
         epsilon = std::stod(settings["epsilon"]);
     if (settings.count("maximumNumberOfIterations"))
         maximumNumberOfIterations = static_cast<int>(std::stod(settings["maximumNumberOfIterations"]));
+
+    if (!settings.count("generateTrainingData"))
+        return;
+
+    generateTrainingData = true;
+
+    if (settings.count("nSamples"))
+        nSamples = static_cast<int>(std::stod(settings["nSamples"]));
+
+    if (settings.count("reMin"))
+        reynoldsRange[0] = std::stod(settings["reMin"]);
+
+    if (settings.count("reMax"))
+        reynoldsRange[1] = std::stod(settings["reMax"]);
+
+    if (settings.count("uMin"))
+        velocityRange[0] = std::stod(settings["uMin"]);
+
+    if (settings.count("uMax"))
+        velocityRange[1] = std::stod(settings["uMax"]);
 }
 
 void Settings::printSettings() const {

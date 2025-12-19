@@ -1,5 +1,13 @@
-# Settings file for numsim program
-# Run ./numsim lid_driven_cavity.txt
+# Settings file for training data generation
+# Run ./numsim_parallel train.txt
+
+# Data generation for ML
+generateTrainingData = 1
+nSamples = 101
+reMin = 500.0
+reMax = 1500.0
+uMin = 0.5
+uMax = 1.5
 
 # Problem description
 physicalSizeX = 2.0   # physical size of the domain
@@ -32,4 +40,3 @@ pressureSolver = SOR  # which pressure solver to use, possible values: GaussSeid
 omega = 1.6           # overrelaxation factor, only for SOR solver
 epsilon = 1e-5        # tolerance for 2-norm of residual
 maximumNumberOfIterations = 1e4    # maximum number of iterations in the solver
-

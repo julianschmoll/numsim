@@ -46,7 +46,7 @@ Simulation::Simulation(const Settings &settings, const std::string &folderName) 
     }
 
     partitioning_->barrier();
-    partitioning_->printPartitioningInfo();
+    DEBUG(partitioning_->printPartitioningInfo());
 
     outputWriterParaview_ = std::make_unique<OutputWriterParaviewParallel>(discOps_, *partitioning_, folderName);
     outputWriterText_ = std::make_unique<OutputWriterTextParallel>(discOps_, *partitioning_, folderName);

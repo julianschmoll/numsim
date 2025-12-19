@@ -12,14 +12,27 @@ void runSimulation(const Settings &settings, const std::string &folderName) {
     simulation.run();
 }
 
+void generateTrainingData(Settings &settings) {
+    std::cout << "Generating training data..." << std::endl;
+    for (int i = 0; i < settings.nSamples; ++i) {
+        const double interpolate = static_cast<double>(i) / (settings.nSamples - 1);
+        settings.re = settings.reynoldsRange[0] + interpolate * (settings.reynoldsRange[1] - settings.reynoldsRange[0]);
+        settings.dirichletBcTop[0] = settings.velocityRange[0] + interpolate * (settings.velocityRange[1] - settings.velocityRange[0]);
+        // help, I hate handling strings in cpp
+        std::ostringstream index;
+        index << std::setw(4) << std::setfill('0') << i;
+        std::string folder = "train/out_" + index.str();
+        runSimulation(settings, folder);
+    }
+}
+
 int main(int argc, char *argv[]) {
     // we need an input file being specified
-    if (argc == 1) {
+    if (argc != 2) {
         std::cout << "usage: " << argv[0] << " <filename>" << std::endl;
         return EXIT_FAILURE;
     }
     const std::string filename = argv[1];
-    const bool generateTrainingData = std::stoi(argv[2]) != 0;
 
     Settings settings;
     settings.loadFromFile(filename);
@@ -37,25 +50,10 @@ int main(int argc, char *argv[]) {
     settings.pressureSolver = IterSolverType::CG;
 #endif
 
-    if (!generateTrainingData) {
+    if (settings.generateTrainingData) {
+        generateTrainingData(settings);
+    } else {
         runSimulation(settings, "out");
-    }
-    else {
-        // ToDo: This is nasty and should probably be configurable somehow
-        const int N = 101;
-        const double Re_min = 500.0;
-        const double Re_max = 1500.0;
-        const double u_min = 0.5;
-        const double u_max = 1.5;
-
-        for (int i = 0; i < N; ++i) {
-            double t = static_cast<double>(i) / (N - 1);
-            settings.re = Re_min + t * (Re_max - Re_min);
-            settings.dirichletBcTop[0] = u_min + t * (u_max - u_min);
-            std::ostringstream folder;
-            folder << "train/out_" << std::setw(3) << std::setfill('0') << i;
-            runSimulation(settings, folder.str());
-        }
     }
 
     MPI_Finalize();
