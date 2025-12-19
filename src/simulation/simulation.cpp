@@ -77,11 +77,10 @@ void Simulation::run() {
         setVelocities();
         partitioning_->exchange(uv);
 
-
         const int lastSec = static_cast<int>(currentTime);
         currentTime += timeStepWidth_;
         const int currentSec = static_cast<int>(currentTime);
-        const bool writeOutput = (currentSec > lastSec);
+        const bool writeOutput = (currentSec > lastSec) && !settings_.generateTrainingData;
 
         printConsoleInfo(currentTime, timeSteppingInfo);
         DEBUG(outputWriterText_->writeFile(currentTime));
@@ -90,8 +89,10 @@ void Simulation::run() {
             outputWriterParaview_->writeFile(currentTime);
         }
         setBoundaryUV();
-
     }
+
+    if (settings_.generateTrainingData)
+        outputWriterParaview_->writeFile(currentTime);
 
     partitioning_->barrier();
 
