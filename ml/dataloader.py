@@ -10,7 +10,11 @@ class FluidDataset(Dataset):
     def __getitem__(self, idx):
         pass
 
-    def read(self):
+    def load(self, path):
         pass
 
-    
+    def save(self, path):
+        pass
+
+    def create(self):
+        pass
