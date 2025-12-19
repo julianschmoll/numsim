@@ -14,7 +14,7 @@ Simulation::Simulation(const Settings &settings, const std::string &folderName) 
     partitioning_ = std::make_shared<Partitioning>(settings_.nCells);
 
     if (partitioning_->onPrimaryRank())
-        std::cout << "Initializing parallel Simulation on" << partitioning_->nRanks() << " ranks." << std::endl;
+        std::cout << "Initializing parallel Simulation on " << partitioning_->nRanks() << " ranks." << std::endl;
 
     for (int i = 0; i < 2; ++i) {
         meshWidth_[i] = settings_.physicalSize[i] / settings_.nCells[i];
