@@ -9,7 +9,7 @@ from fluid_ml import evaluate
 
 import torch
 
-def train_overfit(dataset, epochs=5000, batch_size=32):
+def train(dataset, epochs=5000, batch_size=32):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Training on {device}")
 
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     dataset = FluidDataset()
     dataset.create(train_files_path)
 
-    trained_model = train_overfit(dataset, epochs=1000)
+    trained_model = train(dataset, epochs=500)
     trained_model.eval()
 
     sample_input, sample_label = dataset[0]
