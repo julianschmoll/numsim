@@ -1,9 +1,10 @@
-import torch
+from pathlib import Path
+
 import numpy as np
 import pyvista as pv
+import torch
 import yaml
-from pathlib import Path
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
 
 from fluid_ml import evaluate
 
@@ -12,6 +13,7 @@ class FluidDataset(Dataset):
     def __init__(self):
         self.inputs = None
         self.labels = None
+        self.stats = {}
 
     def __len__(self):
         return len(self.inputs) if self.inputs is not None else 0
@@ -22,7 +24,13 @@ class FluidDataset(Dataset):
         return x, y
 
     def __str__(self):
-        return f"FluidDataset with {self.__len__()} inputs/labels."
+        string = f"FluidDataset with {self.__len__()} inputs/labels.\n"
+        string += "Dataset Statistics (Normalized 0-1):\n"
+        for category, channels in self.stats.items():
+            string += f"  {category}:\n"
+            for channel, values in channels.items():
+                string += f"    - {channel}: min={values['min']:.4f}, max={values['max']:.4f}\n"
+        return string
 
     def create(self, base_dir):
         inputs = []
@@ -57,24 +65,39 @@ class FluidDataset(Dataset):
                 inputs.append(input_channel)
                 labels.append(label_channels)
 
-        self.inputs = np.array(inputs)
-        self.labels = np.array(labels)
+        self.inputs = np.array(inputs, dtype=np.float32)
+        self.labels = np.array(labels, dtype=np.float32)
+        self.normalize()
 
     def normalize(self):
-        """Normalizes each channel and returns min/max stats."""
+        def process(data):
+            c_min, c_max = float(data.min()), float(data.max())
+            if (c_max - c_min) > 1e-9:
+                data[:] = (data - c_min) / (c_max - c_min)
+            return {"min": c_min, "max": c_max}
 
-        def get_stats_and_norm(data):
-            stats = []
-            for c in range(data.shape[1]):
-                c_min, c_max = data[:, c].min(), data[:, c].max()
-                if c_max - c_min > 1e-9:
-                    data[:, c] = (data[:, c] - c_min) / (c_max - c_min)
-                stats.append({"min": float(c_min), "max": float(c_max)})
-            return stats
+        self.stats = {
+            "inputs": {
+                "u": process(self.inputs[:, 0])
+            },
+            "labels": {
+                "u": process(self.labels[:, 0]),
+                "v": process(self.labels[:, 1])
+            }
+        }
 
-        in_stats = get_stats_and_norm(self.inputs)
-        lb_stats = get_stats_and_norm(self.labels)
-        return in_stats, lb_stats
+    def denormalize(self):
+        def process(data, c_stats):
+            c_min, c_max = c_stats["min"], c_stats["max"]
+            if (c_max - c_min) > 1e-9:
+                data[:] = data * (c_max - c_min) + c_min
+
+        stats_in_u = self.stats["inputs"]["u"]
+        stats_label_u = self.stats["labels"]["u"]
+        stats_label_v = self.stats["labels"]["v"]
+        process(self.inputs[:, 0], stats_in_u)
+        process(self.labels[:, 0], stats_label_u)
+        process(self.labels[:, 1], stats_label_v)
 
     def save(self, folder_path):
         folder = Path(folder_path)
@@ -83,16 +106,8 @@ class FluidDataset(Dataset):
         np.save(folder / "inputs.npy", self.inputs)
         np.save(folder / "labels.npy", self.labels)
 
-        # I think the normalization here is wrong, we should already
-        # normalize the data in set probably
-        in_stats, lb_stats = self.normalize()
-        config = {
-            "inputs": {"u": in_stats[0]},
-            "labels": {"u": lb_stats[0], "v": lb_stats[1]},
-        }
-
         with open(folder / "min_max.yaml", "w") as f:
-            yaml.dump(config, f)
+            yaml.dump(self.stats, f)
 
     def load(self, folder_path):
         folder = Path(folder_path)
