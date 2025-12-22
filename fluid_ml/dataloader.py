@@ -1,7 +1,6 @@
 import torch
 import numpy as np
 import pyvista as pv
-import os
 import yaml
 from pathlib import Path
 from torch.utils.data import Dataset, DataLoader
@@ -18,46 +17,48 @@ class FluidDataset(Dataset):
         return len(self.inputs) if self.inputs is not None else 0
 
     def __getitem__(self, idx):
-        x = torch.from_numpy(self.inputs[idx]).float()
-        y = torch.from_numpy(self.labels[idx]).float()
+        x = torch.from_numpy(self.inputs[idx])
+        y = torch.from_numpy(self.labels[idx])
         return x, y
 
-    def create(self, base_dir, n_samples):
-        all_inputs = []
-        all_labels = []
+    def __str__(self):
+        return f"FluidDataset with {self.__len__()} inputs/labels."
+
+    def create(self, base_dir):
+        inputs = []
+        labels = []
         base_path = Path(base_dir)
 
-        for i in range(n_samples):
-            folder = base_path / f"out_{i:04d}"
-            if not folder.exists():
-                continue
+        folders = sorted(
+            path for path in base_path.iterdir()
+            if path.is_dir() and path.name.startswith("out_")
+        )
 
-            vti_files = sorted([f for f in os.listdir(folder) if f.startswith("output_") and f.endswith(".vti")])
+        for folder in folders:
+            vti_files = sorted(
+                file for file in folder.iterdir()
+                if file.is_file() and file.name.startswith("output_") and file.suffix == ".vti"
+            )
 
             for vti_file in vti_files:
                 mesh = pv.read(folder / vti_file)
-                nx, ny, nz = mesh.dimensions
+                hx, hy, _ = mesh.dimensions
+                vel_data = mesh.point_data["velocity"].reshape((hx, hy, 3), order="C")
 
-                vel_data = mesh.point_data["velocity"].reshape((ny, nx, 3), order="F")
-                vel_data = np.transpose(vel_data, (1, 0, 2))
+                u_field = vel_data[:, :, 0]
+                v_field = vel_data[:, :, 1]
 
-                u_field = vel_data[:, :, 0]  # Horizontal
-                v_field = vel_data[:, :, 1]  # Vertical
-
-                # Handcrafted input: A zero-filled grid with the top lid velocity
-                # Note: Index -1 is the "Top" in (ny, nx) layout
+                # Handcrafted input as described in readthedocs
                 ux_val = u_field[-1, 1:-1].mean()
-                input_channel = np.zeros((1, ny, nx))
+                input_channel = np.zeros((1, hy, hx))
                 input_channel[0, -1, 1:-1] = ux_val
-
-                # Label: Stack u and v into (2, ny, nx)
                 label_channels = np.stack([u_field, v_field], axis=0)
 
-                all_inputs.append(input_channel)
-                all_labels.append(label_channels)
+                inputs.append(input_channel)
+                labels.append(label_channels)
 
-        self.inputs = np.array(all_inputs)
-        self.labels = np.array(all_labels)
+        self.inputs = np.array(inputs)
+        self.labels = np.array(labels)
 
     def normalize(self):
         """Normalizes each channel and returns min/max stats."""
@@ -76,31 +77,37 @@ class FluidDataset(Dataset):
         return in_stats, lb_stats
 
     def save(self, folder_path):
-        os.makedirs(folder_path, exist_ok=True)
-        np.save(f"{folder_path}/inputs.npy", self.inputs)
-        np.save(f"{folder_path}/labels.npy", self.labels)
+        folder = Path(folder_path)
+        folder.mkdir(parents=True, exist_ok=True)
+
+        np.save(folder / "inputs.npy", self.inputs)
+        np.save(folder / "labels.npy", self.labels)
 
         # I think the normalization here is wrong, we should already
         # normalize the data in set probably
         in_stats, lb_stats = self.normalize()
         config = {
             "inputs": {"u": in_stats[0]},
-            "labels": {"u": lb_stats[0], "v": lb_stats[1]}
+            "labels": {"u": lb_stats[0], "v": lb_stats[1]},
         }
-        with open(f"{folder_path}/min_max.yaml", "w") as f:
+
+        with open(folder / "min_max.yaml", "w") as f:
             yaml.dump(config, f)
 
     def load(self, folder_path):
-        self.inputs = np.load(f"{folder_path}/inputs.npy")
-        self.labels = np.load(f"{folder_path}/labels.npy")
+        folder = Path(folder_path)
+        self.inputs = np.load(folder / "inputs.npy")
+        self.labels = np.load(folder / "labels.npy")
 
 
 # this is just an entrypoint to test the dataloader, we will not use this in the actual pipeline
 if __name__ == "__main__":
-    dataset = FluidDataset()
     current_file_path = Path(__file__).resolve()
-    train_dir = current_file_path.parent.parent / "build" / "train"
-    dataset.create(train_dir, n_samples=101)
-    train_loader = DataLoader(dataset, batch_size=32, shuffle=True)
-    sample_inputs, sample_labels = next(iter(train_loader))
-    evaluate.visualize(sample_inputs, sample_labels)
+    train_files_path = current_file_path.parent.parent / "build" / "train"
+
+    dataset = FluidDataset()
+    dataset.create(train_files_path)
+    print(dataset)
+
+    train_loader = DataLoader(dataset, batch_size=32, shuffle=False)
+    evaluate.visualize(*next(iter(train_loader)))
