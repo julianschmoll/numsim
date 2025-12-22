@@ -53,5 +53,7 @@ def _quiver(fig, data, label, position):
     ax.set_title(label)
     
     u = data[0]
-    v = data[1] # ToDo: if input, we dont have v
-    plt.quiver(x, y, u, v, ax=ax) # ToDo: x and y pos from u and v data, handle if no v
+    v = 0
+    if data.shape[0] > 1:
+        v = data[1]
+    plt.quiver(u, v, (u ** 2 + v ** 2) ** 0.5, cmap="coolwarm")

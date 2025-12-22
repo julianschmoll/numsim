@@ -48,7 +48,7 @@ if __name__ == "__main__":
     dataset = FluidDataset()
     dataset.create(train_files_path)
 
-    trained_model = train_overfit(dataset, epochs=5000)
+    trained_model = train_overfit(dataset, epochs=1000)
     trained_model.eval()
 
     sample_input, sample_label = dataset[0]
@@ -57,5 +57,7 @@ if __name__ == "__main__":
     with torch.no_grad():
         prediction = trained_model(sample_input).cpu()
 
-    evaluate.visualize(sample_input.cpu(), sample_label.unsqueeze(0), title="Ground Truth")
-    evaluate.visualize(sample_input.cpu(), prediction, title="Prediction")
+    dataset.denormalize()
+
+    evaluate.visualize(sample_input.cpu(), sample_label.unsqueeze(0), title="Ground Truth", quiver=True)
+    evaluate.visualize(sample_input.cpu(), prediction, title="Prediction", quiver=True)
