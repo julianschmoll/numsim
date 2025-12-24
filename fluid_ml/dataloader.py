@@ -10,18 +10,26 @@ import evaluate
 
 
 class FluidDataset(Dataset):
+    inputs: np.ndarray # shape: (#samples, #fields, #cells x, #cells y)
+    labels: np.ndarray
+    stats:  dict[str, dict[str, dict[str, float]]]
+
+
     def __init__(self):
-        self.inputs = None
-        self.labels = None
+        self.inputs = np.array([], dtype=np.float32)
+        self.labels = np.array([], dtype=np.float32)
         self.stats = {}
 
-    def __len__(self):
-        return len(self.inputs) if self.inputs is not None else 0
 
-    def __getitem__(self, idx):
+    def __len__(self):
+        return len(self.inputs)
+
+
+    def __getitem__(self, idx) -> tuple[torch.Tensor, torch.Tensor]:
         x = torch.from_numpy(self.inputs[idx])
         y = torch.from_numpy(self.labels[idx])
         return x, y
+
 
     def __str__(self):
         string = f"FluidDataset with {self.__len__()} inputs/labels.\n"
@@ -32,7 +40,8 @@ class FluidDataset(Dataset):
                 string += f"    - {channel}: min={values['min']:.4f}, max={values['max']:.4f}\n"
         return string
 
-    def create(self, base_dir):
+
+    def create(self, base_dir: Path | str):
         inputs = []
         labels = []
         base_path = Path(base_dir)
@@ -69,8 +78,9 @@ class FluidDataset(Dataset):
         self.labels = np.array(labels, dtype=np.float32)
         self.normalize()
 
+
     def normalize(self):
-        def process(data):
+        def process(data: np.ndarray):
             c_min, c_max = float(data.min()), float(data.max())
             if (c_max - c_min) > 1e-9:
                 data[:] = (data - c_min) / (c_max - c_min)
@@ -86,8 +96,9 @@ class FluidDataset(Dataset):
             }
         }
 
+
     def denormalize(self):
-        def process(data, c_stats):
+        def process(data: np.ndarray, c_stats: dict[str, float]):
             c_min, c_max = c_stats["min"], c_stats["max"]
             if (c_max - c_min) > 1e-9:
                 data[:] = data * (c_max - c_min) + c_min
@@ -99,6 +110,7 @@ class FluidDataset(Dataset):
         process(self.labels[:, 0], stats_label_u)
         process(self.labels[:, 1], stats_label_v)
 
+
     def save(self, folder_path):
         folder = Path(folder_path)
         folder.mkdir(parents=True, exist_ok=True)
@@ -108,6 +120,7 @@ class FluidDataset(Dataset):
 
         with open(folder / "min_max.yaml", "w") as f:
             yaml.dump(self.stats, f)
+
 
     def load(self, folder_path):
         folder = Path(folder_path)
