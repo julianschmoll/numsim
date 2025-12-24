@@ -6,7 +6,7 @@ import torch
 import yaml
 from torch.utils.data import DataLoader, Dataset
 
-from fluid_ml import evaluate
+import evaluate
 
 
 class FluidDataset(Dataset):
