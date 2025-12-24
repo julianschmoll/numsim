@@ -10,7 +10,7 @@ import evaluate
 
 
 class FluidDataset(Dataset):
-    inputs: np.ndarray # shape: (#samples, #fields, #cells x, #cells y)
+    inputs: np.ndarray
     labels: np.ndarray
     stats:  dict[str, dict[str, dict[str, float]]]
     normalized: bool
@@ -44,6 +44,11 @@ class FluidDataset(Dataset):
 
 
     def create(self, base_dir: Path | str):
+        """
+        Create a dataset from `base_dir/out_*/output_*.vti`.
+        - inputs: `np.ndarray` of shape `(#samples, 2, #cells_x, #cells_y)`
+        - labels: `np.ndarray` of shape `(#samples, 1, #cells_x, #cells_y)`
+        """
         inputs = []
         labels = []
         base_path = Path(base_dir)
@@ -107,7 +112,7 @@ class FluidDataset(Dataset):
 
     def denormalize(self) -> None:
         """Denormalize the dataset if it is normalized."""
-        
+
         def process(data: np.ndarray, c_stats: dict[str, float]):
             c_min, c_max = c_stats["min"], c_stats["max"]
             if (c_max - c_min) > 1e-9:
@@ -166,8 +171,8 @@ if __name__ == "__main__":
     train_files_path = current_file_path.parent.parent / "build" / "train"
 
     dataset = FluidDataset()
-    #dataset.create(train_files_path)
-    dataset.load(current_file_path.parent)
+    dataset.create(train_files_path)
+    dataset.save(current_file_path.parent)
     print(dataset)
 
     train_loader = DataLoader(dataset, batch_size=32, shuffle=False)
