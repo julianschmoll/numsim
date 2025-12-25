@@ -6,7 +6,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from dataloader import FluidDataset
 from model import FluidCNN
-import evaluate
+import yaml
 
 
 class Trainer:
@@ -38,7 +38,7 @@ class Trainer:
         self.train_losses = []
         self.test_losses = []
         self.best_test_loss = float('inf')
-        self.save_path = cfg.get("save_path", "model.pt")
+        self.save_path = cfg.get("model_save_path", "model.pt")
         self.epochs = cfg.get("epochs", 5000)
 
         print(f"Training on {self.device}")
@@ -96,7 +96,7 @@ class Trainer:
                       f"Test: {avg_test_loss:.4e}{status}")
                 status = ""
 
-    def plot_losses(self):
+    def plot_losses(self, save=False):
         plt.figure()
         plt.semilogy(self.train_losses, label="Train loss")
         plt.semilogy(self.test_losses, label="Test loss")
@@ -104,7 +104,22 @@ class Trainer:
         plt.ylabel("MSE (log scale)")
         plt.legend()
         plt.title("Training and test loss")
-        plt.show()
+        if not save:
+            plt.show()
+        else:
+            plt.savefig(Path(self.save_path.parent / "losses.png"))
+
+    def save_stats(self, save_plot = False):
+        save_path = self.save_path.parent / "stats.yaml"
+        stats = {
+            "best_train_loss": max(self.train_losses),
+            "best_test_loss": self.best_test_loss,
+            "epochs": self.epochs,
+        }
+        with open(save_path, "w") as f:
+            yaml.dump(stats, f)
+        if save_plot:
+            self.plot_losses(save=True)
 
 
 if __name__ == "__main__":
