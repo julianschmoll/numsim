@@ -130,7 +130,7 @@ class FluidDataset(Dataset):
         self.normalized = False
 
 
-    def save(self, dataset_path: str | Path):
+    def save(self, dataset_path: str | Path, save_np_arrays: bool = False):
         """Save the dataset and normalization info to `dataset_path`."""
 
         folder = Path(dataset_path)
@@ -138,8 +138,9 @@ class FluidDataset(Dataset):
 
         stats = { **self.stats, "normalized": self.normalized }
 
-        np.save(folder / "inputs.npy", self.inputs)
-        np.save(folder / "labels.npy", self.labels)
+        if save_np_arrays:
+            np.save(folder / "inputs.npy", self.inputs)
+            np.save(folder / "labels.npy", self.labels)
 
         with open(folder / "min_max.yaml", "w") as f:
             yaml.dump(stats, f)
