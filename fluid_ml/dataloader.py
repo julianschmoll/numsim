@@ -6,22 +6,32 @@ import torch
 import yaml
 from torch.utils.data import DataLoader, Dataset
 
-from fluid_ml import evaluate
+import evaluate
 
 
 class FluidDataset(Dataset):
+    inputs: np.ndarray
+    labels: np.ndarray
+    stats:  dict[str, dict[str, dict[str, float]]]
+    normalized: bool
+
+
     def __init__(self):
-        self.inputs = None
-        self.labels = None
+        self.inputs = np.array([], dtype=np.float32)
+        self.labels = np.array([], dtype=np.float32)
         self.stats = {}
+        self.normalized = False
+
 
     def __len__(self):
-        return len(self.inputs) if self.inputs is not None else 0
+        return len(self.inputs)
 
-    def __getitem__(self, idx):
+
+    def __getitem__(self, idx) -> tuple[torch.Tensor, torch.Tensor]:
         x = torch.from_numpy(self.inputs[idx])
         y = torch.from_numpy(self.labels[idx])
         return x, y
+
 
     def __str__(self):
         string = f"FluidDataset with {self.__len__()} inputs/labels.\n"
@@ -32,7 +42,13 @@ class FluidDataset(Dataset):
                 string += f"    - {channel}: min={values['min']:.4f}, max={values['max']:.4f}\n"
         return string
 
-    def create(self, base_dir):
+
+    def create(self, base_dir: Path | str):
+        """
+        Create a dataset from `base_dir/out_*/output_*.vti`.
+        - inputs: `np.ndarray` of shape `(#samples, 2, #cells_x, #cells_y)`
+        - labels: `np.ndarray` of shape `(#samples, 1, #cells_x, #cells_y)`
+        """
         inputs = []
         labels = []
         base_path = Path(base_dir)
@@ -69,12 +85,18 @@ class FluidDataset(Dataset):
         self.labels = np.array(labels, dtype=np.float32)
         self.normalize()
 
-    def normalize(self):
-        def process(data):
+
+    def normalize(self) -> None:
+        """Normalize the data if it's not already normalized"""
+
+        def process(data: np.ndarray):
             c_min, c_max = float(data.min()), float(data.max())
             if (c_max - c_min) > 1e-9:
                 data[:] = (data - c_min) / (c_max - c_min)
             return {"min": c_min, "max": c_max}
+        
+        if self.normalized:
+            return
 
         self.stats = {
             "inputs": {
@@ -85,12 +107,19 @@ class FluidDataset(Dataset):
                 "v": process(self.labels[:, 1])
             }
         }
+        self.normalized = True
 
-    def denormalize(self):
-        def process(data, c_stats):
+
+    def denormalize(self) -> None:
+        """Denormalize the dataset if it is normalized."""
+
+        def process(data: np.ndarray, c_stats: dict[str, float]):
             c_min, c_max = c_stats["min"], c_stats["max"]
             if (c_max - c_min) > 1e-9:
                 data[:] = data * (c_max - c_min) + c_min
+
+        if not self.normalized:
+            return
 
         stats_in_u = self.stats["inputs"]["u"]
         stats_label_u = self.stats["labels"]["u"]
@@ -98,21 +127,42 @@ class FluidDataset(Dataset):
         process(self.inputs[:, 0], stats_in_u)
         process(self.labels[:, 0], stats_label_u)
         process(self.labels[:, 1], stats_label_v)
+        self.normalized = False
 
-    def save(self, folder_path):
-        folder = Path(folder_path)
+
+    def save(self, dataset_path: str | Path):
+        """Save the dataset and normalization info to `dataset_path`."""
+
+        folder = Path(dataset_path)
         folder.mkdir(parents=True, exist_ok=True)
+
+        stats = { **self.stats, "normalized": self.normalized }
 
         np.save(folder / "inputs.npy", self.inputs)
         np.save(folder / "labels.npy", self.labels)
 
         with open(folder / "min_max.yaml", "w") as f:
-            yaml.dump(self.stats, f)
+            yaml.dump(stats, f)
 
-    def load(self, folder_path):
-        folder = Path(folder_path)
+
+    def load(self, dataset_path: str | Path):
+        """Load a dataset from `dataset_path` without applying any normalization or denormalization."""
+
+        folder = Path(dataset_path)
+
         self.inputs = np.load(folder / "inputs.npy")
         self.labels = np.load(folder / "labels.npy")
+
+        with open(folder / "min_max.yaml", "r") as f:
+            try:
+                stats = yaml.safe_load(f)
+                self.normalized = stats["normalized"]
+                self.stats = {
+                    "inputs": stats["inputs"],
+                    "labels": stats["labels"]
+                }
+            except yaml.YAMLError as exception:
+                print(f"Error while loading min_max.yaml:\n{exception}")
 
 
 # this is just an entrypoint to test the dataloader, we will not use this in the actual pipeline
@@ -122,6 +172,7 @@ if __name__ == "__main__":
 
     dataset = FluidDataset()
     dataset.create(train_files_path)
+    dataset.save(current_file_path.parent)
     print(dataset)
 
     train_loader = DataLoader(dataset, batch_size=32, shuffle=False)

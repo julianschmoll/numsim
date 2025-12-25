@@ -4,9 +4,9 @@ from torch.utils.data import DataLoader, random_split
 
 from pathlib import Path
 import matplotlib.pyplot as plt
-from fluid_ml.dataloader import FluidDataset
-from fluid_ml.model import FluidCNN
-from fluid_ml import evaluate
+from dataloader import FluidDataset
+from model import FluidCNN
+import evaluate
 
 
 class Trainer:
@@ -58,6 +58,8 @@ class Trainer:
         return avg_test_loss
 
     def train(self):
+        status = ""
+        
         for epoch in range(self.epochs):
             self.model.train()
             epoch_loss = 0.0
@@ -83,16 +85,16 @@ class Trainer:
             self.train_losses.append(avg_train_loss)
             self.test_losses.append(avg_test_loss)
 
-            status = ""
             if avg_test_loss < self.best_test_loss:
                 self.best_test_loss = avg_test_loss
                 torch.save(self.model.state_dict(), self.save_path)
-                status = " (Saved Model)"
+                status = f" (last saved model: {epoch})"
 
             if epoch % 100 == 0 or epoch == 0:
                 print(f"Epoch {epoch}/{self.epochs} | "
                       f"Train: {avg_train_loss:.4e} | "
                       f"Test: {avg_test_loss:.4e}{status}")
+                status = ""
 
     def plot_losses(self):
         plt.figure()
