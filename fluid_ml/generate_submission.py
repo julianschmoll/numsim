@@ -1,4 +1,4 @@
-# copied from jupyter notebook in kaggle
+# copied from jupyter notebook in kaggle but adjusted paths to our repo
 import torch
 import yaml
 import sys
@@ -7,18 +7,28 @@ import pandas as pd
 from pathlib import Path
 
 
-def generate_submission():
-    # ToDo: Update path
-    submission_dir = "./submissions/"
+def rescale(data, mins_in, maxs_in, out_range=(torch.tensor([0, ]), torch.tensor([1, ]))):
+    min_out, max_out = out_range
+    return (data - mins_in[:, None, None]) / (maxs_in - mins_in)[:, None, None] * (max_out - min_out)[
+        :, None, None] + min_out[:, None, None]
 
-    sys.path.append(submission_dir)
+
+def rescale_inputs(inputs, min_max):
+    inputs_mins = torch.tensor([min_max["inputs"]["u"]["min"], ])
+    inputs_maxs = torch.tensor([min_max["inputs"]["u"]["max"], ])
+
+    inputs_scaled = rescale(inputs, inputs_mins, inputs_maxs)
+    return inputs_scaled
+
+
+def generate_submission(submission_dir, inputs_file):
+    sys.path.append(str(submission_dir))
+    print(f"appended {submission_dir} to sys")
     from mymodel import init_my_model
 
     submission_dir = Path(submission_dir)
 
-    # load TEST data
-    # ToDo: Update path
-    inputs = torch.load("/kaggle/input/num-sim-ml/test_data_points/inputs.pt")
+    inputs = torch.load(inputs_file)
 
     # load SUBMITTED yaml
     min_max = yaml.safe_load(open(submission_dir / "min_max.yaml", "r"))
@@ -26,26 +36,17 @@ def generate_submission():
     # load SUBMITTED model
     model = init_my_model()
     model.load_state_dict(torch.load(submission_dir / "model.pt", map_location="cpu"))
-    model.eval();
+    model.eval()
 
-    # print(model)
-
-    def rescale(data, mins_in, maxs_in, out_range=(torch.tensor([0, ]), torch.tensor([1, ]))):
-        min_out, max_out = out_range
-        return (data - mins_in[:, None, None]) / (maxs_in - mins_in)[:, None, None] * (max_out - min_out)[
-            :, None, None] + min_out[:, None, None]
-
-    def rescale_inputs(inputs, min_max):
-        inputs_mins = torch.tensor([min_max["inputs"]["u"]["min"], ])
-        inputs_maxs = torch.tensor([min_max["inputs"]["u"]["max"], ])
-
-        inputs_scaled = rescale(inputs, inputs_mins, inputs_maxs)
-        return inputs_scaled
+    print(model)
 
     # norm data with min_max
     inputs_scaled = rescale_inputs(inputs, min_max)
 
-    # print(inputs_scaled.min(), inputs_scaled.max())
+    # otherwise torch will cause a crash
+    inputs_scaled = inputs_scaled.to(torch.float32)
+
+    print(inputs_scaled.min(), inputs_scaled.max())
 
     # apply model to inputs
     with torch.no_grad():
@@ -63,8 +64,17 @@ def generate_submission():
     cols = ["id"] + [f"val{j}" for j in range(2 * 21 * 21)]
     df = pd.DataFrame(rows, columns=cols)
 
-    df.to_csv("submission.csv", index=False)
+    df.to_csv(submission_dir / "submission.csv", index=False)
 
 
 if __name__ == "__main__":
-    generate_submission()
+    models_dir = Path(__file__).resolve().parent.parent / "models"
+    inputs_path = Path(__file__).resolve().parent.parent / "resources" / "inputs.pt"
+    models = [f for f in models_dir.iterdir() if f.is_dir()]
+
+    if not models:
+        raise RuntimeError("No models found in models directory.")
+
+    latest_submission = max(models, key=lambda f: f.stat().st_mtime)
+
+    generate_submission(latest_submission, inputs_path)
