@@ -1,5 +1,7 @@
 from torch import nn
 
+from pathlib import Path
+import json
 
 class FluidCNN(nn.Module):
     def __init__(self, config=None):
@@ -60,3 +62,17 @@ class FluidCNN(nn.Module):
 
     def forward(self, x):
         return self.net(x)
+
+
+# this has to be named like this so the submission system can read the model
+def init_my_model():
+    config_path = Path(__file__).resolve().parent / "config.json"
+
+    if not config_path.is_file():
+        print(f"Warning: Config not found at {config_path}. Using default architecture.")
+        return FluidCNN()
+
+    with open(config_path, "r") as f:
+        config = json.load(f)
+
+    return FluidCNN(config)
