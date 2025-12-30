@@ -1,10 +1,6 @@
 from matplotlib import pyplot as plt
 
-FIG_WIDTH_QUIVER = 10
-FIG_WIDTH_PLOT = 15
-FIG_HEIGHT = 5
-TITLE_FONT_SIZE = 20
-TITLE_Y_POSITION = 0.95
+import constants
 
 
 def visualize(inputs, labels, title="Visualization", quiver=False):
@@ -17,9 +13,14 @@ def visualize(inputs, labels, title="Visualization", quiver=False):
         title: Title of the figure.
         quiver: Whether to display as quiver plot.
     """
-    fig_width = FIG_WIDTH_QUIVER if quiver else FIG_WIDTH_PLOT
-    fig = plt.figure(figsize=(fig_width, FIG_HEIGHT))
-    plt.suptitle(title, fontsize=TITLE_FONT_SIZE, fontweight="bold", y=TITLE_Y_POSITION)
+    fig_width = constants.FIG_WIDTH * 2 if quiver else constants.FIG_WIDTH * 3
+    fig = plt.figure(figsize=(fig_width, constants.FIG_HEIGHT))
+    plt.suptitle(
+        title,
+        fontsize=constants.TITLE_FONT_SIZE,
+        fontweight="bold",
+        y=constants.TITLE_Y_POSITION
+    )
 
     if quiver:
         _quiver(fig, inputs[0], "Flow input", (1, 2, 1))
@@ -68,4 +69,4 @@ def _quiver(fig, vector_data, label, position):
         v_component = vector_data[1]
 
     magnitude = (u_component**2 + v_component**2) ** 0.5
-    plt.quiver(u_component, v_component, magnitude, cmap="coolwarm")
+    plt.quiver(u_component, v_component, magnitude, cmap=constants.COLORMAP)

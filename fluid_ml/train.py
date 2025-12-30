@@ -8,13 +8,7 @@ from torch.utils.data import DataLoader, random_split
 
 from dataloader import FluidDataset
 from model import FluidCNN
-
-
-DEFAULT_TRAIN_RATIO = 0.8
-DEFAULT_LR = 5e-5
-DEFAULT_EARLY_STOPPING_PATIENCE = 20
-DEFAULT_BATCH_SIZE = 32
-DEFAULT_EPOCHS = 5000
+import constants
 
 
 class Trainer:
@@ -27,7 +21,11 @@ class Trainer:
             config (dict, optional): Configuration parameters for training.
         """
         cfg = config or {}
-        n_train = int(cfg.get("train_ratio", DEFAULT_TRAIN_RATIO) * len(dataset))
+        n_train = int(
+            cfg.get(
+                constants.TRAIN_RATIO_KEY,
+                constants.DEFAULT_TRAIN_RATIO) * len(dataset)
+        )
         n_test = len(dataset) - n_train
         train_set, test_set = random_split(dataset, [n_train, n_test])
 
@@ -35,40 +33,43 @@ class Trainer:
         self.model = FluidCNN(config=cfg).to(self.device)
         self._optimizer = torch.optim.Adam(
             self.model.parameters(),
-            lr=cfg.get("lr", DEFAULT_LR),
-            weight_decay=cfg.get("weight_decay", 0)
+            lr=cfg.get(constants.LEARNING_RATE_KEY, constants.DEFAULT_LR),
+            weight_decay=cfg.get(constants.WEIGHT_DECAY_KEY, 0)
         )
         self._scheduler = None
-        if cfg.get("use_lr_scheduler"):
+        if cfg.get(constants.USE_LR_SCHEDULER_KEY):
             self._scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
                 self._optimizer, mode="min", factor=0.5, patience=10
             )
 
-        self._use_early_stopping = cfg.get("use_early_stopping")
+        self._use_early_stopping = cfg.get(constants.USE_EARLY_STOPPING_KEY, False)
         if self._use_early_stopping:
             self._early_stopping_patience = cfg.get(
-                "early_stopping_patience", DEFAULT_EARLY_STOPPING_PATIENCE
+                constants.EARLY_STOPPING_PATIENCE_KEY,
+                constants.DEFAULT_EARLY_STOPPING_PATIENCE
             )
             self._early_stopping_counter = 0
 
-        self._criterion = cfg.get("criterion", torch.nn.MSELoss)()
+        self._criterion = cfg.get(constants.CRITERION_KEY, torch.nn.MSELoss)()
 
         self._train_loader = DataLoader(
             train_set, batch_size=cfg.get(
-                "batch_size", DEFAULT_BATCH_SIZE
+                constants.BATCH_SIZE_KEY, constants.DEFAULT_BATCH_SIZE
             ), shuffle=True
         )
         self._test_loader = DataLoader(
             test_set, batch_size=cfg.get(
-                "batch_size", DEFAULT_BATCH_SIZE
+                constants.BATCH_SIZE_KEY, constants.DEFAULT_BATCH_SIZE
             ), shuffle=False
         )
 
         self._train_losses = []
         self._test_losses = []
         self._best_test_loss = float("inf")
-        self._save_path = cfg.get("model_save_path", "model.pt")
-        self._epochs = cfg.get("epochs", DEFAULT_EPOCHS)
+        self._save_path = cfg.get(constants.PATHS_KEY, {}).get(
+            constants.MODEL_SAVE_PATH_KEY, "model.pt"
+        )
+        self._epochs = cfg.get(constants.EPOCHS_KEY, constants.DEFAULT_EPOCHS)
 
         self._early_stopping_counter = 0
 
@@ -196,9 +197,9 @@ if __name__ == "__main__":
     dataset.create(train_files_path)
 
     config = {
-        "epochs": DEFAULT_EPOCHS,
-        "batch_size": DEFAULT_BATCH_SIZE,
-        "lr": DEFAULT_LR
+        constants.EPOCHS_KEY: constants.DEFAULT_EPOCHS,
+        constants.BATCH_SIZE_KEY: constants.DEFAULT_BATCH_SIZE,
+        constants.LEARNING_RATE_KEY: constants.DEFAULT_LR
     }
     trainer = Trainer(dataset, config=config)
     trainer.train()

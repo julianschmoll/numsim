@@ -6,8 +6,8 @@ import pandas as pd
 import torch
 import yaml
 
-IMG_SIZE = 21
-N_CHANNELS = 2
+import constants
+
 DEFAULT_OUT_RANGE = (torch.tensor([.0]), torch.tensor([1.0]))
 
 
@@ -90,7 +90,9 @@ def write_csv(inputs_scaled, model, submission_dir):
 
     cols = ["id"] + [
         f"val{value_index}"
-        for value_index in range(N_CHANNELS * IMG_SIZE * IMG_SIZE)
+        for value_index in range(
+            constants.N_CHANNELS * constants.IMG_SIZE * constants.IMG_SIZE
+        )
     ]
     pd.DataFrame(rows, columns=cols).to_csv(
         submission_dir / "submission.csv", index=False

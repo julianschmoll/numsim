@@ -3,7 +3,7 @@ from pathlib import Path
 
 from torch import nn
 
-# This could be in a seperate constants.py file, but we keep it here for simplicity
+# We bake this in here instead of importing constants
 ACTIVATION_KEY = "activation"
 IN_CHANNELS_KEY = "in_channels"
 HIDDEN_CHANNELS_KEY = "hidden_channels"

@@ -7,20 +7,21 @@ from pathlib import Path
 from dataloader import FluidDataset
 from train import Trainer
 from submit import generate_submission
-
-SAVE_PATH_KEY = "save_path"
-MODEL_SAVE_PATH_KEY = "model_save_path"
+import constants
 
 
 def main():
     """Set up configuration, data, and training for the model."""
     config = get_config()
     save_config(config)
+    save_path = Path(config[constants.PATHS_KEY][constants.BASE_SAVE_PATH_KEY])
 
     dataset = FluidDataset()
-    dataset.create(config["train_files_path"])
+    dataset.create(
+        Path(config[constants.PATHS_KEY][constants.TRAIN_FILES_PATH_KEY])
+    )
     dataset.normalize()
-    dataset.save(config[SAVE_PATH_KEY])
+    dataset.save(save_path)
 
     save_model_init(config)
 
@@ -28,8 +29,10 @@ def main():
     trainer.train()
     trainer.save_stats(save_plot=True)
 
-    inputs_path = Path(__file__).resolve().parent.parent / "resources" / "inputs.pt"
-    generate_submission(config[SAVE_PATH_KEY], inputs_path)
+    inputs_path = (Path(__file__).resolve().parent.parent /
+                   constants.RESOURCE_FOLDER_NAME /
+                   constants.INPUTS_FILE_NAME)
+    generate_submission(save_path, inputs_path)
 
 
 # this could either read config from file, get from CLI, ...
@@ -41,27 +44,33 @@ def get_config() -> dict:
         A dictionary containing configuration parameters.
     """
     config = {
-        "epochs": 5000,
-        "batch_size": 32,
-        "lr": 5e-5,
-        "num_hidden_layers": 5,
-        "kernel_size": 7,
-        "in_channels": 1,
-        "out_channels": 2,
-        "hidden_channels": 16,
-        "output_activation": None,
-        "use_bias": True,
-        "padding_mode": "zeros",
+        constants.EPOCHS_KEY: constants.DEFAULT_EPOCHS,
+        constants.BATCH_SIZE_KEY: constants.DEFAULT_BATCH_SIZE,
+        constants.LEARNING_RATE_KEY: constants.DEFAULT_LR,
+        constants.NUM_HIDDEN_LAYERS_KEY: constants.DEFAULT_NUM_HIDDEN_LAYERS,
+        constants.KERNEL_SIZE_KEY: constants.DEFAULT_KERNEL_SIZE,
+        constants.IN_CHANNELS_KEY: constants.DEFAULT_IN_CHANNELS,
+        constants.OUT_CHANNELS_KEY: constants.DEFAULT_OUT_CHANNELS,
+        constants.HIDDEN_CHANNELS_KEY: constants.DEFAULT_HIDDEN_CHANNELS,
+        constants.OUTPUT_ACTIVATION_KEY: constants.DEFAULT_OUTPUT_ACTIVATION,
+        constants.USE_BIAS_KEY: constants.DEFAULT_USE_BIAS,
+        constants.PADDING_MODE_KEY: constants.DEFAULT_PADDING_MODE,
     }
 
     current_file_path = Path(__file__).resolve()
-    train_files_path = current_file_path.parent.parent / "build" / "train"
-    model_path = current_file_path.parent.parent / "models" / get_unique_folder_name()
+    train_files_path = (current_file_path.parent.parent /
+                        constants.BUILD_PATH /
+                        constants.TRAIN_FOLDER_NAME)
+    model_path = (current_file_path.parent.parent /
+                  constants.MODELS_SAVE_PATH /
+                  get_unique_folder_name())
     model_path.mkdir(parents=True, exist_ok=True)
 
-    config["train_files_path"] = train_files_path
-    config[SAVE_PATH_KEY] = model_path
-    config[MODEL_SAVE_PATH_KEY] = model_path / "model.pt"
+    config[constants.PATHS_KEY] = {
+        constants.TRAIN_FILES_PATH_KEY: str(train_files_path),
+        constants.BASE_SAVE_PATH_KEY: str(model_path),
+        constants.MODEL_SAVE_PATH_KEY: str(model_path / constants.DEFAULT_MODEL_NAME),
+    }
 
     return config
 
@@ -84,9 +93,13 @@ def save_config(config: dict) -> None:
     Args:
         config: The configuration dictionary to save.
     """
-    save_path = Path(config[SAVE_PATH_KEY]) / "config.json"
+    save_path = Path(
+        config[constants.PATHS_KEY][constants.BASE_SAVE_PATH_KEY]
+    ) / constants.CONFIG_FILE_NAME
+    save_data = config.copy()
+    save_data.pop(constants.PATHS_KEY)
     with open(save_path, "w") as config_file:
-        json.dump(config, config_file, indent=4, default=str)
+        json.dump(save_data, config_file, indent=4, default=str)
 
 
 def save_model_init(config: dict) -> None:
@@ -96,7 +109,9 @@ def save_model_init(config: dict) -> None:
     Args:
         config: The configuration dictionary containing the save path.
     """
-    save_path = config[SAVE_PATH_KEY] / "mymodel.py"
+    save_path = Path(
+        config[constants.PATHS_KEY][constants.BASE_SAVE_PATH_KEY]
+    ) / constants.INIT_MODEL_PY
     model_path = Path(__file__).resolve().parent / "model.py"
     save_path.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy(model_path, save_path)
