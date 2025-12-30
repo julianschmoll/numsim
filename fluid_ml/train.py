@@ -1,7 +1,6 @@
 import torch
 from torch import optim, nn
 from torch.utils.data import DataLoader, random_split
-
 from pathlib import Path
 import matplotlib.pyplot as plt
 from dataloader import FluidDataset
@@ -24,10 +23,19 @@ class Trainer:
         self.model = FluidCNN(config=cfg).to(self.device)
 
         lr = cfg.get("lr", 5e-5)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
-        # self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        #     self.optimizer, mode='min', factor=0.5, patience=10
-        # )
+        weight_decay = cfg.get("weight_decay", 0)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=lr, weight_decay=weight_decay)
+
+        self.scheduler = None
+        if cfg.get("use_lr_scheduler", False):
+            self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+                self.optimizer, mode='min', factor=0.5, patience=10
+            )
+
+        self.use_early_stopping = cfg.get("use_early_stopping", False)
+        if self.use_early_stopping:
+            self.early_stopping_patience = cfg.get("early_stopping_patience", 20)
+            self.early_stopping_counter = 0
 
         criterion_class = cfg.get("criterion", nn.MSELoss)
         self.criterion = criterion_class()
@@ -59,7 +67,7 @@ class Trainer:
 
     def train(self):
         status = ""
-        
+
         for epoch in range(self.epochs):
             self.model.train()
             epoch_loss = 0.0
@@ -80,7 +88,8 @@ class Trainer:
             avg_train_loss = epoch_loss / len(self.train_loader)
             avg_test_loss = self._get_test_loss(epoch)
 
-            # self.scheduler.step(avg_test_loss)
+            if self.scheduler:
+                self.scheduler.step(avg_test_loss)
 
             self.train_losses.append(avg_train_loss)
             self.test_losses.append(avg_test_loss)
@@ -89,6 +98,13 @@ class Trainer:
                 self.best_test_loss = avg_test_loss
                 torch.save(self.model.state_dict(), self.save_path)
                 status = f" (last saved model: {epoch})"
+                if self.use_early_stopping:
+                    self.early_stopping_counter = 0
+            elif self.use_early_stopping:
+                self.early_stopping_counter += 1
+                if self.early_stopping_counter >= self.early_stopping_patience:
+                    print(f"Early stopping at epoch {epoch}")
+                    break
 
             if epoch % 100 == 0 or epoch == 0:
                 print(f"Epoch {epoch}/{self.epochs} | "
@@ -112,9 +128,9 @@ class Trainer:
     def save_stats(self, save_plot = False):
         save_path = self.save_path.parent / "stats.yaml"
         stats = {
-            "best_train_loss": max(self.train_losses),
+            "best_train_loss": min(self.train_losses),
             "best_test_loss": self.best_test_loss,
-            "epochs": self.epochs,
+            "epochs": len(self.train_losses),
         }
         with open(save_path, "w") as f:
             yaml.dump(stats, f)

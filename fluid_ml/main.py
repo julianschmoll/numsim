@@ -26,7 +26,19 @@ def main():
 
 # this could either read config from file, get from CLI, ...
 def get_config() -> dict[str, int | float | Path]:
-    config = {"epochs": 5000, "batch_size": 32, "lr": 5e-5}
+    config = {
+        "epochs": 5000,
+        "batch_size": 32,
+        "lr": 5e-5,
+        "num_hidden_layers": 5,
+        "kernel_size": 7,
+        "in_channels": 1,
+        "out_channels": 2,
+        "hidden_channels": 16,
+        "output_activation": None,
+        "use_bias": True,
+        "padding_mode": "zeros",
+    }
 
     current_file_path = Path(__file__).resolve()
     train_files_path = current_file_path.parent.parent / "build" / "train"

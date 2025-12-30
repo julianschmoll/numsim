@@ -1,7 +1,7 @@
 from torch import nn
-
 from pathlib import Path
 import json
+
 
 class FluidCNN(nn.Module):
     def __init__(self, config=None):
@@ -15,10 +15,12 @@ class FluidCNN(nn.Module):
         in_channels = config.get("in_channels", 1)
         hidden_channels = config.get("hidden_channels", 16)
         out_channels = config.get("out_channels", 2)
-        activation_layer = config.get("activation", nn.ReLU)
+        activation_str = config.get("activation", "ReLU")
+        activation_layer = getattr(nn, activation_str)
         output_activation = config.get("output_activation")
         use_bias = config.get("use_bias", True)
         padding_mode = config.get("padding_mode", "zeros")
+        dropout_rate = config.get("dropout_rate", 0.0)
 
         layers = [
             nn.Conv2d(
@@ -44,6 +46,8 @@ class FluidCNN(nn.Module):
                 bias=use_bias,
             ))
             layers.append(activation_layer())
+            if dropout_rate > 0:
+                layers.append(nn.Dropout2d(p=dropout_rate))
 
         layers.append(nn.Conv2d(
             in_channels=hidden_channels,
@@ -74,5 +78,9 @@ def init_my_model():
 
     with open(config_path, "r") as f:
         config = json.load(f)
+
+    activation_str = config.get("activation")
+    if activation_str and isinstance(activation_str, str):
+        config["activation"] = getattr(nn, activation_str)
 
     return FluidCNN(config)
