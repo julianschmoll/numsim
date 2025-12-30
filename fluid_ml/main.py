@@ -1,22 +1,26 @@
-import torch
-from pathlib import Path
 import datetime
+import logging
+import json
+import shutil
+from pathlib import Path
 
 from dataloader import FluidDataset
 from train import Trainer
-import shutil
+from submit import generate_submission
 
-import json
+SAVE_PATH_KEY = "save_path"
+MODEL_SAVE_PATH_KEY = "model_save_path"
 
 
 def main():
+    """Set up configuration, data, and training for the model."""
     config = get_config()
     save_config(config)
 
     dataset = FluidDataset()
     dataset.create(config["train_files_path"])
     dataset.normalize()
-    dataset.save(config["save_path"])
+    dataset.save(config[SAVE_PATH_KEY])
 
     save_model_init(config)
 
@@ -24,8 +28,18 @@ def main():
     trainer.train()
     trainer.save_stats(save_plot=True)
 
+    inputs_path = Path(__file__).resolve().parent.parent / "resources" / "inputs.pt"
+    generate_submission(config[SAVE_PATH_KEY], inputs_path)
+
+
 # this could either read config from file, get from CLI, ...
-def get_config() -> dict[str, int | float | Path]:
+def get_config() -> dict:
+    """
+    Get the base configuration for the training run.
+
+    Returns:
+        A dictionary containing configuration parameters.
+    """
     config = {
         "epochs": 5000,
         "batch_size": 32,
@@ -46,28 +60,48 @@ def get_config() -> dict[str, int | float | Path]:
     model_path.mkdir(parents=True, exist_ok=True)
 
     config["train_files_path"] = train_files_path
-    config["save_path"] = model_path
-    config["model_save_path"] = model_path / "model.pt"
+    config[SAVE_PATH_KEY] = model_path
+    config[MODEL_SAVE_PATH_KEY] = model_path / "model.pt"
 
     return config
 
 
-# this is nasty, would still like to have something like the current date/time so we can remember
-def get_unique_folder_name():
-    return str(datetime.datetime.now()).replace("-", "").replace(" ", "_").replace(":", "").split(".")[0]
+# this is nasty, would still like to have something like the current date/time
+def get_unique_folder_name() -> str:
+    """
+    Generate a unique folder name based on the current timestamp.
+
+    Returns:
+        A string representing the unique folder name.
+    """
+    return datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
 
 def save_config(config: dict) -> None:
-    save_path = Path(config["save_path"]) / "config.json"
-    with open(save_path, "w") as f:
-        json.dump(config, f, indent=4, default=str)
+    """
+    Save the configuration dictionary to a JSON file.
+
+    Args:
+        config: The configuration dictionary to save.
+    """
+    save_path = Path(config[SAVE_PATH_KEY]) / "config.json"
+    with open(save_path, "w") as config_file:
+        json.dump(config, config_file, indent=4, default=str)
 
 
-def save_model_init(config: dict[str, int | float | Path]) -> None:
-    save_path = config["save_path"] / "mymodel.py"
+def save_model_init(config: dict) -> None:
+    """
+    Copy the model definition file to the submission directory.
+
+    Args:
+        config: The configuration dictionary containing the save path.
+    """
+    save_path = config[SAVE_PATH_KEY] / "mymodel.py"
     model_path = Path(__file__).resolve().parent / "model.py"
     save_path.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy(model_path, save_path)
 
+
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     main()

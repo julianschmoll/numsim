@@ -1,17 +1,25 @@
-import matplotlib.pyplot as plt
+from matplotlib import pyplot as plt
+
+FIG_WIDTH_QUIVER = 10
+FIG_WIDTH_PLOT = 15
+FIG_HEIGHT = 5
+TITLE_FONT_SIZE = 20
+TITLE_Y_POSITION = 0.95
 
 
 def visualize(inputs, labels, title="Visualization", quiver=False):
-    """Visualizes the input and label channels
+    """
+    Visualizes the input and label channels.
 
     Args:
-        inputs: input tensor
-        labels: label tensor
-        title: title of the figure
-        quiver: whether to display as quiver plot
+        inputs: Input tensor.
+        labels: Label tensor.
+        title: Title of the figure.
+        quiver: Whether to display as quiver plot.
     """
-    fig = plt.figure(figsize=(10 if quiver else 15, 5))
-    plt.suptitle(title, fontsize=20, fontweight="bold", y=0.95)
+    fig_width = FIG_WIDTH_QUIVER if quiver else FIG_WIDTH_PLOT
+    fig = plt.figure(figsize=(fig_width, FIG_HEIGHT))
+    plt.suptitle(title, fontsize=TITLE_FONT_SIZE, fontweight="bold", y=TITLE_Y_POSITION)
 
     if quiver:
         _quiver(fig, inputs[0], "Flow input", (1, 2, 1))
@@ -25,35 +33,39 @@ def visualize(inputs, labels, title="Visualization", quiver=False):
     plt.show()
 
 
-def _plot(fig, data, label, position):
-    """Adds a subplot to the figure with given data.
+def _plot(fig, image_data, label, position):
+    """
+    Adds a subplot to the figure with given data.
 
     Args:
-        fig: figure to add the subplot to
-        data: data to be plotted
-        label: label of the subplot (legend)
-        position: position of the subplot
+        fig: Figure to add the subplot to.
+        image_data: Data to be plotted.
+        label: Label of the subplot (legend).
+        position: Position of the subplot.
     """
-    ax = fig.add_subplot(*position)
-    im = ax.imshow(data, origin='lower')
-    ax.set_title(label)
-    plt.colorbar(im, ax=ax)
+    axis = fig.add_subplot(*position)
+    image = axis.imshow(image_data, origin="lower")
+    axis.set_title(label)
+    plt.colorbar(image, ax=axis)
 
 
-def _quiver(fig, data, label, position):
-    """Adds a quiver subplot to the figure with given data.
+def _quiver(fig, vector_data, label, position):
+    """
+    Adds a quiver subplot to the figure with given data.
 
     Args:
-        fig: figure to add the subplot to
-        data: data to be plotted
-        label: label of the subplot (legend)
-        position: position of the subplot
+        fig: Figure to add the subplot to.
+        vector_data: Data to be plotted.
+        label: Label of the subplot (legend).
+        position: Position of the subplot.
     """
-    ax = fig.add_subplot(*position)
-    ax.set_title(label)
-    
-    u = data[0]
-    v = 0
-    if data.shape[0] > 1:
-        v = data[1]
-    plt.quiver(u, v, (u ** 2 + v ** 2) ** 0.5, cmap="coolwarm")
+    axis = fig.add_subplot(*position)
+    axis.set_title(label)
+
+    u_component = vector_data[0]
+    v_component = 0
+    if vector_data.shape[0] > 1:
+        v_component = vector_data[1]
+
+    magnitude = (u_component**2 + v_component**2) ** 0.5
+    plt.quiver(u_component, v_component, magnitude, cmap="coolwarm")

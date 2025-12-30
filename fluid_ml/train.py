@@ -1,118 +1,124 @@
-import torch
-from torch import optim, nn
-from torch.utils.data import DataLoader, random_split
 from pathlib import Path
-import matplotlib.pyplot as plt
+import logging
+
+from matplotlib import pyplot as plt
+import torch
+import yaml
+from torch.utils.data import DataLoader, random_split
+
 from dataloader import FluidDataset
 from model import FluidCNN
-import yaml
+
+
+DEFAULT_TRAIN_RATIO = 0.8
+DEFAULT_LR = 5e-5
+DEFAULT_EARLY_STOPPING_PATIENCE = 20
+DEFAULT_BATCH_SIZE = 32
+DEFAULT_EPOCHS = 5000
 
 
 class Trainer:
+    """Trainer class for training a FluidCNN model on a FluidDataset."""
     def __init__(self, dataset, config=None):
-        cfg = config or {}
-        n_samples = len(dataset)
-        batch_size = cfg.get("batch_size", 32)
+        """Initialize the Trainer with dataset and configuration.
 
-        train_ratio = cfg.get("train_ratio", 0.8)
-        n_train = int(train_ratio * n_samples)
-        n_test = n_samples - n_train
+        Parameters:
+            dataset (FluidDataset): The dataset to train on.
+            config (dict, optional): Configuration parameters for training.
+        """
+        cfg = config or {}
+        n_train = int(cfg.get("train_ratio", DEFAULT_TRAIN_RATIO) * len(dataset))
+        n_test = len(dataset) - n_train
         train_set, test_set = random_split(dataset, [n_train, n_test])
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = FluidCNN(config=cfg).to(self.device)
-
-        lr = cfg.get("lr", 5e-5)
-        weight_decay = cfg.get("weight_decay", 0)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=lr, weight_decay=weight_decay)
-
-        self.scheduler = None
-        if cfg.get("use_lr_scheduler", False):
-            self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-                self.optimizer, mode='min', factor=0.5, patience=10
+        self._optimizer = torch.optim.Adam(
+            self.model.parameters(),
+            lr=cfg.get("lr", DEFAULT_LR),
+            weight_decay=cfg.get("weight_decay", 0)
+        )
+        self._scheduler = None
+        if cfg.get("use_lr_scheduler"):
+            self._scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+                self._optimizer, mode="min", factor=0.5, patience=10
             )
 
-        self.use_early_stopping = cfg.get("use_early_stopping", False)
-        if self.use_early_stopping:
-            self.early_stopping_patience = cfg.get("early_stopping_patience", 20)
-            self.early_stopping_counter = 0
+        self._use_early_stopping = cfg.get("use_early_stopping")
+        if self._use_early_stopping:
+            self._early_stopping_patience = cfg.get(
+                "early_stopping_patience", DEFAULT_EARLY_STOPPING_PATIENCE
+            )
+            self._early_stopping_counter = 0
 
-        criterion_class = cfg.get("criterion", nn.MSELoss)
-        self.criterion = criterion_class()
+        self._criterion = cfg.get("criterion", torch.nn.MSELoss)()
 
-        self.train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
-        self.test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
+        self._train_loader = DataLoader(
+            train_set, batch_size=cfg.get(
+                "batch_size", DEFAULT_BATCH_SIZE
+            ), shuffle=True
+        )
+        self._test_loader = DataLoader(
+            test_set, batch_size=cfg.get(
+                "batch_size", DEFAULT_BATCH_SIZE
+            ), shuffle=False
+        )
 
-        self.train_losses = []
-        self.test_losses = []
-        self.best_test_loss = float('inf')
-        self.save_path = cfg.get("model_save_path", "model.pt")
-        self.epochs = cfg.get("epochs", 5000)
+        self._train_losses = []
+        self._test_losses = []
+        self._best_test_loss = float("inf")
+        self._save_path = cfg.get("model_save_path", "model.pt")
+        self._epochs = cfg.get("epochs", DEFAULT_EPOCHS)
 
-        print(f"Training on {self.device}")
+        self._early_stopping_counter = 0
 
-    def _get_test_loss(self, epoch):
-        self.model.eval()
-        total_test_loss = 0.0
-
-        with torch.no_grad():
-            for inputs, labels in self.test_loader:
-                inputs, labels = inputs.to(self.device), labels.to(self.device)
-                outputs = self.model(inputs)
-                loss = self.criterion(outputs, labels)
-                total_test_loss += loss.item()
-
-        avg_test_loss = total_test_loss / len(self.test_loader)
-        return avg_test_loss
+        self.log = logging.getLogger("Trainer")
+        self.log.info(f"Training on {self.device}")
 
     def train(self):
-        status = ""
+        """Trains the model according to the specified configuration."""
+        for epoch in range(self._epochs):
+            last_saved_text = ""
+            epoch_loss = self._train_epoch()
+            avg_train_loss = epoch_loss / len(self._train_loader)
+            avg_test_loss = self._get_test_loss()
 
-        for epoch in range(self.epochs):
-            self.model.train()
-            epoch_loss = 0.0
+            if self._scheduler:
+                self._scheduler.step(avg_test_loss)
 
-            for inputs, labels in self.train_loader:
-                inputs, labels = inputs.to(self.device), labels.to(self.device)
+            self._train_losses.append(avg_train_loss)
+            self._test_losses.append(avg_test_loss)
 
-                self.optimizer.zero_grad()
+            if avg_test_loss < self._best_test_loss:
+                self._best_test_loss = avg_test_loss
+                torch.save(self.model.state_dict(), self._save_path)
+                last_saved_text = f" (last saved model: {epoch})"
+                self._early_stopping_counter = 0
 
-                outputs = self.model(inputs)
-                loss = self.criterion(outputs, labels)
+            if self._early_stop(epoch):
+                break
 
-                loss.backward()
-                self.optimizer.step()
+            if epoch % 100 == 0:
+                self.log.info(
+                    f"Epoch {epoch}/{self._epochs} | "
+                    f"Train: {avg_train_loss:.4e} | "
+                    f"Test: {avg_test_loss:.4e}{last_saved_text}"
+                )
 
-                epoch_loss += loss.item()
+    def save_stats(self):
+        """Saves model statistics to a YAML file."""
+        save_path = self._save_path.parent / "stats.yaml"
+        stats = {
+            "best_train_loss": min(self.train_losses),
+            "best_test_loss": self._best_test_loss,
+            "epochs": len(self.train_losses),
+        }
+        with open(save_path, "w") as stats_file:
+            yaml.dump(stats, stats_file)
+        self._save_plot()
 
-            avg_train_loss = epoch_loss / len(self.train_loader)
-            avg_test_loss = self._get_test_loss(epoch)
-
-            if self.scheduler:
-                self.scheduler.step(avg_test_loss)
-
-            self.train_losses.append(avg_train_loss)
-            self.test_losses.append(avg_test_loss)
-
-            if avg_test_loss < self.best_test_loss:
-                self.best_test_loss = avg_test_loss
-                torch.save(self.model.state_dict(), self.save_path)
-                status = f" (last saved model: {epoch})"
-                if self.use_early_stopping:
-                    self.early_stopping_counter = 0
-            elif self.use_early_stopping:
-                self.early_stopping_counter += 1
-                if self.early_stopping_counter >= self.early_stopping_patience:
-                    print(f"Early stopping at epoch {epoch}")
-                    break
-
-            if epoch % 100 == 0 or epoch == 0:
-                print(f"Epoch {epoch}/{self.epochs} | "
-                      f"Train: {avg_train_loss:.4e} | "
-                      f"Test: {avg_test_loss:.4e}{status}")
-                status = ""
-
-    def plot_losses(self, save=False):
+    def _save_plot(self):
+        """Plot training and test losses over epochs and save the figure."""
         plt.figure()
         plt.semilogy(self.train_losses, label="Train loss")
         plt.semilogy(self.test_losses, label="Test loss")
@@ -120,22 +126,66 @@ class Trainer:
         plt.ylabel("MSE (log scale)")
         plt.legend()
         plt.title("Training and test loss")
-        if not save:
-            plt.show()
-        else:
-            plt.savefig(Path(self.save_path.parent / "losses.png"))
+        plt.savefig(Path(self._save_path.parent / "losses.png"))
 
-    def save_stats(self, save_plot = False):
-        save_path = self.save_path.parent / "stats.yaml"
-        stats = {
-            "best_train_loss": min(self.train_losses),
-            "best_test_loss": self.best_test_loss,
-            "epochs": len(self.train_losses),
-        }
-        with open(save_path, "w") as f:
-            yaml.dump(stats, f)
-        if save_plot:
-            self.plot_losses(save=True)
+    def _early_stop(self, epoch):
+        """Checks if early stopping criteria are met.
+
+        Parameters:
+            epoch (int): The current epoch number.
+
+        Returns:
+            bool: True if training should stop early, False otherwise.
+        """
+        if self._use_early_stopping:
+            self._early_stopping_counter += 1
+            if self._early_stopping_counter >= self._early_stopping_patience:
+                self.log.info(f"Early stopping at epoch {epoch}")
+                return True
+        return False
+
+    def _train_epoch(self):
+        """Trains the model for one epoch.
+
+        Returns:
+            float: The total loss for the epoch.
+        """
+        self.model.train()
+        epoch_loss = .0
+
+        for inputs, labels in self._train_loader:
+            inputs = inputs.to(self.device)
+            labels = labels.to(self.device)
+
+            self._optimizer.zero_grad()
+
+            outputs = self.model(inputs)
+            loss = self._criterion(outputs, labels)
+
+            loss.backward()
+            self._optimizer.step()
+
+            epoch_loss += loss.item()
+        return epoch_loss
+
+    def _get_test_loss(self):
+        """Calculates the average test loss over the test dataset.
+
+        Returns:
+            float: The average test loss.
+        """
+        self.model.eval()
+        total_test_loss = .0
+
+        with torch.no_grad():
+            for inputs, labels in self._test_loader:
+                inputs = inputs.to(self.device)
+                labels = labels.to(self.device)
+                outputs = self.model(inputs)
+                loss = self._criterion(outputs, labels)
+                total_test_loss += loss.item()
+
+        return total_test_loss / len(self._test_loader)
 
 
 if __name__ == "__main__":
@@ -145,6 +195,10 @@ if __name__ == "__main__":
     dataset = FluidDataset()
     dataset.create(train_files_path)
 
-    config = {"epochs": 5000, "batch_size": 32, "lr": 5e-5}
+    config = {
+        "epochs": DEFAULT_EPOCHS,
+        "batch_size": DEFAULT_BATCH_SIZE,
+        "lr": DEFAULT_LR
+    }
     trainer = Trainer(dataset, config=config)
     trainer.train()

@@ -1,86 +1,111 @@
-from torch import nn
-from pathlib import Path
 import json
+from pathlib import Path
+
+from torch import nn
+
+# This could be in a seperate constants.py file, but we keep it here for simplicity
+ACTIVATION_KEY = "activation"
+IN_CHANNELS_KEY = "in_channels"
+HIDDEN_CHANNELS_KEY = "hidden_channels"
+OUT_CHANNELS_KEY = "out_channels"
+KERNEL_SIZE_KEY = "kernel_size"
+PADDING_MODE_KEY = "padding_mode"
+USE_BIAS_KEY = "use_bias"
+NUM_HIDDEN_LAYERS_KEY = "num_hidden_layers"
+DROPOUT_RATE_KEY = "dropout_rate"
+OUTPUT_ACTIVATION_KEY = "output_activation"
 
 
 class FluidCNN(nn.Module):
+    """Configurable CNN for fluid flow predictions."""
     def __init__(self, config=None):
+        """Initialize the FluidCNN model.
+
+        Args:
+            config (dict, optional): Configuration parameters for the model.
+        """
         super().__init__()
 
         if config is None:
             config = {}
 
-        num_hidden_layers = config.get("num_hidden_layers", 5)
-        kernel_size = config.get("kernel_size", 7)
-        in_channels = config.get("in_channels", 1)
-        hidden_channels = config.get("hidden_channels", 16)
-        out_channels = config.get("out_channels", 2)
-        activation_str = config.get("activation", "ReLU")
-        activation_layer = getattr(nn, activation_str)
-        output_activation = config.get("output_activation")
-        use_bias = config.get("use_bias", True)
-        padding_mode = config.get("padding_mode", "zeros")
-        dropout_rate = config.get("dropout_rate", 0.0)
+        activation_layer = getattr(nn, config.get(ACTIVATION_KEY, "ReLU"))
 
         layers = [
             nn.Conv2d(
-                in_channels=in_channels,
-                out_channels=hidden_channels,
-                kernel_size=kernel_size,
+                in_channels=config.get(IN_CHANNELS_KEY, 1),
+                out_channels=config.get(HIDDEN_CHANNELS_KEY, 8),
+                kernel_size=config.get(KERNEL_SIZE_KEY, 7),
                 stride=1,
                 padding="same",
-                padding_mode=padding_mode,
-                bias=use_bias,
+                padding_mode=config.get(PADDING_MODE_KEY, "zeros"),
+                bias=config.get(USE_BIAS_KEY, True),
             ),
-            activation_layer()
+            activation_layer(),
         ]
 
-        for _ in range(num_hidden_layers):
-            layers.append(nn.Conv2d(
-                in_channels=hidden_channels,
-                out_channels=hidden_channels,
-                kernel_size=kernel_size,
+        for _ in range(config.get(NUM_HIDDEN_LAYERS_KEY, 5)):
+            layers.append(
+                nn.Conv2d(
+                    in_channels=config.get(HIDDEN_CHANNELS_KEY, 8),
+                    out_channels=config.get(HIDDEN_CHANNELS_KEY, 8),
+                    kernel_size=config.get(KERNEL_SIZE_KEY, 7),
+                    stride=1,
+                    padding="same",
+                    padding_mode=config.get(PADDING_MODE_KEY, "zeros"),
+                    bias=config.get(USE_BIAS_KEY, True),
+                )
+            )
+            layers.append(activation_layer())
+            if config.get(DROPOUT_RATE_KEY):
+                layers.append(nn.Dropout2d(p=config[DROPOUT_RATE_KEY]))
+
+        layers.append(
+            nn.Conv2d(
+                in_channels=config.get(HIDDEN_CHANNELS_KEY, 8),
+                out_channels=config.get(OUT_CHANNELS_KEY, 2),
+                kernel_size=config.get(KERNEL_SIZE_KEY, 7),
                 stride=1,
                 padding="same",
-                padding_mode=padding_mode,
-                bias=use_bias,
-            ))
-            layers.append(activation_layer())
-            if dropout_rate > 0:
-                layers.append(nn.Dropout2d(p=dropout_rate))
+                padding_mode=config.get(PADDING_MODE_KEY, "zeros"),
+                bias=config.get(USE_BIAS_KEY, True),
+            )
+        )
 
-        layers.append(nn.Conv2d(
-            in_channels=hidden_channels,
-            out_channels=out_channels,
-            kernel_size=kernel_size,
-            stride=1,
-            padding="same",
-            padding_mode=padding_mode,
-            bias=use_bias,
-        ))
-
-        if output_activation:
-            layers.append(output_activation())
+        if config.get(OUTPUT_ACTIVATION_KEY):
+            layers.append(config[OUTPUT_ACTIVATION_KEY]())
 
         self.net = nn.Sequential(*layers)
 
-    def forward(self, x):
-        return self.net(x)
+    def forward(self, input_tensor):
+        """Forward pass of the FluidCNN model.
+
+        Args:
+            input_tensor (torch.Tensor): Input tensor to the model.
+
+        Returns:
+            torch.Tensor: Output tensor from the model.
+        """
+        return self.net(input_tensor)
 
 
 # this has to be named like this so the submission system can read the model
 def init_my_model():
+    """Initialize the FluidCNN model from a configuration file.
+
+    Returns:
+        FluidCNN: An instance of the FluidCNN model.
+    """
     config_path = Path(__file__).resolve().parent / "config.json"
 
     if not config_path.is_file():
-        print(f"Warning: Config not found at {config_path}. Using default architecture.")
-        return FluidCNN()
+        raise RuntimeError(f"Config file not found at {config_path}")
 
-    with open(config_path, "r") as f:
-        config = json.load(f)
+    with open(config_path, "r") as config_file:
+        config = json.load(config_file)
 
-    activation_str = config.get("activation")
+    activation_str = config.get(ACTIVATION_KEY)
     if activation_str and isinstance(activation_str, str):
-        config["activation"] = getattr(nn, activation_str)
+        config[ACTIVATION_KEY] = getattr(nn, activation_str)
 
     return FluidCNN(config)
