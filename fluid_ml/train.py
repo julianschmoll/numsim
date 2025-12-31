@@ -95,15 +95,15 @@ class Trainer:
             if avg_test_loss < self._best_test_loss:
                 self._best_test_loss = avg_test_loss
                 torch.save(self.model.state_dict(), self._save_path)
-                last_saved_text = f" (last saved model: {epoch})"
+                last_saved_text = f" (last saved model: {epoch + 1})"
                 self._early_stopping_counter = 0
 
             if self._early_stop(epoch):
                 break
 
-            if epoch % 100 == 0:
+            if (epoch + 1) % 100 == 0 or epoch == 0:
                 self.log.info(
-                    f"Epoch {epoch}/{self._epochs} | "
+                    f"Epoch {epoch + 1}/{self._epochs} | "
                     f"Train: {avg_train_loss:.4e} | "
                     f"Test: {avg_test_loss:.4e}{last_saved_text}"
                 )
