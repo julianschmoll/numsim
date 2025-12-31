@@ -1,9 +1,10 @@
 from matplotlib import pyplot as plt
 
 import constants
+import normalization
 
 
-def visualize(inputs, labels, title="Visualization", quiver=False):
+def visualize(inputs, labels, title="Visualization", quiver=False, stats_path=None):
     """
     Visualizes the input and label channels.
 
@@ -12,6 +13,7 @@ def visualize(inputs, labels, title="Visualization", quiver=False):
         labels: Label tensor.
         title: Title of the figure.
         quiver: Whether to display as quiver plot.
+        stats_path: Path to the directory containing 'min_max.yaml'.
     """
     fig_width = constants.FIG_WIDTH * 2 if quiver else constants.FIG_WIDTH * 3
     fig = plt.figure(figsize=(fig_width, constants.FIG_HEIGHT))
@@ -19,8 +21,11 @@ def visualize(inputs, labels, title="Visualization", quiver=False):
         title,
         fontsize=constants.TITLE_FONT_SIZE,
         fontweight="bold",
-        y=constants.TITLE_Y_POSITION
+        y=constants.TITLE_Y_POSITION,
     )
+
+    if stats_path:
+        inputs, labels = normalization.denormalize(inputs, labels, stats_path)
 
     if quiver:
         _quiver(fig, inputs[0], "Flow input", (1, 2, 1))
