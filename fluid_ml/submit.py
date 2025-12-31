@@ -42,8 +42,12 @@ def rescale_inputs(inputs, min_max_stats):
     Returns:
         The rescaled input tensor.
     """
-    inputs_mins = torch.tensor([min_max_stats["inputs"]["u"]["min"]])
-    inputs_maxs = torch.tensor([min_max_stats["inputs"]["u"]["max"]])
+    inputs_mins = torch.tensor(
+        [min_max_stats[constants.INPUTS_KEY][constants.U_CHANNEL_KEY]["min"]]
+    )
+    inputs_maxs = torch.tensor(
+        [min_max_stats[constants.INPUTS_KEY][constants.U_CHANNEL_KEY]["max"]]
+    )
     return rescale(inputs, inputs_mins, inputs_maxs)
 
 

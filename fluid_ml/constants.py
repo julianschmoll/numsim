@@ -22,8 +22,8 @@ USE_BIAS_KEY = "use_bias"
 PADDING_MODE_KEY = "padding_mode"
 INPUTS_KEY = "inputs"
 LABELS_KEY = "labels"
-U_CHANNEL_KEY = "u_channel"
-V_CHANNEL_KEY = "v_channel"
+U_CHANNEL_KEY = "u"
+V_CHANNEL_KEY = "v"
 
 
 # Paths

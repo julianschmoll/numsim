@@ -66,8 +66,10 @@ class Trainer:
         self._train_losses = []
         self._test_losses = []
         self._best_test_loss = float("inf")
-        self._save_path = cfg.get(constants.PATHS_KEY, {}).get(
-            constants.MODEL_SAVE_PATH_KEY, "model.pt"
+        self._save_path = Path(
+            cfg.get(constants.PATHS_KEY, {}).get(
+                constants.MODEL_SAVE_PATH_KEY, "model.pt"
+            )
         )
         self._epochs = cfg.get(constants.EPOCHS_KEY, constants.DEFAULT_EPOCHS)
 
@@ -110,9 +112,9 @@ class Trainer:
         """Saves model statistics to a YAML file."""
         save_path = self._save_path.parent / "stats.yaml"
         stats = {
-            "best_train_loss": min(self.train_losses),
+            "best_train_loss": min(self._train_losses),
             "best_test_loss": self._best_test_loss,
-            "epochs": len(self.train_losses),
+            "epochs": len(self._train_losses),
         }
         with open(save_path, "w") as stats_file:
             yaml.dump(stats, stats_file)
@@ -121,8 +123,8 @@ class Trainer:
     def _save_plot(self):
         """Plot training and test losses over epochs and save the figure."""
         plt.figure()
-        plt.semilogy(self.train_losses, label="Train loss")
-        plt.semilogy(self.test_losses, label="Test loss")
+        plt.semilogy(self._train_losses, label="Train loss")
+        plt.semilogy(self._test_losses, label="Test loss")
         plt.xlabel("Epoch")
         plt.ylabel("MSE (log scale)")
         plt.legend()

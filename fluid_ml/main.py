@@ -1,3 +1,4 @@
+import argparse
 import datetime
 import logging
 import json
@@ -10,9 +11,9 @@ from submit import generate_submission
 import constants
 
 
-def main():
+def main(config_path: str | Path | None):
     """Set up configuration, data, and training for the model."""
-    config = get_config()
+    config = get_config(config_path)
     save_config(config)
     save_path = Path(config[constants.PATHS_KEY][constants.BASE_SAVE_PATH_KEY])
 
@@ -26,7 +27,7 @@ def main():
 
     trainer = Trainer(dataset, config=config)
     trainer.train()
-    trainer.save_stats(save_plot=True)
+    trainer.save_stats()
 
     inputs_path = (Path(__file__).resolve().parent.parent /
                    constants.RESOURCE_FOLDER_NAME /
@@ -34,27 +35,17 @@ def main():
     generate_submission(save_path, inputs_path)
 
 
-# this could either read config from file, get from CLI, ...
-def get_config() -> dict:
+def get_config(config_path: str | Path | None) -> dict:
     """
     Get the base configuration for the training run.
 
     Returns:
         A dictionary containing configuration parameters.
     """
-    config = {
-        constants.EPOCHS_KEY: constants.DEFAULT_EPOCHS,
-        constants.BATCH_SIZE_KEY: constants.DEFAULT_BATCH_SIZE,
-        constants.LEARNING_RATE_KEY: constants.DEFAULT_LR,
-        constants.NUM_HIDDEN_LAYERS_KEY: constants.DEFAULT_NUM_HIDDEN_LAYERS,
-        constants.KERNEL_SIZE_KEY: constants.DEFAULT_KERNEL_SIZE,
-        constants.IN_CHANNELS_KEY: constants.DEFAULT_IN_CHANNELS,
-        constants.OUT_CHANNELS_KEY: constants.DEFAULT_OUT_CHANNELS,
-        constants.HIDDEN_CHANNELS_KEY: constants.DEFAULT_HIDDEN_CHANNELS,
-        constants.OUTPUT_ACTIVATION_KEY: constants.DEFAULT_OUTPUT_ACTIVATION,
-        constants.USE_BIAS_KEY: constants.DEFAULT_USE_BIAS,
-        constants.PADDING_MODE_KEY: constants.DEFAULT_PADDING_MODE,
-    }
+    config = {}
+    if config_path and Path(config_path).exists():
+        with open(config_path, 'r') as config_file:
+            config = json.load(config_file)
 
     current_file_path = Path(__file__).resolve()
     train_files_path = (current_file_path.parent.parent /
@@ -74,7 +65,6 @@ def get_config() -> dict:
     return config
 
 
-# this is nasty, would still like to have something like the current date/time
 def get_unique_folder_name() -> str:
     """
     Generate a unique folder name based on the current timestamp.
@@ -96,7 +86,8 @@ def save_config(config: dict) -> None:
         config[constants.PATHS_KEY][constants.BASE_SAVE_PATH_KEY]
     ) / constants.CONFIG_FILE_NAME
     save_data = config.copy()
-    save_data.pop(constants.PATHS_KEY)
+    if constants.PATHS_KEY in save_data:
+        save_data.pop(constants.PATHS_KEY)
     with open(save_path, "w") as config_file:
         json.dump(save_data, config_file, indent=4, default=str)
 
@@ -117,5 +108,20 @@ def save_model_init(config: dict) -> None:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Train a fluid model.")
+    parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help="Path to the configuration JSON file.",
+    )
+    args = parser.parse_args()
+
+    config = args.config
+    if not config:
+        config = (Path(__file__).resolve().parent.parent
+                  / "cfg" / "ml" / "config.json"
+                  )
+
     logging.basicConfig(level=logging.INFO)
-    main()
+    main(config_path=config)

@@ -139,10 +139,8 @@ class FluidDataset(Dataset):
         folder = Path(dataset_path)
         folder.mkdir(parents=True, exist_ok=True)
 
-        stats = {**self.stats, "normalized": self.normalized}
-
         with open(folder / "min_max.yaml", "w") as min_max_yaml:
-            yaml.dump(stats, min_max_yaml)
+            yaml.dump(self.stats, min_max_yaml)
 
 
 if __name__ == "__main__":
