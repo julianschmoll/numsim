@@ -24,6 +24,8 @@ INPUTS_KEY = "inputs"
 LABELS_KEY = "labels"
 U_CHANNEL_KEY = "u"
 V_CHANNEL_KEY = "v"
+MIN = "min"
+MAX = "max"
 
 
 # Paths

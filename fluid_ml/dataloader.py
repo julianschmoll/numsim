@@ -6,24 +6,9 @@ import torch
 import yaml
 from torch.utils.data import DataLoader, Dataset
 
-import evaluate
+from visualize import visualize
 import constants
-
-
-def _normalize_channel(channel_data):
-    """Normalize a single data channel in-place and return its stats."""
-    c_min = float(channel_data.min())
-    c_max = float(channel_data.max())
-    if (c_max - c_min) > constants.EPSILON:
-        channel_data[...] = (channel_data - c_min) / (c_max - c_min)
-    return {"min": c_min, "max": c_max}
-
-
-def _denormalize_channel(channel_data, channel_stats):
-    """Denormalize a single data channel in-place using provided stats."""
-    c_min, c_max = channel_stats["min"], channel_stats["max"]
-    if (c_max - c_min) > constants.EPSILON:
-        channel_data[...] = channel_data * (c_max - c_min) + c_min
+import normalization
 
 
 def _get_input_channel(hx, hy, u_field):
@@ -110,13 +95,13 @@ class FluidDataset(Dataset):
         self.stats = {
             constants.INPUTS_KEY: {
                 constants.U_CHANNEL_KEY:
-                    _normalize_channel(self.inputs[:, 0])  # noqa: WPS478
+                    normalization.normalize_channel(self.inputs[:, 0])  # noqa: WPS478
             },
             constants.LABELS_KEY: {
                 constants.U_CHANNEL_KEY:
-                    _normalize_channel(self.labels[:, 0]),  # noqa: WPS478
+                    normalization.normalize_channel(self.labels[:, 0]),  # noqa: WPS478
                 constants.V_CHANNEL_KEY:
-                    _normalize_channel(self.labels[:, 1]),  # noqa: WPS478
+                    normalization.normalize_channel(self.labels[:, 1]),  # noqa: WPS478
             },
         }
         self.normalized = True
@@ -130,20 +115,29 @@ class FluidDataset(Dataset):
         stats_label_u = self.stats[constants.LABELS_KEY][constants.U_CHANNEL_KEY]
         stats_label_v = self.stats[constants.LABELS_KEY][constants.V_CHANNEL_KEY]
 
-        _denormalize_channel(self.inputs[:, 0], stats_in_u)  # noqa: WPS478
-        _denormalize_channel(self.labels[:, 0], stats_label_u)  # noqa: WPS478
-        _denormalize_channel(self.labels[:, 1], stats_label_v)  # noqa: WPS478
+        normalization.denormalize_channel(
+            self.inputs[:, 0], stats_in_u  # noqa: WPS478
+        )
+        normalization.denormalize_channel(
+            self.labels[:, 0], stats_label_u  # noqa: WPS478
+        )
+        normalization.denormalize_channel(
+            self.labels[:, 1], stats_label_v  # noqa: WPS478
+        )
 
         self.normalized = False
 
     def save(self, dataset_path: str | Path):
         """Save the dataset and normalization info to `dataset_path`."""
-
         folder = Path(dataset_path)
         folder.mkdir(parents=True, exist_ok=True)
 
-        with open(folder / "min_max.yaml", "w") as min_max_yaml:
+        save_path = folder / "min_max.yaml"
+
+        with open(save_path, "w") as min_max_yaml:
             yaml.dump(self.stats, min_max_yaml)
+
+        return save_path
 
 
 if __name__ == "__main__":
@@ -152,9 +146,10 @@ if __name__ == "__main__":
 
     dataset = FluidDataset(train_files_path)
     dataset.normalize()
-    dataset.save(current_file_path.parent)
+    saved_file = dataset.save(current_file_path.parent)
 
     train_loader = DataLoader(
         dataset, batch_size=constants.DEFAULT_BATCH_SIZE, shuffle=False
     )
-    evaluate.visualize(*next(iter(train_loader)))
+    visualize(*next(iter(train_loader)), stats_path=saved_file)
+    visualize(*next(iter(train_loader)), quiver=True, stats_path=saved_file)
