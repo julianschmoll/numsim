@@ -193,8 +193,7 @@ if __name__ == "__main__":
     current_file_path = Path(__file__).resolve()
     train_files_path = current_file_path.parent.parent / "build" / "train"
 
-    dataset = FluidDataset()
-    dataset.create(train_files_path)
+    dataset = FluidDataset(train_files_path)
 
     config = {
         constants.EPOCHS_KEY: constants.DEFAULT_EPOCHS,

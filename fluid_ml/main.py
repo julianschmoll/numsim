@@ -16,8 +16,7 @@ def main():
     save_config(config)
     save_path = Path(config[constants.PATHS_KEY][constants.BASE_SAVE_PATH_KEY])
 
-    dataset = FluidDataset()
-    dataset.create(
+    dataset = FluidDataset(
         Path(config[constants.PATHS_KEY][constants.TRAIN_FILES_PATH_KEY])
     )
     dataset.normalize()

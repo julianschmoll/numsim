@@ -20,6 +20,10 @@ HIDDEN_CHANNELS_KEY = "hidden_channels"
 OUTPUT_ACTIVATION_KEY = "output_activation"
 USE_BIAS_KEY = "use_bias"
 PADDING_MODE_KEY = "padding_mode"
+INPUTS_KEY = "inputs"
+LABELS_KEY = "labels"
+U_CHANNEL_KEY = "u_channel"
+V_CHANNEL_KEY = "v_channel"
 
 
 # Paths
@@ -55,3 +59,6 @@ DEFAULT_HIDDEN_CHANNELS = 16
 DEFAULT_OUTPUT_ACTIVATION = None
 DEFAULT_USE_BIAS = True
 DEFAULT_PADDING_MODE = "zeros"
+
+# Normalization constants
+EPSILON = 1e-9

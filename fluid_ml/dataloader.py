@@ -7,27 +7,81 @@ import yaml
 from torch.utils.data import DataLoader, Dataset
 
 import evaluate
+import constants
+
+
+def _normalize_channel(channel_data):
+    """Normalize a single data channel in-place and return its stats."""
+    c_min = float(channel_data.min())
+    c_max = float(channel_data.max())
+    if (c_max - c_min) > constants.EPSILON:
+        channel_data[...] = (channel_data - c_min) / (c_max - c_min)
+    return {"min": c_min, "max": c_max}
+
+
+def _denormalize_channel(channel_data, channel_stats):
+    """Denormalize a single data channel in-place using provided stats."""
+    c_min, c_max = channel_stats["min"], channel_stats["max"]
+    if (c_max - c_min) > constants.EPSILON:
+        channel_data[...] = channel_data * (c_max - c_min) + c_min
+
+
+def _get_input_channel(hx, hy, u_field):
+    ux_val = u_field[-1, 1:-1].mean()
+    input_channel = np.zeros((1, hy, hx))
+    input_channel[0, -1, 1:-1] = ux_val
+    return input_channel
+
+
+def _read_vti_file(path):
+    mesh = pv.read(path)
+    dims = mesh.dimensions[0], mesh.dimensions[1]
+    velocity_data = mesh.point_data["velocity"].reshape(
+        (*dims, 3), order="C"
+    )
+    return {
+        "dimensions": dims,
+        "u_field": velocity_data[..., 0],
+        "v_field": velocity_data[..., 1],
+    }
+
+
+def _load_data(base_dir):
+    """Helper generator to keep __init__ clean."""
+    output_folders = sorted(
+        path
+        for path in Path(base_dir).iterdir()
+        if path.is_dir() and path.name.startswith("out_")
+    )
+    for folder in output_folders:
+        vti_files = sorted(
+            vti_file
+            for vti_file in folder.iterdir()
+            if vti_file.is_file()
+            and vti_file.name.startswith("output_")
+            and vti_file.suffix == ".vti"
+        )
+        for vti_file in vti_files:
+            vti_data = _read_vti_file(folder / vti_file)
+            yield (
+                _get_input_channel(*vti_data["dimensions"], vti_data["u_field"]),
+                np.stack([vti_data["u_field"], vti_data["v_field"]], axis=0)
+            )
 
 
 class FluidDataset(Dataset):
-    inputs: np.ndarray
-    labels: np.ndarray
-    stats: dict
-    normalized: bool
-
-    def __init__(self):
-        self.inputs = np.array([], dtype=np.float32)
-        self.labels = np.array([], dtype=np.float32)
+    def __init__(self, base_dir):
         self.stats = {}
         self.normalized = False
 
+        fluid_data = list(_load_data(base_dir))
+        inputs, labels = zip(*fluid_data)
+
+        self.inputs = np.array(inputs, dtype=np.float32)
+        self.labels = np.array(labels, dtype=np.float32)
+
     def __len__(self):
         return len(self.inputs)
-
-    def __getitem__(self, idx) -> tuple[torch.Tensor, torch.Tensor]:
-        x = torch.from_numpy(self.inputs[idx])
-        y = torch.from_numpy(self.labels[idx])
-        return x, y
 
     def __str__(self):
         """Return a string representation of the dataset including statistics."""
@@ -38,94 +92,45 @@ class FluidDataset(Dataset):
         for category, channels in self.stats.items():
             lines.append(f"  {category}:")
             for channel, channel_stats in channels.items():
-                min_val = channel_stats["min"]
-                max_val = channel_stats["max"]
-                lines.append(f"    - {channel}: min={min_val:.4f}, max={max_val:.4f}")
+                lines.append(f"    - {channel}: "
+                             f"min={channel_stats["min"]:.4f}, "
+                             f"max={channel_stats["max"]:.4f}")
         return "\n".join(lines)
 
-    def create(self, base_dir: Path | str):
-        """
-        Create a dataset from `base_dir/out_*/output_*.vti`.
-        - inputs: `np.ndarray` of shape `(#samples, 2, #cells_x, #cells_y)`
-        - labels: `np.ndarray` of shape `(#samples, 1, #cells_x, #cells_y)`
-        """
-        inputs = []
-        labels = []
-        base_path = Path(base_dir)
-
-        folders = sorted(
-            path
-            for path in base_path.iterdir()
-            if path.is_dir() and path.name.startswith("out_")
-        )
-
-        for folder in folders:
-            vti_files = sorted(
-                file
-                for file in folder.iterdir()
-                if file.is_file()
-                and file.name.startswith("output_")
-                and file.suffix == ".vti"
-            )
-
-            for vti_file in vti_files:
-                mesh = pv.read(folder / vti_file)
-                hx, hy, _ = mesh.dimensions
-                vel_data = mesh.point_data["velocity"].reshape((hx, hy, 3), order="C")
-
-                u_field = vel_data[:, :, 0]
-                v_field = vel_data[:, :, 1]
-
-                # Handcrafted input as described in readthedocs
-                ux_val = u_field[-1, 1:-1].mean()
-                input_channel = np.zeros((1, hy, hx))
-                input_channel[0, -1, 1:-1] = ux_val
-                label_channels = np.stack([u_field, v_field], axis=0)
-
-                inputs.append(input_channel)
-                labels.append(label_channels)
-
-        self.inputs = np.array(inputs, dtype=np.float32)
-        self.labels = np.array(labels, dtype=np.float32)
+    def __getitem__(self, idx) -> tuple[torch.Tensor, torch.Tensor]:
+        input_ = torch.from_numpy(self.inputs[idx])
+        label = torch.from_numpy(self.labels[idx])
+        return input_, label
 
     def normalize(self) -> None:
-        """Normalize the data if it's not already normalized"""
-
-        def process(data: np.ndarray):
-            c_min, c_max = float(data.min()), float(data.max())
-            if (c_max - c_min) > 1e-9:
-                data[:] = (data - c_min) / (c_max - c_min)
-            return {"min": c_min, "max": c_max}
-
+        """Normalize the data if it's not already normalized."""
         if self.normalized:
             return
 
         self.stats = {
-            "inputs": {"u": process(self.inputs[:, 0])},
-            "labels": {
-                "u": process(self.labels[:, 0]),
-                "v": process(self.labels[:, 1]),
+            constants.INPUTS_KEY: {
+                constants.U_CHANNEL_KEY: _normalize_channel(self.inputs[..., 0])
+            },
+            constants.LABELS_KEY: {
+                constants.U_CHANNEL_KEY: _normalize_channel(self.labels[..., 0]),
+                constants.V_CHANNEL_KEY: _normalize_channel(self.labels[..., 1]),
             },
         }
         self.normalized = True
 
     def denormalize(self) -> None:
         """Denormalize the dataset if it is normalized."""
-
-        def process(data: np.ndarray, c_stats: dict[str, float]):
-            c_min, c_max = c_stats["min"], c_stats["max"]
-            if (c_max - c_min) > 1e-9:
-                data[:] = data * (c_max - c_min) + c_min
-
         if not self.normalized:
             return
 
-        stats_in_u = self.stats["inputs"]["u"]
-        stats_label_u = self.stats["labels"]["u"]
-        stats_label_v = self.stats["labels"]["v"]
-        process(self.inputs[:, 0], stats_in_u)
-        process(self.labels[:, 0], stats_label_u)
-        process(self.labels[:, 1], stats_label_v)
+        stats_in_u = self.stats[constants.INPUTS_KEY][constants.U_CHANNEL_KEY]
+        stats_label_u = self.stats[constants.LABELS_KEY][constants.U_CHANNEL_KEY]
+        stats_label_v = self.stats[constants.LABELS_KEY][constants.V_CHANNEL_KEY]
+
+        _denormalize_channel(self.inputs[..., 0], stats_in_u)
+        _denormalize_channel(self.labels[..., 0], stats_label_u)
+        _denormalize_channel(self.labels[..., 1], stats_label_v)
+
         self.normalized = False
 
     def save(self, dataset_path: str | Path):
@@ -139,32 +144,15 @@ class FluidDataset(Dataset):
         with open(folder / "min_max.yaml", "w") as min_max_yaml:
             yaml.dump(stats, min_max_yaml)
 
-    def load(self, dataset_path: str | Path):
-        """Loads dataset without applying any normalization or denormalization.
-
-        Args:
-            dataset_path: Path to the dataset folder.
-        """
-
-        folder = Path(dataset_path)
-
-        with open(folder / "min_max.yaml", "r") as min_max_yaml:
-            try:
-                stats = yaml.safe_load(min_max_yaml)
-            except yaml.YAMLError as exception:
-                raise RuntimeError(f"Error while loading min_max.yaml:\n{exception}")
-
-        self.normalized = stats["normalized"]
-        self.stats = {"inputs": stats["inputs"], "labels": stats["labels"]}
-
 
 if __name__ == "__main__":
     current_file_path = Path(__file__).resolve()
     train_files_path = current_file_path.parent.parent / "build" / "train"
 
-    dataset = FluidDataset()
-    dataset.create(train_files_path)
+    dataset = FluidDataset(train_files_path)
     dataset.save(current_file_path.parent)
 
-    train_loader = DataLoader(dataset, batch_size=32, shuffle=False)
+    train_loader = DataLoader(
+        dataset, batch_size=constants.DEFAULT_BATCH_SIZE, shuffle=False
+    )
     evaluate.visualize(*next(iter(train_loader)))
