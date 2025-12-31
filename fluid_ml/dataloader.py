@@ -28,19 +28,19 @@ def _denormalize_channel(channel_data, channel_stats):
 
 def _get_input_channel(hx, hy, u_field):
     ux_val = u_field[-1, 1:-1].mean()
-    input_channel = np.zeros((1, hy, hx))
+    input_channel = np.zeros((1, hy, hx), dtype=np.float32)
     input_channel[0, -1, 1:-1] = ux_val
     return input_channel
 
 
 def _read_vti_file(path):
     mesh = pv.read(path)
-    dims = mesh.dimensions[0], mesh.dimensions[1]
-    velocity_data = mesh.point_data["velocity"].reshape(
-        (*dims, 3), order="C"
-    )
+    hx, hy, _ = mesh.dimensions
+    velocity_data = mesh.point_data["velocity"].reshape((hx, hy, 3), order="C")
+
     return {
-        "dimensions": dims,
+        "hx": hx,
+        "hy": hy,
         "u_field": velocity_data[..., 0],
         "v_field": velocity_data[..., 1],
     }
@@ -64,7 +64,7 @@ def _load_data(base_dir):
         for vti_file in vti_files:
             vti_data = _read_vti_file(folder / vti_file)
             yield (
-                _get_input_channel(*vti_data["dimensions"], vti_data["u_field"]),
+                _get_input_channel(vti_data["hx"], vti_data["hy"], vti_data["u_field"]),
                 np.stack([vti_data["u_field"], vti_data["v_field"]], axis=0)
             )
 
@@ -109,11 +109,14 @@ class FluidDataset(Dataset):
 
         self.stats = {
             constants.INPUTS_KEY: {
-                constants.U_CHANNEL_KEY: _normalize_channel(self.inputs[..., 0])
+                constants.U_CHANNEL_KEY:
+                    _normalize_channel(self.inputs[:, 0])  # noqa: WPS478
             },
             constants.LABELS_KEY: {
-                constants.U_CHANNEL_KEY: _normalize_channel(self.labels[..., 0]),
-                constants.V_CHANNEL_KEY: _normalize_channel(self.labels[..., 1]),
+                constants.U_CHANNEL_KEY:
+                    _normalize_channel(self.labels[:, 0]),  # noqa: WPS478
+                constants.V_CHANNEL_KEY:
+                    _normalize_channel(self.labels[:, 1]),  # noqa: WPS478
             },
         }
         self.normalized = True
@@ -127,9 +130,9 @@ class FluidDataset(Dataset):
         stats_label_u = self.stats[constants.LABELS_KEY][constants.U_CHANNEL_KEY]
         stats_label_v = self.stats[constants.LABELS_KEY][constants.V_CHANNEL_KEY]
 
-        _denormalize_channel(self.inputs[..., 0], stats_in_u)
-        _denormalize_channel(self.labels[..., 0], stats_label_u)
-        _denormalize_channel(self.labels[..., 1], stats_label_v)
+        _denormalize_channel(self.inputs[:, 0], stats_in_u)  # noqa: WPS478
+        _denormalize_channel(self.labels[:, 0], stats_label_u)  # noqa: WPS478
+        _denormalize_channel(self.labels[:, 1], stats_label_v)  # noqa: WPS478
 
         self.normalized = False
 
@@ -148,6 +151,7 @@ if __name__ == "__main__":
     train_files_path = current_file_path.parent.parent / "build" / "train"
 
     dataset = FluidDataset(train_files_path)
+    dataset.normalize()
     dataset.save(current_file_path.parent)
 
     train_loader = DataLoader(
