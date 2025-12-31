@@ -12,7 +12,11 @@ import constants
 
 
 def main(config_path: str | Path | None):
-    """Set up configuration, data, and training for the model."""
+    """Entrypoint to train the model.
+
+    Args:
+        config_path: Path to configuration file.
+    """
     config = get_config(config_path)
     save_config(config)
     save_path = Path(config[constants.PATHS_KEY][constants.BASE_SAVE_PATH_KEY])
@@ -36,8 +40,10 @@ def main(config_path: str | Path | None):
 
 
 def get_config(config_path: str | Path | None) -> dict:
-    """
-    Get the base configuration for the training run.
+    """Reads configuration for the training run from file.
+
+    Args:
+        config_path: Path to configuration file.
 
     Returns:
         A dictionary containing configuration parameters.

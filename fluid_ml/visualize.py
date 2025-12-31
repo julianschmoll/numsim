@@ -31,15 +31,15 @@ def visualize(inputs, labels, title="Visualization", quiver=False, stats_path=No
         _quiver(fig, inputs[0], "Flow input", (1, 2, 1))
         _quiver(fig, labels[0], "Flow output", (1, 2, 2))
     else:
-        _plot(fig, inputs[0, 0], "Input $u$", (1, 3, 1))
-        _plot(fig, labels[0, 0], "Output $u$", (1, 3, 2))
-        _plot(fig, labels[0, 1], "Output $v$", (1, 3, 3))
+        _implot(fig, inputs[0, 0], "Input $u$", (1, 3, 1))
+        _implot(fig, labels[0, 0], "Output $u$", (1, 3, 2))
+        _implot(fig, labels[0, 1], "Output $v$", (1, 3, 3))
 
     plt.tight_layout()
     plt.show()
 
 
-def _plot(fig, image_data, label, position):
+def _implot(fig, image_data, label, position):
     """
     Adds a subplot to the figure with given data.
 

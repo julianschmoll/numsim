@@ -11,6 +11,18 @@ from model import FluidCNN
 import constants
 
 
+def _print_epoch(epoch: int) -> bool:
+    """Checks if the current epoch should be printed.
+
+    Args:
+        epoch: The current epoch number.
+
+    Returns:
+        If the epoch should be printed.
+    """
+    return epoch % 100 == 0 or epoch == 1
+
+
 class Trainer:
     """Trainer class for training a FluidCNN model on a FluidDataset."""
     def __init__(self, dataset, config=None):
@@ -80,7 +92,7 @@ class Trainer:
 
     def train(self):
         """Trains the model according to the specified configuration."""
-        for epoch in range(self._epochs):
+        for epoch in range(1, self._epochs + 1):
             last_saved_text = ""
             epoch_loss = self._train_epoch()
             avg_train_loss = epoch_loss / len(self._train_loader)
@@ -95,21 +107,25 @@ class Trainer:
             if avg_test_loss < self._best_test_loss:
                 self._best_test_loss = avg_test_loss
                 torch.save(self.model.state_dict(), self._save_path)
-                last_saved_text = f" (last saved model: {epoch + 1})"
+                last_saved_text = f" (last saved model: {epoch})"
                 self._early_stopping_counter = 0
 
             if self._early_stop(epoch):
                 break
 
-            if (epoch + 1) % 100 == 0 or epoch == 0:
+            if _print_epoch(epoch):
                 self.log.info(
-                    f"Epoch {epoch + 1}/{self._epochs} | "
+                    f"Epoch {epoch}/{self._epochs} | "
                     f"Train: {avg_train_loss:.4e} | "
                     f"Test: {avg_test_loss:.4e}{last_saved_text}"
                 )
 
     def save_stats(self):
-        """Saves model statistics to a YAML file."""
+        """Saves model statistics to a YAML file.
+
+        Returns:
+            Path: Path to the saved YAML file.
+        """
         save_path = self._save_path.parent / "stats.yaml"
         stats = {
             "best_train_loss": min(self._train_losses),
@@ -119,6 +135,7 @@ class Trainer:
         with open(save_path, "w") as stats_file:
             yaml.dump(stats, stats_file)
         self._save_plot()
+        return save_path
 
     def _save_plot(self):
         """Plot training and test losses over epochs and save the figure."""

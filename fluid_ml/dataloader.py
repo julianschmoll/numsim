@@ -12,6 +12,16 @@ import normalization
 
 
 def _get_input_channel(hx, hy, u_field):
+    """Crafts input channel based on mean value in u field.
+
+    Args:
+        hx: Width of the Data.
+        hy: Height of the Data.
+        u_field: U Velocity field.
+
+    Returns:
+        input_channel: Input channel corresponding to u_field.
+    """
     ux_val = u_field[-1, 1:-1].mean()
     input_channel = np.zeros((1, hy, hx), dtype=np.float32)
     input_channel[0, -1, 1:-1] = ux_val
@@ -19,6 +29,14 @@ def _get_input_channel(hx, hy, u_field):
 
 
 def _read_vti_file(path):
+    """Reads vti files with pyvista.
+
+    Args:
+        path: Path to the vti file.
+
+    Returns:
+        dict: VTI Data.
+    """
     mesh = pv.read(path)
     hx, hy, _ = mesh.dimensions
     velocity_data = mesh.point_data["velocity"].reshape((hx, hy, 3), order="C")
@@ -32,7 +50,14 @@ def _read_vti_file(path):
 
 
 def _load_data(base_dir):
-    """Helper generator to keep __init__ clean."""
+    """Generator for loading data from vti files in directory.
+
+    Args:
+        base_dir: Base directory for data files.
+
+    Yields:
+        (input_channel, output_channel): Data from the current file.
+    """
     output_folders = sorted(
         path
         for path in Path(base_dir).iterdir()
@@ -55,7 +80,13 @@ def _load_data(base_dir):
 
 
 class FluidDataset(Dataset):
+    """Dataset class to load fluid data from vti files."""
     def __init__(self, base_dir):
+        """Initializes the dataset.
+
+        Args:
+            base_dir (Path): Path to the data directory.
+        """
         self.stats = {}
         self.normalized = False
 
@@ -66,10 +97,19 @@ class FluidDataset(Dataset):
         self.labels = np.array(labels, dtype=np.float32)
 
     def __len__(self):
+        """Returns the length of the dataset.
+
+        Returns:
+            int: Length of the dataset.
+        """
         return len(self.inputs)
 
     def __str__(self):
-        """Return a string representation of the dataset including statistics."""
+        """Return a string representation of the dataset including statistics.
+
+        Returns:
+            str: String representation of the dataset.
+        """
         lines = [
             f"FluidDataset with {len(self)} inputs/labels.",
             "Dataset Statistics (Normalized 0-1):",
@@ -83,6 +123,14 @@ class FluidDataset(Dataset):
         return "\n".join(lines)
 
     def __getitem__(self, idx) -> tuple[torch.Tensor, torch.Tensor]:
+        """Returns the input and label tensors.
+
+        Args:
+            idx (int): Index of the data sample.
+
+        Returns:
+            tuple[torch.Tensor, torch.Tensor]: Input and label tensors.
+        """
         input_ = torch.from_numpy(self.inputs[idx])
         label = torch.from_numpy(self.labels[idx])
         return input_, label
@@ -128,7 +176,14 @@ class FluidDataset(Dataset):
         self.normalized = False
 
     def save(self, dataset_path: str | Path):
-        """Save the dataset and normalization info to `dataset_path`."""
+        """Save the dataset and normalization info to `dataset_path`.
+
+        Args:
+            dataset_path (Path): Folder to save the dataset to.
+
+        Returns:
+            Path: Path to the saved dataset statistics.
+        """
         folder = Path(dataset_path)
         folder.mkdir(parents=True, exist_ok=True)
 

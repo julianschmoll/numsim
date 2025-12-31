@@ -8,6 +8,16 @@ DEFAULT_OUT_RANGE = (torch.tensor([.0]), torch.tensor([1.0]))
 
 
 def denormalize(inputs, labels, stats_path):
+    """Denormalizes the inputs and labels.
+
+    Args:
+        inputs: Input tensor
+        labels: Labels tensor.
+        stats_path: Path to statistics file.
+
+    Returns:
+        Denormalized tensor
+    """
     with open(stats_path, "r") as min_max_yaml:
         stats = yaml.safe_load(min_max_yaml)
 
@@ -58,6 +68,15 @@ def rescale_inputs(inputs, min_max_stats):
 
 
 def rescale_labels(labels, stats):
+    """Rescale label tensors using provided statistics.
+
+    Args:
+        labels: The label tensor to be rescaled.
+        stats: Dictionary containing min and max statistics for rescaling.
+
+    Returns:
+        The rescaled label tensor.
+    """
     labels_min = torch.tensor([
         stats[constants.LABELS_KEY][constants.U_CHANNEL_KEY][constants.MIN],
         stats[constants.LABELS_KEY][constants.V_CHANNEL_KEY][constants.MIN]
@@ -70,7 +89,14 @@ def rescale_labels(labels, stats):
 
 
 def normalize_channel(channel_data):
-    """Normalize a single data channel in-place and return its stats."""
+    """Normalize a single data channel in-place and return its stats.
+
+    Args:
+        channel_data: The data channel to be normalized.
+
+    Returns:
+        dict: Statistics (old min and max values) about normalization.
+    """
     c_min = float(channel_data.min())
     c_max = float(channel_data.max())
     if (c_max - c_min) > constants.EPSILON:
@@ -79,7 +105,12 @@ def normalize_channel(channel_data):
 
 
 def denormalize_channel(channel_data, channel_stats):
-    """Denormalize a single data channel in-place using provided stats."""
+    """Denormalize a single data channel in-place using provided stats.
+
+    Args:
+        channel_data: The data channel to be denormalized.
+        channel_stats: Dictionary containing min, max statistics for denormalization.
+    """
     c_min, c_max = channel_stats[constants.MIN], channel_stats[constants.MAX]
     if (c_max - c_min) > constants.EPSILON:
         channel_data[...] = channel_data * (c_max - c_min) + c_min

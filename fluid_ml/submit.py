@@ -60,19 +60,7 @@ def write_csv(inputs_scaled, model, submission_dir, stats_path):
             )
 
             if index == len(inputs_scaled) - 1:
-                visualize(
-                    input_tensor.unsqueeze(0),
-                    prediction,
-                    title="Prediction Visualization",
-                    stats_path=stats_path,
-                )
-                visualize(
-                    input_tensor.unsqueeze(0),
-                    prediction,
-                    title="Prediction Visualization (Quiver)",
-                    quiver=True,
-                    stats_path=stats_path,
-                )
+                visualize_prediction(input_tensor, prediction, stats_path)
 
     cols = ["id"] + [
         f"val{value_index}"
@@ -82,6 +70,29 @@ def write_csv(inputs_scaled, model, submission_dir, stats_path):
     ]
     pd.DataFrame(rows, columns=cols).to_csv(
         submission_dir / "submission.csv", index=False
+    )
+
+
+def visualize_prediction(input_tensor, prediction, stats_path):
+    """Visualizes the prediction.
+
+    Args:
+        input_tensor: The input tensor.
+        prediction: The prediction.
+        stats_path: Path to the statistics file for visualization.
+    """
+    visualize(
+        input_tensor.unsqueeze(0),
+        prediction,
+        title="Prediction Visualization",
+        stats_path=stats_path,
+    )
+    visualize(
+        input_tensor.unsqueeze(0),
+        prediction,
+        title="Prediction Visualization (Quiver)",
+        quiver=True,
+        stats_path=stats_path,
     )
 
 
