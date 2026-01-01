@@ -92,9 +92,10 @@ class Trainer:
 
     def train(self):
         """Trains the model according to the specified configuration."""
+        last_saved_text = ""
         for epoch in range(1, self._epochs + 1):
-            last_saved_text = ""
             epoch_loss = self._train_epoch()
+
             avg_train_loss = epoch_loss / len(self._train_loader)
             avg_test_loss = self._get_test_loss()
 
@@ -119,6 +120,7 @@ class Trainer:
                     f"Train: {avg_train_loss:.4e} | "
                     f"Test: {avg_test_loss:.4e}{last_saved_text}"
                 )
+                last_saved_text = ""
 
     def save_stats(self):
         """Saves model statistics to a YAML file.
