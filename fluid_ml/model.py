@@ -1,7 +1,8 @@
 import json
 from pathlib import Path
 
-from torch import nn
+import torch
+import numpy as np
 
 # We bake this in here instead of importing constants
 ACTIVATION_KEY = "activation"
@@ -16,7 +17,7 @@ DROPOUT_RATE_KEY = "dropout_rate"
 OUTPUT_ACTIVATION_KEY = "output_activation"
 
 
-class FluidCNN(nn.Module):
+class FluidCNN(torch.nn.Module):
     """Configurable CNN for fluid flow predictions."""
     def __init__(self, config=None):
         """Initialize the FluidCNN model.
@@ -29,10 +30,10 @@ class FluidCNN(nn.Module):
         if config is None:
             config = {}
 
-        activation_layer = getattr(nn, config.get(ACTIVATION_KEY, "ReLU"))
+        activation_layer = getattr(torch.nn, config.get(ACTIVATION_KEY, "ReLU"))
 
         layers = [
-            nn.Conv2d(
+            torch.nn.Conv2d(
                 in_channels=config.get(IN_CHANNELS_KEY, 1),
                 out_channels=config.get(HIDDEN_CHANNELS_KEY, 8),
                 kernel_size=config.get(KERNEL_SIZE_KEY, 7),
@@ -46,7 +47,7 @@ class FluidCNN(nn.Module):
 
         for _ in range(config.get(NUM_HIDDEN_LAYERS_KEY, 5)):
             layers.append(
-                nn.Conv2d(
+                torch.nn.Conv2d(
                     in_channels=config.get(HIDDEN_CHANNELS_KEY, 8),
                     out_channels=config.get(HIDDEN_CHANNELS_KEY, 8),
                     kernel_size=config.get(KERNEL_SIZE_KEY, 7),
@@ -58,10 +59,10 @@ class FluidCNN(nn.Module):
             )
             layers.append(activation_layer())
             if config.get(DROPOUT_RATE_KEY):
-                layers.append(nn.Dropout2d(p=config[DROPOUT_RATE_KEY]))
+                layers.append(torch.nn.Dropout2d(p=config[DROPOUT_RATE_KEY]))
 
         layers.append(
-            nn.Conv2d(
+            torch.nn.Conv2d(
                 in_channels=config.get(HIDDEN_CHANNELS_KEY, 8),
                 out_channels=config.get(OUT_CHANNELS_KEY, 2),
                 kernel_size=config.get(KERNEL_SIZE_KEY, 7),
@@ -75,7 +76,7 @@ class FluidCNN(nn.Module):
         if config.get(OUTPUT_ACTIVATION_KEY):
             layers.append(config[OUTPUT_ACTIVATION_KEY]())
 
-        self.net = nn.Sequential(*layers)
+        self.net = torch.nn.Sequential(*layers)
 
     def forward(self, input_tensor):
         """Forward pass of the FluidCNN model.
@@ -87,6 +88,27 @@ class FluidCNN(nn.Module):
             torch.Tensor: Output tensor from the model.
         """
         return self.net(input_tensor)
+
+    def predict(self, flow_speed, hx, hy):
+        """Predicts lid driven cavity scenario.
+
+        Args:
+            flow_speed: Speed of flow at lid.
+            hx: Width of the domain.
+            hy: Height of the domain.
+
+        Returns:
+            Predicted tensor.
+        """
+        input_channel = np.zeros((1, hx, hy), dtype=np.float32)
+        input_channel[0, -1, 1:-1] = flow_speed
+        input_tensor = torch.from_numpy(input_channel).unsqueeze(0)
+        device = next(self.parameters()).device
+        input_tensor = input_tensor.to(device)
+        self.eval()
+        with torch.no_grad():
+            output = self.forward(input_tensor)
+        return output.detach()
 
 
 # this has to be named like this so the submission system can read the model
@@ -103,9 +125,5 @@ def init_my_model():
 
     with open(config_path, "r") as config_file:
         config = json.load(config_file)
-
-    activation_str = config.get(ACTIVATION_KEY)
-    if activation_str and isinstance(activation_str, str):
-        config[ACTIVATION_KEY] = getattr(nn, activation_str)
 
     return FluidCNN(config)
