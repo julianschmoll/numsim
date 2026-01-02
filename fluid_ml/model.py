@@ -104,11 +104,15 @@ class FluidCNN(torch.nn.Module):
         input_channel[0, -1, 1:-1] = flow_speed
         input_tensor = torch.from_numpy(input_channel).unsqueeze(0)
         device = next(self.parameters()).device
-        input_tensor = input_tensor.to(device)
         self.eval()
         with torch.no_grad():
-            output = self.forward(input_tensor)
-        return output.detach()
+            output = self.forward(input_tensor.to(device))
+        return input_tensor.detach(), output.detach()
+
+
+class Sine(torch.nn.Module):
+    def forward(self, input_tensor):
+        return torch.sin(input_tensor)
 
 
 # this has to be named like this so the submission system can read the model
