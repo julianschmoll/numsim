@@ -37,6 +37,7 @@ MODELS_SAVE_PATH = "models"
 DEFAULT_MODEL_NAME = "model.pt"
 CONFIG_FILE_NAME = "config.json"
 INIT_MODEL_PY = "mymodel.py"
+MIN_MAX_YAML = "min_max.yaml"
 
 # Plotting constants
 FIG_HEIGHT = 5
