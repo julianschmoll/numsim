@@ -75,12 +75,12 @@ def rescale_labels(labels, stats):
         The rescaled label tensor.
     """
     labels_min = torch.tensor([
-        stats[LABELS_KEY][U_CHANNEL_KEY][MIN],
-        stats[LABELS_KEY][V_CHANNEL_KEY][MIN]
+        stats[LABELS][U][MIN],
+        stats[LABELS][V][MIN]
     ])
     labels_max = torch.tensor([
-        stats[LABELS_KEY][U_CHANNEL_KEY][MAX],
-        stats[LABELS_KEY][V_CHANNEL_KEY][MAX]
+        stats[LABELS][U][MAX],
+        stats[LABELS][V][MAX]
     ])
     return rescale(labels, *DEFAULT_OUT_RANGE, out_range=(labels_min, labels_max))
 
