@@ -23,9 +23,8 @@ def generate_submission(submission_dir, inputs_file):
     from mymodel import init_my_model
 
     submission_dir = Path(submission_dir)
-    stats_path = submission_dir / "min_max.yaml"
 
-    with open(stats_path, "r") as min_max_yaml:
+    with open(submission_dir / constants.MIN_MAX_YAML, "r") as min_max_yaml:
         min_max_stats = yaml.safe_load(min_max_yaml)
 
     model = init_my_model()
@@ -38,18 +37,33 @@ def generate_submission(submission_dir, inputs_file):
         ).to(torch.float32),
         model,
         submission_dir,
-        stats_path
     )
 
+    save_plots(model, submission_dir)
 
-def write_csv(inputs_scaled, model, submission_dir, stats_path):
+
+def save_plots(model, submission_dir: Path):
+    flow_speeds = [0.25, 0.75, 1.25, 2.0, 3.0, 5.0]
+    for flow_speed in flow_speeds:
+        inputs, labels = normalization.denormalize(
+            *model.predict(
+                flow_speed, constants.IMG_SIZE, constants.IMG_SIZE
+            ), submission_dir / constants.MIN_MAX_YAML
+        )
+        save_visualization(
+            inputs, labels,
+            submission_dir,
+            title=f"Prediction with Flow Speed: {flow_speed}"
+        )
+
+
+def write_csv(inputs_scaled, model, submission_dir):
     """Write model predictions to a CSV file.
 
     Args:
         inputs_scaled: The scaled input tensors.
         model: The trained model for making predictions.
         submission_dir: The directory to save the submission CSV file.
-        stats_path: Path to the statistics file for visualization.
     """
     rows = []
     with torch.no_grad():
@@ -58,9 +72,6 @@ def write_csv(inputs_scaled, model, submission_dir, stats_path):
             rows.append(
                 np.concatenate(([index], prediction.numpy().reshape(-1)))
             )
-
-            if index == len(inputs_scaled) - 1:
-                visualize_prediction(input_tensor, prediction, stats_path)
 
     cols = ["id"] + [
         f"val{value_index}"
@@ -73,27 +84,37 @@ def write_csv(inputs_scaled, model, submission_dir, stats_path):
     )
 
 
-def visualize_prediction(input_tensor, prediction, stats_path):
+def save_visualization(input_tensor, prediction, submission_dir, title=""):
     """Visualizes the prediction.
 
     Args:
         input_tensor: The input tensor.
         prediction: The prediction.
-        stats_path: Path to the statistics file for visualization.
+        submission_dir: Path to the submission directory.
+        title: Title for the visualization.
     """
-    visualize(
-        input_tensor.unsqueeze(0),
-        prediction,
-        title="Prediction Visualization",
-        stats_path=stats_path,
+    sanitized_title = title.replace(
+        " ", "_"
+    ).replace(
+        ":", ""
+    ).lower() if title else "prediction_visualization"
+
+    fig = visualize(
+        [
+            (input_tensor[0, 0], "Input"),
+            (prediction[0, 0], "Prediction U"),
+            (prediction[0, 1], "Prediction V")
+        ],
+        title=title if title else "Prediction Visualization",
     )
-    visualize(
-        input_tensor.unsqueeze(0),
-        prediction,
-        title="Prediction Visualization (Quiver)",
-        quiver=True,
-        stats_path=stats_path,
+    fig.savefig(submission_dir / f"{sanitized_title}.png")
+
+    quiver_fig = visualize(
+        [(input_tensor[0], "Input"), (prediction[0], "Prediction")],
+        title=title if title else "Prediction Visualization (Quiver)",
+        plt_fn="quiver",
     )
+    quiver_fig.savefig(submission_dir / f"{sanitized_title}_quiver.png")
 
 
 if __name__ == "__main__":
