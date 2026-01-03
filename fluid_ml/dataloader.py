@@ -1,3 +1,4 @@
+"""DataLoader for fluid simulation data stored in VTI files."""
 from pathlib import Path
 
 import numpy as np
@@ -188,7 +189,7 @@ class FluidDataset(Dataset):
 
         save_path = folder / "min_max.yaml"
 
-        with open(save_path, "w") as min_max_yaml:
+        with open(save_path, "w", encoding="utf-8") as min_max_yaml:
             yaml.dump(self.stats, min_max_yaml)
 
         return save_path

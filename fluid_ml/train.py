@@ -1,3 +1,4 @@
+"""Trainer module for FluidCNN model training."""
 from pathlib import Path
 import logging
 
@@ -22,7 +23,7 @@ def _print_epoch(epoch: int) -> bool:
     return epoch % 100 == 0 or epoch == 1
 
 
-class Trainer:
+class Trainer:  # pylint: disable=too-many-instance-attributes
     """Trainer class for training a FluidCNN model on a FluidDataset."""
     def __init__(self, dataset, config=None):
         """Initialize the Trainer with dataset and configuration.
@@ -133,7 +134,7 @@ class Trainer:
             "best_test_loss": self._best_test_loss,
             "epochs": len(self._train_losses),
         }
-        with open(save_path, "w") as stats_file:
+        with open(save_path, "w", encoding="utf-8") as stats_file:
             yaml.dump(stats, stats_file)
         self._save_plot()
         return save_path

@@ -1,3 +1,4 @@
+"""Normalization and denormalization utilities."""
 import torch
 import yaml
 
@@ -18,7 +19,7 @@ def denormalize(inputs, labels, stats_path):
     Returns:
         Denormalized tensor
     """
-    with open(stats_path, "r") as min_max_yaml:
+    with open(stats_path, "r", encoding="utf-8") as min_max_yaml:
         stats = yaml.safe_load(min_max_yaml)
 
     if not stats.get("inputs") and not stats.get("labels"):

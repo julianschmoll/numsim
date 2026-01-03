@@ -1,3 +1,4 @@
+"""FluidCNN model for fluid flow predictions."""
 import json
 from pathlib import Path
 
@@ -111,7 +112,16 @@ class FluidCNN(torch.nn.Module):
 
 
 class Sine(torch.nn.Module):
+    """Sine activation function."""
     def forward(self, input_tensor):
+        """Forward pass of the Sine activation function.
+
+        Args:
+            input_tensor (torch.Tensor): Input tensor to the activation function.
+
+        Returns:
+            torch.Tensor: Output tensor after applying sine activation.
+        """
         return torch.sin(input_tensor)
 
 
@@ -127,7 +137,7 @@ def init_my_model():
     if not config_path.is_file():
         raise RuntimeError(f"Config file not found at {config_path}")
 
-    with open(config_path, "r") as config_file:
+    with open(config_path, "r", encoding="utf-8") as config_file:
         config = json.load(config_file)
 
     return FluidCNN(config)

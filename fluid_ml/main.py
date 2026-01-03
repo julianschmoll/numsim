@@ -1,3 +1,4 @@
+"""Entrypoint to train the fluid model and generate submission."""
 import argparse
 import datetime
 import logging
@@ -5,10 +6,10 @@ import json
 import shutil
 from pathlib import Path
 
-from dataloader import FluidDataset
-from train import Trainer
-from submit import generate_submission
 import constants
+from dataloader import FluidDataset
+from submit import generate_submission
+from train import Trainer
 
 
 def main(config_path: str | Path | None):
@@ -50,7 +51,7 @@ def get_config(config_path: str | Path | None) -> dict:
     """
     config = {}
     if config_path and Path(config_path).exists():
-        with open(config_path, 'r') as config_file:
+        with open(config_path, "r", encoding="utf-8") as config_file:
             config = json.load(config_file)
 
     current_file_path = Path(__file__).resolve()
@@ -94,7 +95,7 @@ def save_config(config: dict) -> None:
     save_data = config.copy()
     if constants.PATHS_KEY in save_data:
         save_data.pop(constants.PATHS_KEY)
-    with open(save_path, "w") as config_file:
+    with open(save_path, "w", encoding="utf-8") as config_file:
         json.dump(save_data, config_file, indent=4, default=str)
 
 
@@ -123,11 +124,10 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    config = args.config
-    if not config:
-        config = (Path(__file__).resolve().parent.parent
-                  / "cfg" / "ml" / "config.json"
-                  )
+    cfg_path = args.config
+    if not cfg_path:
+        cfg_path = (Path(__file__).resolve().parent.parent
+                    / "cfg" / "ml" / "config.json")
 
     logging.basicConfig(level=logging.INFO)
-    main(config_path=config)
+    main(config_path=cfg_path)

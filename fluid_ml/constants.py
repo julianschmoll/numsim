@@ -1,3 +1,4 @@
+"""This module contains constants used throughout package."""
 # Dictionary keys for the configuration files
 PATHS_KEY = "paths"
 TRAIN_FILES_PATH_KEY = "train_files_path"

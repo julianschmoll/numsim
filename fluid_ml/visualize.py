@@ -1,3 +1,4 @@
+"""Visualization utilities for fluid data."""
 from types import MappingProxyType
 
 from matplotlib import pyplot as plt
