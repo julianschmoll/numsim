@@ -5,7 +5,7 @@ import logging
 from matplotlib import pyplot as plt
 import torch
 import yaml
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader, Subset, random_split
 
 from model import FluidCNN
 import constants
@@ -23,6 +23,60 @@ def _print_epoch(epoch: int) -> bool:
     return epoch % 100 == 0 or epoch == 1
 
 
+def _get_subsets(cfg, dataset):
+    """Splits the dataset into training, validation and test subsets.
+
+    Args:
+        cfg: Configuration dict.
+        dataset: The dataset to split.
+
+    Returns:
+        The test, train and validation subsets.
+    """
+    n_total = len(dataset)
+    n_train = int(
+        cfg.get(
+            constants.TRAIN_RATIO_KEY,
+            constants.DEFAULT_TRAIN_RATIO) * n_total
+    )
+    n_test = int((n_total - n_train) / 2)
+    n_val = n_total - n_train - n_test
+
+    split_fn = random_split if cfg.get(constants.RANDOM_SPLIT_KEY) else _sorted_split
+    return split_fn(dataset, [n_train, n_test, n_val])
+
+
+def _sorted_split(dataset, lengths):
+    """Splits the dataset into subsets of given lengths without shuffling.
+
+    This is implemented here because we hope to archive better extrapolation
+    performance, when the model trains on the earlier part of the dataset and
+    is tested/validated on the later part.
+
+    Args:
+        dataset: The dataset to split.
+        lengths: A list of lengths for each subset.
+
+    Returns:
+        A list of Subset objects corresponding to the splits.
+    """
+    if sum(lengths) != len(dataset):
+        raise ValueError(
+            "Sum of input lengths does not equal the length of the input dataset!"
+        )
+
+    sets = []
+    start_idx = 0
+
+    for length in lengths:
+        end_idx = start_idx + length
+        indices = range(start_idx, end_idx)
+        sets.append(Subset(dataset, indices))
+        start_idx = end_idx
+
+    return sets
+
+
 class Trainer:  # pylint: disable=too-many-instance-attributes
     """Trainer class for training a FluidCNN model on a FluidDataset."""
     def __init__(self, dataset, config=None):
@@ -33,13 +87,7 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
             config (dict, optional): Configuration parameters for training.
         """
         cfg = config or {}
-        n_train = int(
-            cfg.get(
-                constants.TRAIN_RATIO_KEY,
-                constants.DEFAULT_TRAIN_RATIO) * len(dataset)
-        )
-        n_test = len(dataset) - n_train
-        train_set, test_set = random_split(dataset, [n_train, n_test])
+        train_set, test_set, val_set = _get_subsets(cfg, dataset)
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = FluidCNN(config=cfg).to(self.device)
@@ -64,20 +112,15 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
 
         self._criterion = cfg.get(constants.CRITERION_KEY, torch.nn.MSELoss)()
 
-        self._train_loader = DataLoader(
-            train_set, batch_size=cfg.get(
-                constants.BATCH_SIZE_KEY, constants.DEFAULT_BATCH_SIZE
-            ), shuffle=True
-        )
-        self._test_loader = DataLoader(
-            test_set, batch_size=cfg.get(
-                constants.BATCH_SIZE_KEY, constants.DEFAULT_BATCH_SIZE
-            ), shuffle=False
-        )
+        batch_size = cfg.get(constants.BATCH_SIZE_KEY, constants.DEFAULT_BATCH_SIZE)
+        self._train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
+        self._val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False)
+        self._test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
 
         self._train_losses = []
+        self._val_losses = []
         self._test_losses = []
-        self._best_test_loss = float("inf")
+        self._best_val_loss = float("inf")
         self._save_path = Path(
             cfg.get(constants.PATHS_KEY, {}).get(
                 constants.MODEL_SAVE_PATH_KEY, "model.pt"
@@ -96,17 +139,15 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
         for epoch in range(1, self._epochs + 1):
             epoch_loss = self._train_epoch()
 
-            avg_train_loss = epoch_loss / len(self._train_loader)
-            avg_test_loss = self._get_test_loss()
+            self._train_losses.append(epoch_loss / len(self._train_loader))
+            self._test_losses.append(self._get_loss(self._test_loader))
+            self._val_losses.append(self._get_loss(self._val_loader))
 
             if self._scheduler:
-                self._scheduler.step(avg_test_loss)
+                self._scheduler.step(self._val_losses[-1])
 
-            self._train_losses.append(avg_train_loss)
-            self._test_losses.append(avg_test_loss)
-
-            if avg_test_loss < self._best_test_loss:
-                self._best_test_loss = avg_test_loss
+            if self._val_losses[-1] < self._best_val_loss:
+                self._best_val_loss = self._val_losses[-1]
                 torch.save(self.model.state_dict(), self._save_path)
                 last_saved_text = f" (last saved model: {epoch})"
                 self._early_stopping_counter = 0
@@ -116,9 +157,10 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
 
             if _print_epoch(epoch):
                 self.log.info(
-                    f"Epoch {epoch}/{self._epochs} | "
-                    f"Train: {avg_train_loss:.4e} | "
-                    f"Test: {avg_test_loss:.4e}{last_saved_text}"
+                    f"Epoch {epoch}/{self._epochs} | "  # noqa: WPS237
+                    f"Train: {self._train_losses[-1]:.4e} | "
+                    f"Val: {self._val_losses[-1]:.4e} | "
+                    f"Test: {self._test_losses[-1]:.4e}{last_saved_text}"
                 )
                 last_saved_text = ""
 
@@ -131,7 +173,8 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
         save_path = self._save_path.parent / "stats.yaml"
         stats = {
             "best_train_loss": min(self._train_losses),
-            "best_test_loss": self._best_test_loss,
+            "best_val_loss": self._best_val_loss,
+            "best_test_loss": min(self._test_losses),
             "epochs": len(self._train_losses),
         }
         with open(save_path, "w", encoding="utf-8") as stats_file:
@@ -139,15 +182,16 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
         self._save_plot()
         return save_path
 
-    def _save_plot(self):
-        """Plot training and test losses over epochs and save the figure."""
+    def _save_plot(self):  # noqa: WPS213
+        """Plot losses over epochs and save the figure."""
         plt.figure()
         plt.semilogy(self._train_losses, label="Train loss")
         plt.semilogy(self._test_losses, label="Test loss")
+        plt.semilogy(self._val_losses, label="Validation loss")
         plt.xlabel("Epoch")
         plt.ylabel("MSE (log scale)")
         plt.legend()
-        plt.title("Training and test loss")
+        plt.title("Training, validation and test loss")
         plt.savefig(Path(self._save_path.parent / "losses.png"))
 
     def _early_stop(self, epoch):
@@ -190,21 +234,24 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
             epoch_loss += loss.item()
         return epoch_loss
 
-    def _get_test_loss(self):
-        """Calculates the average test loss over the test dataset.
+    def _get_loss(self, loader):
+        """Calculates average test loss over dataset specified by loader.
+
+        Args:
+            loader (DataLoader): DataLoader for the dataset to evaluate.
 
         Returns:
             float: The average test loss.
         """
         self.model.eval()
-        total_test_loss = .0
+        total_loss = .0
 
         with torch.no_grad():
-            for inputs, labels in self._test_loader:
+            for inputs, labels in loader:
                 inputs = inputs.to(self.device)
                 labels = labels.to(self.device)
                 outputs = self.model(inputs)
                 loss = self._criterion(outputs, labels)
-                total_test_loss += loss.item()
+                total_loss += loss.item()
 
-        return total_test_loss / len(self._test_loader)
+        return total_loss / len(loader)

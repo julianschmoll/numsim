@@ -25,6 +25,7 @@ INPUTS_KEY = "inputs"
 LABELS_KEY = "labels"
 U_CHANNEL_KEY = "u"
 V_CHANNEL_KEY = "v"
+RANDOM_SPLIT_KEY = "random_split"
 MIN = "min"
 MAX = "max"
 
