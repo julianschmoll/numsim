@@ -1,4 +1,6 @@
+import shutil
 import sys
+import subprocess
 from pathlib import Path
 
 import numpy as np
@@ -40,6 +42,8 @@ def generate_submission(submission_dir, inputs_file):
     )
 
     save_plots(model, submission_dir)
+
+    run_notebook(copy_notebook(submission_dir))
 
 
 def save_plots(model, submission_dir: Path):
@@ -115,6 +119,43 @@ def save_visualization(input_tensor, prediction, submission_dir, title=""):
         plt_fn="quiver",
     )
     quiver_fig.savefig(submission_dir / f"{sanitized_title}_quiver.png")
+
+
+def copy_notebook(destination_dir):
+    source_notebook = (Path(__file__).resolve().parent.parent
+                       / "resources" / "results.ipynb")
+    destination_notebook = Path(destination_dir) / "results.ipynb"
+    shutil.copy(source_notebook, destination_notebook)
+    return destination_notebook
+
+
+def run_notebook(notebook_path, save_pdf=True):
+    run_notebook_cmd = [
+        "jupyter", "nbconvert",
+        "--to", "notebook",
+        "--execute",
+        "--inplace",
+        notebook_path
+    ]
+    try:
+        subprocess.run(
+            run_notebook_cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+    except subprocess.CalledProcessError as error:
+        raise RuntimeError(f"Error executing notebook {notebook_path}: {error}")
+
+    if not save_pdf:
+        return
+
+    pdf_cmd = ["jupyter", "nbconvert", "--to", "pdf", "--no-input", notebook_path]
+
+    # this requires a LaTeX installation
+    try:
+        subprocess.run(
+            pdf_cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+    except subprocess.CalledProcessError as error:
+        raise RuntimeError(f"Error converting notebook {notebook_path} to PDF: {error}")
 
 
 if __name__ == "__main__":
