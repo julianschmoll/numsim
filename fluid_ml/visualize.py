@@ -51,7 +51,7 @@ PLOT_FUNCTIONS = MappingProxyType(
 )
 
 
-def visualize(input_data, title="Visualization", plt_fn="implot", num_rows=2):
+def visualize(input_data, title="Visualization", plt_fn="implot", num_rows=1):
     """
     Visualizes the input and label channels.
 
