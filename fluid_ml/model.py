@@ -6,16 +6,16 @@ import torch
 import numpy as np
 
 # We bake this in here instead of importing constants
-ACTIVATION_KEY = "activation"
-IN_CHANNELS_KEY = "in_channels"
-HIDDEN_CHANNELS_KEY = "hidden_channels"
-OUT_CHANNELS_KEY = "out_channels"
-KERNEL_SIZE_KEY = "kernel_size"
-PADDING_MODE_KEY = "padding_mode"
-USE_BIAS_KEY = "use_bias"
-NUM_HIDDEN_LAYERS_KEY = "num_hidden_layers"
-DROPOUT_RATE_KEY = "dropout_rate"
-OUTPUT_ACTIVATION_KEY = "output_activation"
+ACTIVATION = "activation"
+IN_CHANNELS = "in_channels"
+HIDDEN_CHANNELS = "hidden_channels"
+OUT_CHANNELS = "out_channels"
+KERNEL_SIZE = "kernel_size"
+PADDING_MODE = "padding_mode"
+USE_BIAS = "use_bias"
+NUM_HIDDEN_LAYERS = "num_hidden_layers"
+DROPOUT_RATE = "dropout_rate"
+OUTPUT_ACTIVATION = "output_activation"
 
 
 class FluidCNN(torch.nn.Module):
@@ -31,51 +31,51 @@ class FluidCNN(torch.nn.Module):
         if config is None:
             config = {}
 
-        activation_layer = getattr(torch.nn, config.get(ACTIVATION_KEY, "ReLU"))
+        activation_layer = getattr(torch.nn, config.get(ACTIVATION, "ReLU"))
 
         layers = [
             torch.nn.Conv2d(
-                in_channels=config.get(IN_CHANNELS_KEY, 1),
-                out_channels=config.get(HIDDEN_CHANNELS_KEY, 8),
-                kernel_size=config.get(KERNEL_SIZE_KEY, 7),
+                in_channels=config.get(IN_CHANNELS, 1),
+                out_channels=config.get(HIDDEN_CHANNELS, 8),
+                kernel_size=config.get(KERNEL_SIZE, 7),
                 stride=1,
                 padding="same",
-                padding_mode=config.get(PADDING_MODE_KEY, "zeros"),
-                bias=config.get(USE_BIAS_KEY, True),
+                padding_mode=config.get(PADDING_MODE, "zeros"),
+                bias=config.get(USE_BIAS, True),
             ),
             activation_layer(),
         ]
 
-        for _ in range(config.get(NUM_HIDDEN_LAYERS_KEY, 5)):
+        for _ in range(config.get(NUM_HIDDEN_LAYERS, 5)):
             layers.append(
                 torch.nn.Conv2d(
-                    in_channels=config.get(HIDDEN_CHANNELS_KEY, 8),
-                    out_channels=config.get(HIDDEN_CHANNELS_KEY, 8),
-                    kernel_size=config.get(KERNEL_SIZE_KEY, 7),
+                    in_channels=config.get(HIDDEN_CHANNELS, 8),
+                    out_channels=config.get(HIDDEN_CHANNELS, 8),
+                    kernel_size=config.get(KERNEL_SIZE, 7),
                     stride=1,
                     padding="same",
-                    padding_mode=config.get(PADDING_MODE_KEY, "zeros"),
-                    bias=config.get(USE_BIAS_KEY, True),
+                    padding_mode=config.get(PADDING_MODE, "zeros"),
+                    bias=config.get(USE_BIAS, True),
                 )
             )
             layers.append(activation_layer())
-            if config.get(DROPOUT_RATE_KEY):
-                layers.append(torch.nn.Dropout2d(p=config[DROPOUT_RATE_KEY]))
+            if config.get(DROPOUT_RATE):
+                layers.append(torch.nn.Dropout2d(p=config[DROPOUT_RATE]))
 
         layers.append(
             torch.nn.Conv2d(
-                in_channels=config.get(HIDDEN_CHANNELS_KEY, 8),
-                out_channels=config.get(OUT_CHANNELS_KEY, 2),
-                kernel_size=config.get(KERNEL_SIZE_KEY, 7),
+                in_channels=config.get(HIDDEN_CHANNELS, 8),
+                out_channels=config.get(OUT_CHANNELS, 2),
+                kernel_size=config.get(KERNEL_SIZE, 7),
                 stride=1,
                 padding="same",
-                padding_mode=config.get(PADDING_MODE_KEY, "zeros"),
-                bias=config.get(USE_BIAS_KEY, True),
+                padding_mode=config.get(PADDING_MODE, "zeros"),
+                bias=config.get(USE_BIAS, True),
             )
         )
 
-        if config.get(OUTPUT_ACTIVATION_KEY):
-            layers.append(config[OUTPUT_ACTIVATION_KEY]())
+        if config.get(OUTPUT_ACTIVATION):
+            layers.append(config[OUTPUT_ACTIVATION]())
 
         self.net = torch.nn.Sequential(*layers)
 

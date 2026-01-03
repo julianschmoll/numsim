@@ -3,7 +3,7 @@ from types import MappingProxyType
 
 from matplotlib import pyplot as plt
 
-import constants
+from constants import *  # noqa: F403, WPS347
 
 
 def _implot(fig, image_data, label, position):
@@ -41,7 +41,7 @@ def _quiver(fig, vector_data, label, position):
         v_component = vector_data[1]
 
     magnitude = (u_component**2 + v_component**2) ** 0.5
-    plt.quiver(u_component, v_component, magnitude, cmap=constants.COLORMAP)
+    plt.quiver(u_component, v_component, magnitude, cmap=COLORMAP)
 
 
 PLOT_FUNCTIONS = MappingProxyType(
@@ -64,15 +64,10 @@ def visualize(input_data, title="Visualization", plt_fn="implot", num_rows=1):
     """
     num_cols = (len(input_data) + num_rows - 1) // num_rows
 
-    fig = plt.figure(
-        figsize=(constants.FIG_WIDTH * num_cols, constants.FIG_HEIGHT * num_rows)
-    )
+    fig = plt.figure(figsize=(FIG_WIDTH * num_cols, FIG_HEIGHT * num_rows))
 
     plt.suptitle(
-        title,
-        fontsize=constants.TITLE_FONT_SIZE,
-        fontweight="bold",
-        y=constants.TITLE_Y_POSITION,
+        title, fontsize=TITLE_FONT_SIZE, fontweight="bold", y=TITLE_Y_POSITION,
     )
 
     plot_function = PLOT_FUNCTIONS.get(plt_fn)

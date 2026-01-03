@@ -2,7 +2,7 @@
 import torch
 import yaml
 
-import constants
+from constants import *  # noqa: F403, WPS347
 
 
 DEFAULT_OUT_RANGE = (torch.tensor([.0]), torch.tensor([1.0]))
@@ -59,12 +59,8 @@ def rescale_inputs(inputs, min_max_stats):
     Returns:
         The rescaled input tensor.
     """
-    inputs_mins = torch.tensor(
-        [min_max_stats[constants.INPUTS_KEY][constants.U_CHANNEL_KEY][constants.MIN]]
-    )
-    inputs_maxs = torch.tensor(
-        [min_max_stats[constants.INPUTS_KEY][constants.U_CHANNEL_KEY][constants.MAX]]
-    )
+    inputs_mins = torch.tensor([min_max_stats[INPUTS][U][MIN]])
+    inputs_maxs = torch.tensor([min_max_stats[INPUTS][U][MAX]])
     return rescale(inputs, inputs_mins, inputs_maxs)
 
 
@@ -79,12 +75,12 @@ def rescale_labels(labels, stats):
         The rescaled label tensor.
     """
     labels_min = torch.tensor([
-        stats[constants.LABELS_KEY][constants.U_CHANNEL_KEY][constants.MIN],
-        stats[constants.LABELS_KEY][constants.V_CHANNEL_KEY][constants.MIN]
+        stats[LABELS_KEY][U_CHANNEL_KEY][MIN],
+        stats[LABELS_KEY][V_CHANNEL_KEY][MIN]
     ])
     labels_max = torch.tensor([
-        stats[constants.LABELS_KEY][constants.U_CHANNEL_KEY][constants.MAX],
-        stats[constants.LABELS_KEY][constants.V_CHANNEL_KEY][constants.MAX]
+        stats[LABELS_KEY][U_CHANNEL_KEY][MAX],
+        stats[LABELS_KEY][V_CHANNEL_KEY][MAX]
     ])
     return rescale(labels, *DEFAULT_OUT_RANGE, out_range=(labels_min, labels_max))
 
@@ -100,9 +96,9 @@ def normalize_channel(channel_data):
     """
     c_min = float(channel_data.min())
     c_max = float(channel_data.max())
-    if (c_max - c_min) > constants.EPSILON:
+    if (c_max - c_min) > EPSILON:
         channel_data[...] = (channel_data - c_min) / (c_max - c_min)
-    return {constants.MIN: c_min, constants.MAX: c_max}
+    return {MIN: c_min, MAX: c_max}
 
 
 def denormalize_channel(channel_data, channel_stats):
@@ -112,6 +108,6 @@ def denormalize_channel(channel_data, channel_stats):
         channel_data: The data channel to be denormalized.
         channel_stats: Dictionary containing min, max statistics for denormalization.
     """
-    c_min, c_max = channel_stats[constants.MIN], channel_stats[constants.MAX]
-    if (c_max - c_min) > constants.EPSILON:
+    c_min, c_max = channel_stats[MIN], channel_stats[MAX]
+    if (c_max - c_min) > EPSILON:
         channel_data[...] = channel_data * (c_max - c_min) + c_min

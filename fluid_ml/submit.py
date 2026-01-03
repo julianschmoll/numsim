@@ -9,7 +9,7 @@ import pandas as pd
 import torch
 import yaml
 
-import constants
+from constants import *  # noqa: F403, WPS347
 import normalization
 from visualize import visualize
 
@@ -27,9 +27,7 @@ def generate_submission(submission_dir, inputs_file):
 
     submission_dir = Path(submission_dir)
 
-    with open(
-            submission_dir / constants.MIN_MAX_YAML, "r", encoding="utf-8"
-    ) as min_max_yaml:
+    with open(submission_dir / MIN_MAX_YAML, "r", encoding="utf-8") as min_max_yaml:
         min_max_stats = yaml.safe_load(min_max_yaml)
 
     model = init_my_model()
@@ -59,9 +57,8 @@ def save_plots(model, submission_dir: Path):
     flow_speeds = [0.25, 0.75, 1.25, 2.0, 3.0, 5.0]
     for flow_speed in flow_speeds:
         inputs, labels = normalization.denormalize(
-            *model.predict(
-                flow_speed, constants.IMG_SIZE, constants.IMG_SIZE
-            ), submission_dir / constants.MIN_MAX_YAML
+            *model.predict(flow_speed, IMG_SIZE, IMG_SIZE),
+            submission_dir / MIN_MAX_YAML
         )
         save_visualization(
             inputs, labels,
@@ -88,9 +85,7 @@ def write_csv(inputs_scaled, model, submission_dir):
 
     cols = ["id"] + [
         f"val{value_index}"
-        for value_index in range(
-            constants.N_CHANNELS * constants.IMG_SIZE * constants.IMG_SIZE
-        )
+        for value_index in range(N_CHANNELS * IMG_SIZE * IMG_SIZE)
     ]
     pd.DataFrame(rows, columns=cols).to_csv(
         submission_dir / "submission.csv", index=False

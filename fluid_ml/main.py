@@ -6,7 +6,7 @@ import json
 import shutil
 from pathlib import Path
 
-import constants
+from constants import *  # noqa: F403, WPS347
 from dataloader import FluidDataset
 from submit import generate_submission
 from train import Trainer
@@ -20,10 +20,10 @@ def main(config_path: str | Path | None):
     """
     config = get_config(config_path)
     save_config(config)
-    save_path = Path(config[constants.PATHS_KEY][constants.BASE_SAVE_PATH_KEY])
+    save_path = Path(config[PATHS][SAVE_PATH])
 
     dataset = FluidDataset(
-        Path(config[constants.PATHS_KEY][constants.TRAIN_FILES_PATH_KEY])
+        Path(config[PATHS][TRAIN_FILES_PATH])
     )
     dataset.normalize()
     dataset.save(save_path)
@@ -35,8 +35,7 @@ def main(config_path: str | Path | None):
     trainer.save_stats()
 
     inputs_path = (Path(__file__).resolve().parent.parent /
-                   constants.RESOURCE_FOLDER_NAME /
-                   constants.INPUTS_FILE_NAME)
+                   RESOURCES / INPUTS_FILE_NAME)
     generate_submission(save_path, inputs_path)
 
 
@@ -56,17 +55,15 @@ def get_config(config_path: str | Path | None) -> dict:
 
     current_file_path = Path(__file__).resolve()
     train_files_path = (current_file_path.parent.parent /
-                        constants.BUILD_PATH /
-                        constants.TRAIN_FOLDER_NAME)
+                        BUILD / TRAIN)
     model_path = (current_file_path.parent.parent /
-                  constants.MODELS_SAVE_PATH /
-                  get_unique_folder_name())
+                  MODELS / get_unique_folder_name())
     model_path.mkdir(parents=True, exist_ok=True)
 
-    config[constants.PATHS_KEY] = {
-        constants.TRAIN_FILES_PATH_KEY: str(train_files_path),
-        constants.BASE_SAVE_PATH_KEY: str(model_path),
-        constants.MODEL_SAVE_PATH_KEY: str(model_path / constants.DEFAULT_MODEL_NAME),
+    config[PATHS] = {
+        TRAIN_FILES_PATH: str(train_files_path),
+        SAVE_PATH: str(model_path),
+        MODEL: str(model_path / DEFAULT_MODEL_NAME),
     }
 
     return config
@@ -89,12 +86,10 @@ def save_config(config: dict) -> None:
     Args:
         config: The configuration dictionary to save.
     """
-    save_path = Path(
-        config[constants.PATHS_KEY][constants.BASE_SAVE_PATH_KEY]
-    ) / constants.CONFIG_FILE_NAME
+    save_path = Path(config[PATHS][SAVE_PATH]) / CONFIG_FILE_NAME
     save_data = config.copy()
-    if constants.PATHS_KEY in save_data:
-        save_data.pop(constants.PATHS_KEY)
+    if PATHS in save_data:
+        save_data.pop(PATHS)
     with open(save_path, "w", encoding="utf-8") as config_file:
         json.dump(save_data, config_file, indent=4, default=str)
 
@@ -106,9 +101,7 @@ def save_model_init(config: dict) -> None:
     Args:
         config: The configuration dictionary containing the save path.
     """
-    save_path = Path(
-        config[constants.PATHS_KEY][constants.BASE_SAVE_PATH_KEY]
-    ) / constants.INIT_MODEL_PY
+    save_path = Path(config[PATHS][SAVE_PATH]) / INIT_MODEL_PY
     model_path = Path(__file__).resolve().parent / "model.py"
     save_path.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy(model_path, save_path)

@@ -8,7 +8,7 @@ import yaml
 from torch.utils.data import DataLoader, Subset, random_split
 
 from model import FluidCNN
-import constants
+from constants import *  # noqa: F403, WPS347
 
 
 def _print_epoch(epoch: int) -> bool:
@@ -34,15 +34,11 @@ def _get_subsets(cfg, dataset):
         The test, train and validation subsets.
     """
     n_total = len(dataset)
-    n_train = int(
-        cfg.get(
-            constants.TRAIN_RATIO_KEY,
-            constants.DEFAULT_TRAIN_RATIO) * n_total
-    )
+    n_train = int(cfg.get(TRAIN_RATIO, DEFAULT_TRAIN_RATIO) * n_total)
     n_test = int((n_total - n_train) / 2)
     n_val = n_total - n_train - n_test
 
-    split_fn = random_split if cfg.get(constants.RANDOM_SPLIT_KEY) else _sorted_split
+    split_fn = random_split if cfg.get(RANDOM_SPLIT) else _sorted_split
     return split_fn(dataset, [n_train, n_test, n_val])
 
 
@@ -93,26 +89,25 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
         self.model = FluidCNN(config=cfg).to(self.device)
         self._optimizer = torch.optim.Adam(
             self.model.parameters(),
-            lr=cfg.get(constants.LEARNING_RATE_KEY, constants.DEFAULT_LR),
-            weight_decay=cfg.get(constants.WEIGHT_DECAY_KEY, 0)
+            lr=cfg.get(LEARNING_RATE, DEFAULT_LR),
+            weight_decay=cfg.get(WEIGHT_DECAY, 0)
         )
         self._scheduler = None
-        if cfg.get(constants.USE_LR_SCHEDULER_KEY):
+        if cfg.get(USE_LR_SCHEDULER):
             self._scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
                 self._optimizer, mode="min", factor=0.5, patience=10
             )
 
-        self._use_early_stopping = cfg.get(constants.USE_EARLY_STOPPING_KEY, False)
+        self._use_early_stopping = cfg.get(USE_EARLY_STOPPING, False)
         if self._use_early_stopping:
             self._early_stopping_patience = cfg.get(
-                constants.EARLY_STOPPING_PATIENCE_KEY,
-                constants.DEFAULT_EARLY_STOPPING_PATIENCE
+                EARLY_STOPPING_PATIENCE, DEFAULT_EARLY_STOPPING_PATIENCE
             )
             self._early_stopping_counter = 0
 
-        self._criterion = cfg.get(constants.CRITERION_KEY, torch.nn.MSELoss)()
+        self._criterion = cfg.get(CRITERION, torch.nn.MSELoss)()
 
-        batch_size = cfg.get(constants.BATCH_SIZE_KEY, constants.DEFAULT_BATCH_SIZE)
+        batch_size = cfg.get(BATCH_SIZE, DEFAULT_BATCH_SIZE)
         self._train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
         self._val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False)
         self._test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
@@ -121,12 +116,8 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
         self._val_losses = []
         self._test_losses = []
         self._best_val_loss = float("inf")
-        self._save_path = Path(
-            cfg.get(constants.PATHS_KEY, {}).get(
-                constants.MODEL_SAVE_PATH_KEY, "model.pt"
-            )
-        )
-        self._epochs = cfg.get(constants.EPOCHS_KEY, constants.DEFAULT_EPOCHS)
+        self._save_path = Path(cfg.get(PATHS, {}).get(MODEL, "model.pt"))
+        self._epochs = cfg.get(EPOCHS, DEFAULT_EPOCHS)
 
         self._early_stopping_counter = 0
 

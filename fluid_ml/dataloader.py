@@ -7,7 +7,7 @@ import torch
 import yaml
 from torch.utils.data import Dataset
 
-import constants
+from constants import *  # noqa: F403, WPS347
 import normalization
 
 
@@ -141,15 +141,12 @@ class FluidDataset(Dataset):
             return
 
         self.stats = {
-            constants.INPUTS_KEY: {
-                constants.U_CHANNEL_KEY:
-                    normalization.normalize_channel(self.inputs[:, 0])  # noqa: WPS478
+            INPUTS: {
+                U: normalization.normalize_channel(self.inputs[:, 0])  # noqa: WPS478
             },
-            constants.LABELS_KEY: {
-                constants.U_CHANNEL_KEY:
-                    normalization.normalize_channel(self.labels[:, 0]),  # noqa: WPS478
-                constants.V_CHANNEL_KEY:
-                    normalization.normalize_channel(self.labels[:, 1]),  # noqa: WPS478
+            LABELS: {
+                U: normalization.normalize_channel(self.labels[:, 0]),  # noqa: WPS478
+                V: normalization.normalize_channel(self.labels[:, 1]),  # noqa: WPS478
             },
         }
         self.normalized = True
@@ -159,9 +156,9 @@ class FluidDataset(Dataset):
         if not self.normalized:
             return
 
-        stats_in_u = self.stats[constants.INPUTS_KEY][constants.U_CHANNEL_KEY]
-        stats_label_u = self.stats[constants.LABELS_KEY][constants.U_CHANNEL_KEY]
-        stats_label_v = self.stats[constants.LABELS_KEY][constants.V_CHANNEL_KEY]
+        stats_in_u = self.stats[INPUTS][U]
+        stats_label_u = self.stats[LABELS][U]
+        stats_label_v = self.stats[LABELS][V]
 
         normalization.denormalize_channel(
             self.inputs[:, 0], stats_in_u  # noqa: WPS478
