@@ -4,9 +4,8 @@ import numpy as np
 import pyvista as pv
 import torch
 import yaml
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import Dataset
 
-from visualize import visualize
 import constants
 import normalization
 
@@ -193,18 +192,3 @@ class FluidDataset(Dataset):
             yaml.dump(self.stats, min_max_yaml)
 
         return save_path
-
-
-if __name__ == "__main__":
-    current_file_path = Path(__file__).resolve()
-    train_files_path = current_file_path.parent.parent / "build" / "train"
-
-    dataset = FluidDataset(train_files_path)
-    dataset.normalize()
-    saved_file = dataset.save(current_file_path.parent)
-
-    train_loader = DataLoader(
-        dataset, batch_size=constants.DEFAULT_BATCH_SIZE, shuffle=False
-    )
-    visualize(*next(iter(train_loader)), stats_path=saved_file)
-    visualize(*next(iter(train_loader)), quiver=True, stats_path=saved_file)

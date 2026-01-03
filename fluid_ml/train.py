@@ -6,7 +6,6 @@ import torch
 import yaml
 from torch.utils.data import DataLoader, random_split
 
-from dataloader import FluidDataset
 from model import FluidCNN
 import constants
 
@@ -208,18 +207,3 @@ class Trainer:
                 total_test_loss += loss.item()
 
         return total_test_loss / len(self._test_loader)
-
-
-if __name__ == "__main__":
-    current_file_path = Path(__file__).resolve()
-    train_files_path = current_file_path.parent.parent / "build" / "train"
-
-    dataset = FluidDataset(train_files_path)
-
-    config = {
-        constants.EPOCHS_KEY: constants.DEFAULT_EPOCHS,
-        constants.BATCH_SIZE_KEY: constants.DEFAULT_BATCH_SIZE,
-        constants.LEARNING_RATE_KEY: constants.DEFAULT_LR
-    }
-    trainer = Trainer(dataset, config=config)
-    trainer.train()
