@@ -1,42 +1,8 @@
+from types import MappingProxyType
+
 from matplotlib import pyplot as plt
 
 import constants
-import normalization
-
-
-def visualize(inputs, labels, title="Visualization", quiver=False, stats_path=None):
-    """
-    Visualizes the input and label channels.
-
-    Args:
-        inputs: Input tensor.
-        labels: Label tensor.
-        title: Title of the figure.
-        quiver: Whether to display as quiver plot.
-        stats_path: Path to the directory containing 'min_max.yaml'.
-    """
-    fig_width = constants.FIG_WIDTH * 2 if quiver else constants.FIG_WIDTH * 3
-    fig = plt.figure(figsize=(fig_width, constants.FIG_HEIGHT))
-    plt.suptitle(
-        title,
-        fontsize=constants.TITLE_FONT_SIZE,
-        fontweight="bold",
-        y=constants.TITLE_Y_POSITION,
-    )
-
-    if stats_path:
-        inputs, labels = normalization.denormalize(inputs, labels, stats_path)
-
-    if quiver:
-        _quiver(fig, inputs[0], "Flow input", (1, 2, 1))
-        _quiver(fig, labels[0], "Flow output", (1, 2, 2))
-    else:
-        _implot(fig, inputs[0, 0], "Input $u$", (1, 3, 1))
-        _implot(fig, labels[0, 0], "Output $u$", (1, 3, 2))
-        _implot(fig, labels[0, 1], "Output $v$", (1, 3, 3))
-
-    plt.tight_layout()
-    plt.show()
 
 
 def _implot(fig, image_data, label, position):
@@ -75,3 +41,45 @@ def _quiver(fig, vector_data, label, position):
 
     magnitude = (u_component**2 + v_component**2) ** 0.5
     plt.quiver(u_component, v_component, magnitude, cmap=constants.COLORMAP)
+
+
+PLOT_FUNCTIONS = MappingProxyType(
+    {
+        "implot": _implot,
+        "quiver": _quiver,
+    }
+)
+
+
+def visualize(input_data, title="Visualization", plt_fn="implot", num_rows=2):
+    """
+    Visualizes the input and label channels.
+
+    Args:
+        input_data: List of tuples containing data and labels to be plotted.
+        title: Title of the figure.
+        plt_fn: Name of the plotting function to use (e.g. 'implot' or 'quiver').
+        num_rows: Number of rows in the figure.
+    """
+    num_cols = (len(input_data) + num_rows - 1) // num_rows
+
+    fig = plt.figure(
+        figsize=(constants.FIG_WIDTH * num_cols, constants.FIG_HEIGHT * num_rows)
+    )
+
+    plt.suptitle(
+        title,
+        fontsize=constants.TITLE_FONT_SIZE,
+        fontweight="bold",
+        y=constants.TITLE_Y_POSITION,
+    )
+
+    plot_function = PLOT_FUNCTIONS.get(plt_fn)
+    if not plot_function:
+        raise ValueError(f"Unknown plot function: {plt_fn}")
+
+    for idx, plt_data in enumerate(input_data):
+        plot_function(fig, *plt_data, (num_rows, num_cols, idx + 1))
+
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
+    return fig
