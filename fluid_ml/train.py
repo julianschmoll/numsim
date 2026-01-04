@@ -2,7 +2,6 @@
 from pathlib import Path
 import logging
 
-from matplotlib import pyplot as plt
 import torch
 import yaml
 from torch.utils.data import DataLoader, Subset, random_split
@@ -74,7 +73,7 @@ def _sorted_split(dataset, lengths):
     return sets
 
 
-class Trainer:  # pylint: disable=too-many-instance-attributes
+class Trainer:  # noqa: WPS230, pylint: disable=too-many-instance-attributes
     """Trainer class for training a FluidCNN model on a FluidDataset."""
     def __init__(self, dataset, config=None):
         """Initialize the Trainer with dataset and configuration.
@@ -110,13 +109,14 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
         self._criterion = cfg.get(CRITERION, torch.nn.MSELoss)()
 
         batch_size = cfg.get(BATCH_SIZE, DEFAULT_BATCH_SIZE)
-        self._train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
-        self._val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False)
-        self._test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
+        self.train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
+        self.val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False)
+        self.test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
 
-        self._train_losses = []
-        self._val_losses = []
-        self._test_losses = []
+        self.train_losses = []
+        self.val_losses = []
+        self.test_losses = []
+
         self._best_val_loss = float("inf")
         self._save_path = Path(cfg.get(PATHS, {}).get(MODEL, "model.pt"))
         self._epochs = cfg.get(EPOCHS, DEFAULT_EPOCHS)
@@ -132,15 +132,15 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
         for epoch in range(1, self._epochs + 1):
             epoch_loss = self._train_epoch()
 
-            self._train_losses.append(epoch_loss / len(self._train_loader))
-            self._test_losses.append(self._get_loss(self._test_loader))
-            self._val_losses.append(self._get_loss(self._val_loader))
+            self.train_losses.append(epoch_loss / len(self.train_loader))
+            self.test_losses.append(self._get_loss(self.test_loader))
+            self.val_losses.append(self._get_loss(self.val_loader))
 
             if self._scheduler:
-                self._scheduler.step(self._val_losses[-1])
+                self._scheduler.step(self.val_losses[-1])
 
-            if self._val_losses[-1] < self._best_val_loss:
-                self._best_val_loss = self._val_losses[-1]
+            if self.val_losses[-1] < self._best_val_loss:
+                self._best_val_loss = self.val_losses[-1]
                 torch.save(self.model.state_dict(), self._save_path)
                 last_saved_text = f" (last saved model: {epoch})"
                 self._early_stopping_counter = 0
@@ -151,9 +151,9 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
             if _print_epoch(epoch):
                 self.log.info(
                     f"Epoch {epoch}/{self._epochs} | "  # noqa: WPS237
-                    f"Train: {self._train_losses[-1]:.4e} | "
-                    f"Val: {self._val_losses[-1]:.4e} | "
-                    f"Test: {self._test_losses[-1]:.4e}{last_saved_text}"
+                    f"Train: {self.train_losses[-1]:.4e} | "
+                    f"Val: {self.val_losses[-1]:.4e} | "
+                    f"Test: {self.test_losses[-1]:.4e}{last_saved_text}"
                 )
                 last_saved_text = ""
 
@@ -165,38 +165,25 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
         """
         save_path = self._save_path.parent / "stats.yaml"
         stats = {
-            "best_train_loss": min(self._train_losses),
+            "best_train_loss": min(self.train_losses),
             "best_val_loss": self._best_val_loss,
-            "best_test_loss": min(self._test_losses),
-            "epochs": len(self._train_losses),
+            "best_test_loss": min(self.test_losses),
+            "epochs": len(self.train_losses),
             "metrics": {
                 "train": evaluate.evaluation_metrics(
-                    self._train_loader, self.model, self.dataset, self.device
+                    self.train_loader, self.model, self.dataset, self.device
                 ),
                 "validation": evaluate.evaluation_metrics(
-                    self._val_loader, self.model, self.dataset, self.device
+                    self.val_loader, self.model, self.dataset, self.device
                 ),
                 "test": evaluate.evaluation_metrics(
-                    self._test_loader, self.model, self.dataset, self.device
+                    self.test_loader, self.model, self.dataset, self.device
                 )
             },
         }
         with open(save_path, "w", encoding="utf-8") as stats_file:
             yaml.dump(stats, stats_file)
-        self._save_plot()
         return save_path
-
-    def _save_plot(self):  # noqa: WPS213
-        """Plot losses over epochs and save the figure."""
-        plt.figure()
-        plt.semilogy(self._train_losses, label="Train loss")
-        plt.semilogy(self._test_losses, label="Test loss")
-        plt.semilogy(self._val_losses, label="Validation loss")
-        plt.xlabel("Epoch")
-        plt.ylabel("MSE (log scale)")
-        plt.legend()
-        plt.title("Training, validation and test loss")
-        plt.savefig(Path(self._save_path.parent / "losses.png"))
 
     def _early_stop(self, epoch):
         """Checks if early stopping criteria are met.
@@ -223,7 +210,7 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
         self.model.train()
         epoch_loss = .0
 
-        for inputs, labels in self._train_loader:
+        for inputs, labels in self.train_loader:
             inputs = inputs.to(self.device)
             labels = labels.to(self.device)
 

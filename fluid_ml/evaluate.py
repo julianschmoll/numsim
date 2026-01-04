@@ -6,7 +6,7 @@ import normalization
 from constants import *  # noqa: F403, WPS347
 
 
-def rmse(pred, truth):
+def root_mean_square_error(pred, truth):
     """Root Mean Square Error calculation.
 
     Args:
@@ -19,7 +19,7 @@ def rmse(pred, truth):
     return float(np.sqrt(np.mean((pred - truth) ** 2)))
 
 
-def mae(pred, truth):
+def mean_absolute_error(pred, truth):
     """Mean Absolute Error calculation.
 
     Args:
@@ -60,12 +60,12 @@ def evaluation_metrics(loader, model, dataset, device):  # noqa: WPS210
 
     return {
         "u": {
-            "rmse": rmse(predicted_u_field, true_u_field),
-            "mae": mae(predicted_u_field, true_u_field)
+            "rmse": root_mean_square_error(predicted_u_field, true_u_field),
+            "mae": mean_absolute_error(predicted_u_field, true_u_field)
         },
         "v": {
-            "rmse": rmse(predicted_v_field, true_v_field),
-            "mae": mae(predicted_v_field, true_v_field)
+            "rmse": root_mean_square_error(predicted_v_field, true_v_field),
+            "mae": mean_absolute_error(predicted_v_field, true_v_field)
         },
     }
 

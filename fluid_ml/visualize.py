@@ -79,3 +79,21 @@ def visualize(input_data, title="Visualization", plt_fn="implot", num_rows=1):
 
     plt.tight_layout(rect=[0, 0, 1, 0.95])
     return fig
+
+
+def loss_plot(save_path, loss_data, title="Loss Plot"):
+    """Saves Semilogy plot of MSE loss.
+
+    Args:
+        save_path: Path to save the plot.
+        loss_data: List of tuples containing loss values and their labels.
+        title: Title of the plot.
+    """
+    plt.figure()
+    for loss, label in loss_data:
+        plt.semilogy(loss, label=label)
+    plt.xlabel("Epoch")
+    plt.ylabel("MSE (log scale)")
+    plt.legend()
+    plt.title(title)
+    plt.savefig(save_path)

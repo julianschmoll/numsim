@@ -41,30 +41,7 @@ def generate_submission(submission_dir, inputs_file):
         model,
         submission_dir,
     )
-
-    save_plots(model, submission_dir)
-
     run_notebook(copy_notebook(submission_dir))
-
-
-def save_plots(model, submission_dir: Path):
-    """Saves visualizations of model predictions at different flow speeds.
-
-    Args:
-        model: The trained model for making predictions.
-        submission_dir: The directory to save the visualizations.
-    """
-    flow_speeds = [0.25, 0.75, 1.25, 2.0, 3.0, 5.0]
-    for flow_speed in flow_speeds:
-        inputs, labels = normalization.denormalize(
-            *model.predict(flow_speed, IMG_SIZE, IMG_SIZE),
-            submission_dir / MIN_MAX_YAML
-        )
-        save_visualization(
-            inputs, labels,
-            submission_dir,
-            title=f"Prediction with Flow Speed: {flow_speed}"
-        )
 
 
 def write_csv(inputs_scaled, model, submission_dir):
@@ -90,39 +67,6 @@ def write_csv(inputs_scaled, model, submission_dir):
     pd.DataFrame(rows, columns=cols).to_csv(
         submission_dir / "submission.csv", index=False
     )
-
-
-def save_visualization(input_tensor, prediction, submission_dir, title=""):
-    """Visualizes the prediction.
-
-    Args:
-        input_tensor: The input tensor.
-        prediction: The prediction.
-        submission_dir: Path to the submission directory.
-        title: Title for the visualization.
-    """
-    sanitized_title = title.replace(
-        " ", "_"
-    ).replace(
-        ":", ""
-    ).lower() if title else "prediction_visualization"
-
-    fig = visualize(
-        [
-            (input_tensor[0, 0], "Input"),
-            (prediction[0, 0], "Prediction U"),
-            (prediction[0, 1], "Prediction V")
-        ],
-        title=title if title else "Prediction Visualization",
-    )
-    fig.savefig(submission_dir / f"{sanitized_title}.png")
-
-    quiver_fig = visualize(
-        [(input_tensor[0], "Input"), (prediction[0], "Prediction")],
-        title=title if title else "Prediction Visualization (Quiver)",
-        plt_fn="quiver",
-    )
-    quiver_fig.savefig(submission_dir / f"{sanitized_title}_quiver.png")
 
 
 def copy_notebook(destination_dir):
