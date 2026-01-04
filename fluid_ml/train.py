@@ -8,6 +8,7 @@ import yaml
 from torch.utils.data import DataLoader, Subset, random_split
 
 from model import FluidCNN
+import evaluate
 from constants import *  # noqa: F403, WPS347
 
 
@@ -84,6 +85,7 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
         """
         cfg = config or {}
         train_set, test_set, val_set = _get_subsets(cfg, dataset)
+        self.dataset = dataset
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = FluidCNN(config=cfg).to(self.device)
@@ -156,7 +158,7 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
                 last_saved_text = ""
 
     def save_stats(self):
-        """Saves model statistics to a YAML file.
+        """Saves model statistics and evaluation metrics to a YAML file.
 
         Returns:
             Path: Path to the saved YAML file.
@@ -167,6 +169,17 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
             "best_val_loss": self._best_val_loss,
             "best_test_loss": min(self._test_losses),
             "epochs": len(self._train_losses),
+            "metrics": {
+                "train": evaluate.evaluation_metrics(
+                    self._train_loader, self.model, self.dataset, self.device
+                ),
+                "validation": evaluate.evaluation_metrics(
+                    self._val_loader, self.model, self.dataset, self.device
+                ),
+                "test": evaluate.evaluation_metrics(
+                    self._test_loader, self.model, self.dataset, self.device
+                )
+            },
         }
         with open(save_path, "w", encoding="utf-8") as stats_file:
             yaml.dump(stats, stats_file)
