@@ -172,7 +172,7 @@ class FluidDataset(Dataset):
 
         self.normalized = False
 
-    def save(self, dataset_path: str | Path):
+    def save(self, dataset_path: str | Path, save_np_arrays: bool = True) -> None:
         """Save the dataset and normalization info to `dataset_path`.
 
         Args:
@@ -184,9 +184,16 @@ class FluidDataset(Dataset):
         folder = Path(dataset_path)
         folder.mkdir(parents=True, exist_ok=True)
 
-        save_path = folder / "min_max.yaml"
+        np_save_path = folder / "np_arrays"
+        np_save_path.mkdir(parents=True, exist_ok=True)
 
-        with open(save_path, "w", encoding="utf-8") as min_max_yaml:
+        if save_np_arrays:
+            np.save(np_save_path / "inputs.npy", self.inputs)
+            np.save(np_save_path / "labels.npy", self.labels)
+
+        minmax_save_path = folder / "min_max.yaml"
+
+        with open(minmax_save_path, "w", encoding="utf-8") as min_max_yaml:
             yaml.dump(self.stats, min_max_yaml)
 
-        return save_path
+        return minmax_save_path

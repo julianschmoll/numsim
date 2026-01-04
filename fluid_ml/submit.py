@@ -14,57 +14,96 @@ import normalization
 from visualize import visualize
 
 
-def generate_submission(submission_dir, inputs_file):
-    """Generate a submission file from a trained model and inputs.
+class Submitter:
 
-    Args:
-        submission_dir: The directory containing the trained model and statistics.
-        inputs_file: The file containing the input tensors.
+    def __init__(self, submission_dir):
+        """Create a submitter for a trained model.
 
-    """
-    sys.path.append(str(submission_dir))
-    from mymodel import init_my_model  # pylint: disable=import-outside-toplevel
+        Args:
+            submission_dir: The directory containing the trained model and statistics.
+        """
+        self.submission_dir = Path(submission_dir)
+        with open(submission_dir / MIN_MAX_YAML, "r", encoding="utf-8") as min_max_yaml:
+            self.min_max_stats = yaml.safe_load(min_max_yaml)
 
-    submission_dir = Path(submission_dir)
+    def generate_submission(self, inputs_file):
+        """Generate a submission file from a trained model and inputs.
 
-    with open(submission_dir / MIN_MAX_YAML, "r", encoding="utf-8") as min_max_yaml:
-        min_max_stats = yaml.safe_load(min_max_yaml)
+        Args:
+            inputs_file: The file containing the input tensors.
 
-    model = init_my_model()
-    model.load_state_dict(torch.load(submission_dir / "model.pt", map_location="cpu"))
-    model.eval()
+        """
+        sys.path.append(str(self.submission_dir))
+        from mymodel import init_my_model  # pylint: disable=import-outside-toplevel
 
-    write_csv(
-        normalization.rescale_inputs(
-            torch.load(inputs_file), min_max_stats
-        ).to(torch.float32),
-        model,
-        submission_dir,
-    )
+        model = init_my_model()
+        model.load_state_dict(
+            torch.load(self.submission_dir / "model.pt", map_location="cpu")
+        )
+        model.eval()
 
-    save_plots(model, submission_dir)
+        write_csv(
+            normalization.rescale_inputs(
+                torch.load(inputs_file), self.min_max_stats
+            ).to(torch.float32),
+            model,
+            self.submission_dir,
+        )
 
-    run_notebook(copy_notebook(submission_dir))
+        self.save_plots(model, self.submission_dir)
 
+        run_notebook(copy_notebook(self.submission_dir))
 
-def save_plots(model, submission_dir: Path):
-    """Saves visualizations of model predictions at different flow speeds.
+    def save_plots(self, model, submission_dir: Path):
+        """Saves visualizations of model predictions at different flow speeds.
 
-    Args:
-        model: The trained model for making predictions.
-        submission_dir: The directory to save the visualizations.
-    """
-    flow_speeds = [0.25, 0.75, 1.25, 2.0, 3.0, 5.0]
-    for flow_speed in flow_speeds:
-        inputs, labels = normalization.denormalize(
-            *model.predict(flow_speed, IMG_SIZE, IMG_SIZE),
+        Args:
+            model: The trained model for making predictions.
+            submission_dir: The directory to save the visualizations.
+        """
+        ground_truth_inputs = torch.from_numpy(
+            np.load(submission_dir / "np_arrays" / "inputs.npy")
+        )
+        ground_truth_labels = torch.from_numpy(
+            np.load(submission_dir / "np_arrays" / "labels.npy")
+        )
+        print("GT inputs:", ground_truth_inputs.shape)
+        print("\t", ground_truth_inputs.min(), ground_truth_inputs.max())
+        print("GT labels:", ground_truth_labels.shape)
+        print("\t", ground_truth_labels.min(), ground_truth_labels.max())
+        den_gt_inputs, den_gt_labels = normalization.denormalize(
+            ground_truth_inputs, ground_truth_labels,
             submission_dir / MIN_MAX_YAML
         )
-        save_visualization(
-            inputs, labels,
-            submission_dir,
-            title=f"Prediction with Flow Speed: {flow_speed}"
-        )
+        print("Den GT inputs:", den_gt_inputs.shape)
+        print("\t", den_gt_inputs.min(), den_gt_inputs.max())
+        print("Den GT labels:", den_gt_labels.shape)
+        print("\t", den_gt_labels.min(), den_gt_labels.max())
+
+        flow_speeds = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0, 5.0]
+        for flow_speed in flow_speeds:
+            inputs, labels = normalization.denormalize(
+                *model.predict(flow_speed, IMG_SIZE, IMG_SIZE),
+                submission_dir / MIN_MAX_YAML
+            )
+            save_visualization(
+                inputs, labels,
+                submission_dir,
+                title=f"Prediction with Flow Speed: {flow_speed}"
+            )
+            if 0.5 <= flow_speed <= 1.5:
+                sample_index = int((flow_speed - 0.5) * 100)
+                print(flow_speed, sample_index)
+                save_error_visualization(
+                    labels,
+                    den_gt_labels[sample_index:sample_index + 1],
+                    submission_dir,
+                    title=f"Error with Flow Speed: {flow_speed}"
+                )
+            else:
+                pass
+                # ToDo: Plot ground truth error plots from outside training data
+                #  (generate it first)
 
 
 def write_csv(inputs_scaled, model, submission_dir):
@@ -123,6 +162,48 @@ def save_visualization(input_tensor, prediction, submission_dir, title=""):
         plt_fn="quiver",
     )
     quiver_fig.savefig(submission_dir / f"{sanitized_title}_quiver.png")
+
+
+def save_error_visualization(prediction, ground_truth, submission_dir, title=""):
+    """Visualizes the error of the prediction.
+
+    Args:
+        prediction: The prediction of the flow.
+        ground_truth: The simulated result of the flow.
+        submission_dir: Path to the submission directory.
+        title: Title for the visualization.
+    """
+    sanitized_title = title.replace(
+        " ", "_"
+    ).replace(
+        ":", ""
+    ).lower() if title else "error_visualization"
+
+    prediction_u, prediction_v = prediction[0]
+    prediction_magnitude = (prediction_u ** 2 + prediction_v ** 2) ** 0.5
+    ground_truth_u, ground_truth_v = ground_truth[0]
+    ground_truth_magnitude = (ground_truth_u ** 2 + ground_truth_v ** 2) ** 0.5
+
+    error_u = abs(ground_truth_u - prediction_u)
+    error_v = abs(ground_truth_v - prediction_v)
+    error_magnitude = (error_u ** 2 + error_v ** 2) ** 0.5
+
+    fig = visualize(
+        [
+            (ground_truth_u, "Ground Truth U"),
+            (ground_truth_v, "Ground Truth V"),
+            (ground_truth_magnitude, "Ground Truth Magnitude"),
+            (prediction_u, "Prediction U"),
+            (prediction_v, "Prediction V"),
+            (prediction_magnitude, "Prediction Magnitude"),
+            (error_u, "Abs. Error U"),
+            (error_v, "Abs. Error V"),
+            (error_magnitude, "Root Squared Error Magnitude"),
+        ],
+        title=title if title else "Error Visualization",
+        num_rows=3
+    )
+    fig.savefig(submission_dir / f"{sanitized_title}.png")
 
 
 def copy_notebook(destination_dir):
@@ -189,4 +270,6 @@ if __name__ == "__main__":
         raise RuntimeError("No models found in models directory.")
 
     latest_submission = max(model_dirs, key=lambda path: path.stat().st_mtime)
-    generate_submission(latest_submission, inputs_path)
+
+    submitter = Submitter(latest_submission)
+    submitter.generate_submission(inputs_path)

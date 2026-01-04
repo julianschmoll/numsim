@@ -8,7 +8,7 @@ from pathlib import Path
 
 from constants import *  # noqa: F403, WPS347
 from dataloader import FluidDataset
-from submit import generate_submission
+from submit import Submitter
 from train import Trainer
 
 
@@ -36,7 +36,8 @@ def main(config_path: str | Path | None):
 
     inputs_path = (Path(__file__).resolve().parent.parent /
                    RESOURCES / INPUTS_FILE_NAME)
-    generate_submission(save_path, inputs_path)
+    submitter = Submitter(save_path)
+    submitter.generate_submission(inputs_path)
 
 
 def get_config(config_path: str | Path | None) -> dict:
