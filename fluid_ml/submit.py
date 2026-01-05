@@ -73,7 +73,8 @@ def save_plots(model, submission_dir: Path, min_max_stats):
             flow_speed, IMG_SIZE, IMG_SIZE, min_max_stats
         )
         inputs, labels = normalization.denormalize(
-            *model.predict(input_tensor),
+            input_tensor,
+            model(input_tensor).detach(),
             submission_dir / MIN_MAX_YAML
         )
         save_visualization(

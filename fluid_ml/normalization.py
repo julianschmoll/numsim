@@ -66,9 +66,6 @@ def rescale_inputs(inputs, min_max_stats):
 
 def _denormalize_inputs(inputs, min_max_stats):
     """Denormalizes input tensors using provided statistics.
-    This is scaling the tensors correctly in the visualizations.
-    Check if rescale_inputs is doing the correct thing, since it
-    probably (?) should do the same as this function.
 
     Args:
         inputs: The input tensor to be rescaled.
