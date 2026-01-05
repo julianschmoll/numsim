@@ -3,7 +3,6 @@ import json
 from pathlib import Path
 
 import torch
-import numpy as np
 
 # We bake this in here instead of importing constants
 ACTIVATION = "activation"
@@ -90,20 +89,15 @@ class FluidCNN(torch.nn.Module):
         """
         return self.net(input_tensor)
 
-    def predict(self, flow_speed, hx, hy):
+    def predict(self, input_tensor):
         """Predicts lid driven cavity scenario.
 
         Args:
-            flow_speed: Speed of flow at lid.
-            hx: Width of the domain.
-            hy: Height of the domain.
+            input_tensor: Normalized input tensor.
 
         Returns:
             Predicted tensor.
         """
-        input_channel = np.zeros((1, hx, hy), dtype=np.float32)
-        input_channel[0, -1, 1:-1] = flow_speed
-        input_tensor = torch.from_numpy(input_channel).unsqueeze(0)
         device = next(self.parameters()).device
         self.eval()
         with torch.no_grad():

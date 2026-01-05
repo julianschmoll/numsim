@@ -25,7 +25,7 @@ def denormalize(inputs, labels, stats_path):
     if not stats.get("inputs") and not stats.get("labels"):
         return inputs, labels
 
-    return rescale_inputs(inputs, stats), rescale_labels(labels, stats)
+    return _denormalize_inputs(inputs, stats), _denormalize_labels(labels, stats)
 
 
 def rescale(tensor, mins_in, maxs_in, out_range=DEFAULT_OUT_RANGE):
@@ -64,23 +64,41 @@ def rescale_inputs(inputs, min_max_stats):
     return rescale(inputs, inputs_mins, inputs_maxs)
 
 
-def rescale_labels(labels, stats):
+def _denormalize_inputs(inputs, min_max_stats):
+    """Denormalizes input tensors using provided statistics.
+    This is scaling the tensors correctly in the visualizations.
+    Check if rescale_inputs is doing the correct thing, since it
+    probably (?) should do the same as this function.
+
+    Args:
+        inputs: The input tensor to be rescaled.
+        min_max_stats: A dictionary containing min and max statistics for rescaling.
+
+    Returns:
+        The rescaled input tensor.
+    """
+    inputs_mins = torch.tensor([min_max_stats[INPUTS][U][MIN]])
+    inputs_maxs = torch.tensor([min_max_stats[INPUTS][U][MAX]])
+    return rescale(inputs, *DEFAULT_OUT_RANGE, out_range=(inputs_mins, inputs_maxs))
+
+
+def _denormalize_labels(labels, min_max_stats):
     """Rescale label tensors using provided statistics.
 
     Args:
         labels: The label tensor to be rescaled.
-        stats: Dictionary containing min and max statistics for rescaling.
+        min_max_stats: Dictionary containing min and max statistics for rescaling.
 
     Returns:
         The rescaled label tensor.
     """
     labels_min = torch.tensor([
-        stats[LABELS][U][MIN],
-        stats[LABELS][V][MIN]
+        min_max_stats[LABELS][U][MIN],
+        min_max_stats[LABELS][V][MIN]
     ])
     labels_max = torch.tensor([
-        stats[LABELS][U][MAX],
-        stats[LABELS][V][MAX]
+        min_max_stats[LABELS][U][MAX],
+        min_max_stats[LABELS][V][MAX]
     ])
     return rescale(labels, *DEFAULT_OUT_RANGE, out_range=(labels_min, labels_max))
 

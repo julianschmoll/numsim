@@ -18,6 +18,7 @@ def generate_submission(submission_dir, inputs_file):
     """Generate a submission file from a trained model and inputs.
 
     Args:
+        submission_dir: The directory containing the trained model and statistics.
         inputs_file: The file containing the input tensors.
 
     """
@@ -61,23 +62,18 @@ def save_plots(model, submission_dir: Path, min_max_stats):
     ground_truth_labels = torch.from_numpy(
         np.load(submission_dir / "np_arrays" / "labels.npy")
     )
-    print("GT inputs:", ground_truth_inputs.shape)
-    print("\t", ground_truth_inputs.min(), ground_truth_inputs.max())
-    print("GT labels:", ground_truth_labels.shape)
-    print("\t", ground_truth_labels.min(), ground_truth_labels.max())
     den_gt_inputs, den_gt_labels = normalization.denormalize(
         ground_truth_inputs, ground_truth_labels,
         submission_dir / MIN_MAX_YAML
     )
-    print("Den GT inputs:", den_gt_inputs.shape)
-    print("\t", den_gt_inputs.min(), den_gt_inputs.max())
-    print("Den GT labels:", den_gt_labels.shape)
-    print("\t", den_gt_labels.min(), den_gt_labels.max())
 
     flow_speeds = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0, 5.0]
     for flow_speed in flow_speeds:
+        input_tensor = _tensor_from_flow_speed(
+            flow_speed, IMG_SIZE, IMG_SIZE, min_max_stats
+        )
         inputs, labels = normalization.denormalize(
-            *model.predict(flow_speed, IMG_SIZE, IMG_SIZE, min_max_stats),
+            *model.predict(input_tensor),
             submission_dir / MIN_MAX_YAML
         )
         save_visualization(
@@ -87,7 +83,6 @@ def save_plots(model, submission_dir: Path, min_max_stats):
         )
         if 0.5 <= flow_speed <= 1.5:
             sample_index = int((flow_speed - 0.5) * 100)
-            print(flow_speed, sample_index)
             save_error_visualization(
                 labels,
                 den_gt_labels[sample_index:sample_index + 1],
@@ -192,7 +187,7 @@ def save_error_visualization(prediction, ground_truth, submission_dir, title="")
             (prediction_magnitude, "Prediction Magnitude"),
             (error_u, "Absolute Error U"),
             (error_v, "Absolute Error V"),
-            (error_magnitude, "Root Squared Error Magnitude"),
+            (error_magnitude, "Combined Error Magnitude"),
         ],
         title=title if title else "Error Visualization",
         num_rows=3
@@ -253,6 +248,31 @@ def run_notebook(notebook_path, save_pdf=True):
         raise RuntimeError(
             f"Error converting notebook {notebook_path} to PDF: {error}"
         ) from error
+
+
+def _tensor_from_flow_speed(flow_speed, hx, hy, min_max_stats):
+    """Creates an input tensor from a flow speed value.
+
+    Args:
+            flow_speed: Speed of flow at lid.
+            hx: Width of the domain.
+            hy: Height of the domain.
+
+    Returns:
+        Normalized input tensor.
+    """
+    input_channel = np.zeros((1, hx, hy), dtype=np.float32)
+    input_channel[0, -1, 1:-1] = flow_speed
+    input_tensor = torch.from_numpy(input_channel).unsqueeze(0)
+    input_mins = torch.tensor(0, dtype=torch.float32)
+    input_maxs = torch.tensor(flow_speed, dtype=torch.float32)
+    out_min = min_max_stats[INPUTS][U][MIN]
+    out_max = flow_speed / min_max_stats[INPUTS][U][MAX]
+    n_input_tensor = normalization.rescale(
+        input_tensor, input_mins, input_maxs,
+        out_range=(torch.tensor(out_min), torch.tensor(out_max))
+    )
+    return n_input_tensor
 
 
 if __name__ == "__main__":
