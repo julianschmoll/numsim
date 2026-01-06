@@ -22,17 +22,16 @@ def generate_submission(submission_dir, inputs_file):
         inputs_file: The file containing the input tensors.
 
     """
-    submission_dir = Path(submission_dir)
-    with open(submission_dir / MIN_MAX_YAML, "r", encoding="utf-8") as min_max_yaml:
-        min_max_stats = yaml.safe_load(min_max_yaml)
-
     sys.path.append(str(submission_dir))
     from mymodel import init_my_model  # pylint: disable=import-outside-toplevel
 
+    submission_dir = Path(submission_dir)
+
+    with open(submission_dir / MIN_MAX_YAML, "r", encoding="utf-8") as min_max_yaml:
+        min_max_stats = yaml.safe_load(min_max_yaml)
+
     model = init_my_model()
-    model.load_state_dict(
-        torch.load(submission_dir / "model.pt", map_location="cpu")
-    )
+    model.load_state_dict(torch.load(submission_dir / "model.pt", map_location="cpu"))
     model.eval()
 
     write_csv(
@@ -285,5 +284,4 @@ if __name__ == "__main__":
         raise RuntimeError("No models found in models directory.")
 
     latest_submission = max(model_dirs, key=lambda path: path.stat().st_mtime)
-
     generate_submission(latest_submission, inputs_path)

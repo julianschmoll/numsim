@@ -6,6 +6,7 @@ import json
 import shutil
 from pathlib import Path
 
+import visualize
 from constants import *  # noqa: F403, WPS347
 from dataloader import FluidDataset
 from submit import generate_submission
@@ -33,6 +34,12 @@ def main(config_path: str | Path | None):
     trainer = Trainer(dataset, config=config)
     trainer.train()
     trainer.save_stats()
+
+    visualize.loss_plot(save_path / "losses.png", [
+        (trainer.train_losses, "Train Loss"),
+        (trainer.val_losses, "Validation Loss"),
+        (trainer.test_losses, "Test Loss"),
+    ], title="Training, Test and Validation Loss Over Epochs",)
 
     inputs_path = (Path(__file__).resolve().parent.parent /
                    RESOURCES / INPUTS_FILE_NAME)
