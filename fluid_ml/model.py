@@ -89,15 +89,20 @@ class FluidCNN(torch.nn.Module):
         """
         return self.net(input_tensor)
 
-    def predict(self, input_tensor):
+    def predict(self, flow_speed, hx, hy):
         """Predicts lid driven cavity scenario.
 
         Args:
-            input_tensor: Normalized input tensor.
+            flow_speed: Speed of flow at lid.
+            hx: Width of the domain.
+            hy: Height of the domain.
 
         Returns:
             Predicted tensor.
         """
+        input_channel = np.zeros((1, hx, hy), dtype=np.float32)
+        input_channel[0, -1, 1:-1] = flow_speed
+        input_tensor = torch.from_numpy(input_channel).unsqueeze(0)
         device = next(self.parameters()).device
         self.eval()
         with torch.no_grad():
