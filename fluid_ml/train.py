@@ -106,7 +106,7 @@ class Trainer:  # noqa: WPS230, pylint: disable=too-many-instance-attributes
             )
             self._early_stopping_counter = 0
 
-        self._criterion = cfg.get(CRITERION, torch.nn.MSELoss)()
+        self._criterion = getattr(torch.nn, cfg.get(CRITERION, "MSELoss"))()
 
         batch_size = cfg.get(BATCH_SIZE, DEFAULT_BATCH_SIZE)
         self.train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
