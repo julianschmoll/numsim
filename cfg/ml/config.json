@@ -11,5 +11,6 @@
     "output_activation": null,
     "use_bias": true,
     "padding_mode": "zeros",
-    "random_split": false
+    "random_split": true,
+    "random_split_seed": 1
 }

@@ -26,6 +26,7 @@ LABELS = "labels"
 U = "u"  # noqa: WPS111
 V = "v"  # noqa: WPS111
 RANDOM_SPLIT = "random_split"
+RANDOM_SPLIT_SEED = "random_split_seed"
 MIN = "min"
 MAX = "max"
 
