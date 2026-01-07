@@ -9,7 +9,7 @@ from pathlib import Path
 import visualize
 from constants import *  # noqa: F403, WPS347
 from dataloader import FluidDataset
-from submit import generate_submission
+import submit
 from train import Trainer
 
 
@@ -23,27 +23,51 @@ def main(config_path: str | Path | None):
     save_config(config)
     save_path = Path(config[PATHS][SAVE_PATH])
 
-    dataset = FluidDataset(
-        Path(config[PATHS][TRAIN_FILES_PATH])
-    )
-    dataset.normalize()
-    dataset.save(save_path)
+    trainer = _train_model(config, save_path)
+    _write_submission_data(save_path, trainer)
 
-    save_model_init(config)
 
-    trainer = Trainer(dataset, config=config)
-    trainer.train()
-    trainer.save_stats()
+def _write_submission_data(save_path, trainer):
+    inputs_path = (Path(__file__).resolve().parent.parent /
+                   RESOURCES / INPUTS_FILE_NAME)
 
     visualize.loss_plot(save_path / "losses.png", [
         (trainer.train_losses, "Train Loss"),
         (trainer.val_losses, "Validation Loss"),
         (trainer.test_losses, "Test Loss"),
-    ], title="Training, Test and Validation Loss Over Epochs",)
+    ], title="Training, Test and Validation Loss Over Epochs", )
 
-    inputs_path = (Path(__file__).resolve().parent.parent /
-                   RESOURCES / INPUTS_FILE_NAME)
-    generate_submission(save_path, inputs_path)
+
+    model = submit.init_model(save_path)
+    submit.generate_kaggle_submission(
+        model, save_path, inputs_path
+    )
+    submit.generate_interpolation_plots(model, trainer, save_path)
+    extrapolation_path = Path(save_path) / "plots" / "extrapolation"
+    extrapolation_path.mkdir(parents=True, exist_ok=True)
+    resource_dir = Path(__file__).resolve().parent.parent / RESOURCES
+
+    submit.generate_extrapolation_plots(
+        model, extrapolation_path, resource_dir, trainer.dataset.stats
+    )
+
+    submit.run_notebook(
+        submit.copy_notebook(save_path)
+    )
+
+
+def _train_model(config, save_path):
+    dataset = FluidDataset(
+        Path(config[PATHS][TRAIN_FILES_PATH])
+    )
+    dataset.normalize()
+    dataset.save(save_path)
+    save_model_init(config)
+
+    trainer = Trainer(dataset, config=config)
+    trainer.train()
+    trainer.save_stats()
+    return trainer
 
 
 def get_config(config_path: str | Path | None) -> dict:

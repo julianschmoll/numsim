@@ -11,124 +11,39 @@ import yaml
 
 from constants import *  # noqa: F403, WPS347
 import normalization
-from visualize import prediction_visualization, error_visualization
+import visualize
 
 
-def generate_submission(submission_dir, inputs_file):
-    """Generate a submission file from a trained model and inputs.
-
-    Args:
-        submission_dir: The directory containing the trained model and statistics.
-        inputs_file: The file containing the input tensors.
-
-    """
+def init_model(submission_dir):
     sys.path.append(str(submission_dir))
     from mymodel import init_my_model  # pylint: disable=import-outside-toplevel
 
     submission_dir = Path(submission_dir)
 
-    with open(submission_dir / MIN_MAX_YAML, "r", encoding="utf-8") as min_max_yaml:
-        min_max_stats = yaml.safe_load(min_max_yaml)
-
     model = init_my_model()
     model.load_state_dict(torch.load(submission_dir / "model.pt", map_location="cpu"))
     model.eval()
 
-    write_csv(
+    return model
+
+def generate_kaggle_submission(model, submission_dir, inputs_file):
+    """Generate a submission file from a trained model and inputs.
+
+    Args:
+        model (torch.nn.Module): The trained model.
+        submission_dir: The directory containing the trained model and statistics.
+        inputs_file: The file containing the input tensors.
+
+    """
+    with open(submission_dir / MIN_MAX_YAML, "r", encoding="utf-8") as min_max_yaml:
+        min_max_stats = yaml.safe_load(min_max_yaml)
+
+    _write_csv(
         normalization.rescale_inputs(
             torch.load(inputs_file), min_max_stats
         ).to(torch.float32),
         model,
         submission_dir,
-    )
-
-    generate_plots(model, submission_dir, min_max_stats)
-
-    run_notebook(copy_notebook(submission_dir))
-
-
-def generate_plots(model, submission_dir: Path, min_max_stats):
-    """Saves visualizations of model predictions at different flow speeds.
-
-    Args:
-        model: The trained model for making predictions.
-        submission_dir: The directory to save the visualizations.
-        min_max_stats: Stats for rescaling
-    """
-    plots_dir = Path(submission_dir / "plots")
-    plots_dir.mkdir(parents=True, exist_ok=True)
-    interpolation_plot_dir = Path(plots_dir / "interpolation")
-    interpolation_plot_dir.mkdir(parents=True, exist_ok=True)
-    extrapolation_plot_dir = Path(plots_dir / "extrapolation")
-    extrapolation_plot_dir.mkdir(parents=True, exist_ok=True)
-
-    training_inputs = torch.from_numpy(
-        np.load(submission_dir / "np_arrays" / "inputs.npy")
-    )
-    training_labels = torch.from_numpy(
-        np.load(submission_dir / "np_arrays" / "labels.npy")
-    )
-    den_training_inputs, den_training_labels = normalization.denormalize(
-        training_inputs, training_labels,
-        submission_dir / MIN_MAX_YAML
-    )
-
-    flow_speeds = [0.25, 0.5, 1.0, 1.5, 2.0, 3.0, 5.0]
-
-    for flow_speed in flow_speeds:
-        plot_dir = submission_dir / "plots" / "extrapolation"
-        if 0.5 <= flow_speed <= 1.5:
-            plot_dir = submission_dir / "plots" / "interpolation"
-
-        input_tensor = _tensor_from_flow_speed(
-            flow_speed, IMG_SIZE, IMG_SIZE, min_max_stats
-        )
-        inputs, labels = normalization.denormalize(
-            input_tensor,
-            model(input_tensor).detach(),
-            submission_dir / MIN_MAX_YAML
-        )
-        prediction_visualization(
-            inputs, labels,
-            plot_dir,
-            title=f"Prediction with Flow Speed: {flow_speed}"
-        )
-        if 0.5 <= flow_speed <= 1.5:
-            sample_index = int((flow_speed - 0.5) * 100)
-            error_visualization(
-                labels,
-                den_training_labels[sample_index:sample_index + 1],
-                plot_dir,
-                title=f"Error with Flow Speed: {flow_speed}"
-            )
-        else:
-            pass
-            # ToDo: Plot ground truth error plots from outside training data
-            #  (generate it first)
-
-
-def write_csv(inputs_scaled, model, submission_dir):
-    """Write model predictions to a CSV file.
-
-    Args:
-        inputs_scaled: The scaled input tensors.
-        model: The trained model for making predictions.
-        submission_dir: The directory to save the submission CSV file.
-    """
-    rows = []
-    with torch.no_grad():
-        for index, input_tensor in enumerate(inputs_scaled):
-            prediction = model(input_tensor.unsqueeze(0)).detach()
-            rows.append(
-                np.concatenate(([index], prediction.numpy().reshape(-1)))
-            )
-
-    cols = ["id"] + [
-        f"val{value_index}"
-        for value_index in range(N_CHANNELS * IMG_SIZE * IMG_SIZE)
-    ]
-    pd.DataFrame(rows, columns=cols).to_csv(
-        submission_dir / "submission.csv", index=False
     )
 
 
@@ -187,6 +102,146 @@ def run_notebook(notebook_path, save_pdf=True):
         ) from error
 
 
+def generate_interpolation_plots(model, trainer, submission_dir):
+    """Saves visualizations of model predictions at different flow speeds.
+
+    Args:
+        model: The trained model for making predictions.
+        trainer: The trainer containing the trained model and data loaders.
+        submission_dir: The directory to save the submission to.
+    """
+    plot_dir = submission_dir / "plots" / "interpolation"
+    plot_dir.mkdir(parents=True, exist_ok=True)
+
+    train_loader = trainer.train_loader
+    first_train_sample = train_loader.dataset[0:1]
+    last_train_sample = train_loader.dataset[-1:]
+    training_samples = [first_train_sample, last_train_sample]
+
+    for training_sample in training_samples:
+        training_input = training_sample[0]
+        training_label = training_sample[1]
+        den_training_input, den_training_label = normalization.denormalize(
+            training_input, training_label,
+            submission_dir / MIN_MAX_YAML
+        )
+
+        flow_speed = round(float(den_training_input[0, 0, -1, 1:-1].mean()), 2)
+
+        _, den_pred_label = normalization.denormalize(
+            training_input,
+            model(training_input).detach(),
+            submission_dir / MIN_MAX_YAML
+        )
+        visualize.prediction_visualization(
+            den_training_input,
+            den_pred_label,
+            plot_dir,
+            title=f"Prediction with Flow Speed: {flow_speed}"
+        )
+        visualize.error_visualization(
+            den_pred_label,
+            den_training_label,
+            plot_dir,
+            title=f"Error with Flow Speed: {flow_speed}"
+        )
+
+
+def generate_extrapolation_plots(model, plot_dir, resource_dir, stats):
+    _extrapolate_flow_seeds(model, plot_dir, resource_dir, stats, [0.25, 3.0])
+    _extrapolate_resolution(model, plot_dir, resource_dir, stats, [(41, 41)])
+    _extrapolate_boundary(model, plot_dir, stats)
+
+
+def _extrapolate_boundary(model, plot_dir, stats):
+    # from here we don't have ground truth data,
+    # as we could simply flip/rotate the tensor
+    # to make those interpolation problems
+
+    # extrapolation with negative flow speed
+    input_tensor = _tensor_from_flow_speed(-1.0, IMG_SIZE, IMG_SIZE, stats)
+    neg_speed_prediction = model(input_tensor).detach()
+    visualize.prediction_visualization(
+        input_tensor, neg_speed_prediction, plot_dir, f"Negative Flow Speed"
+    )
+
+    # extrapolation with boundary at different position
+    flow_speed = 1.0
+    input_channel = np.zeros((1, IMG_SIZE, IMG_SIZE), dtype=np.float32)
+    input_channel[0, 1:-1, -1] = flow_speed
+    input_tensor = torch.from_numpy(input_channel).unsqueeze(0)
+    out_min = torch.tensor(stats[INPUTS][U][MIN])
+    out_max = torch.tensor(stats[INPUTS][U][MAX])
+    n_input_tensor = normalization.rescale(input_tensor, out_min, out_max)
+    other_boundary_prediction = normalization.rescale(
+        model(n_input_tensor).detach(), torch.tensor(.0), torch.tensor(.1),
+        out_range=(out_min, out_max)
+    )
+
+    visualize.prediction_visualization(
+        input_tensor, other_boundary_prediction, plot_dir, f"Right Boundary"
+    )
+
+
+def _extrapolate_resolution(model, plot_dir, resource_dir, stats, resolutions):
+    for hx, hy in resolutions:
+        input_tensor = _tensor_from_flow_speed(1.0, hx, hy, stats)
+        truth = torch.from_numpy(
+            np.load(Path(resource_dir) / f"{hx}_cells_labels.npy")
+        )
+        _, prediction = normalization.denormalize(
+            input_tensor,
+            model(input_tensor).detach(),
+            Path(plot_dir).parent.parent / MIN_MAX_YAML
+        )
+
+        visualize.error_visualization(
+            prediction, truth, plot_dir, f"Extrapolation at {hx}x{hy} Resolution"
+        )
+
+
+def _extrapolate_flow_seeds(model, plot_dir, resource_dir, stats, extrapolation_speeds):
+    for flow_speed in extrapolation_speeds:
+        input_tensor = _tensor_from_flow_speed(flow_speed, IMG_SIZE, IMG_SIZE, stats)
+        truth = torch.from_numpy(
+            np.load(Path(resource_dir) / f"flow_speed_{flow_speed}_labels.npy")
+        )
+        _, prediction = normalization.denormalize(
+            input_tensor,
+            model(input_tensor).detach(),
+            Path(plot_dir).parent.parent / MIN_MAX_YAML
+        )
+
+        visualize.error_visualization(
+            prediction, truth, plot_dir, f"Extrapolation at Flow Speed: {flow_speed}"
+        )
+
+
+def _write_csv(inputs_scaled, model, submission_dir):
+    """Write model predictions to a CSV file.
+
+    Args:
+        inputs_scaled: The scaled input tensors.
+        model: The trained model for making predictions.
+        submission_dir: The directory to save the submission CSV file.
+    """
+    rows = []
+    with torch.no_grad():
+        for index, input_tensor in enumerate(inputs_scaled):
+            prediction = model(input_tensor.unsqueeze(0)).detach()
+            rows.append(
+                np.concatenate(([index], prediction.numpy().reshape(-1)))
+            )
+
+    cols = ["id"] + [
+        f"val{value_index}"
+        for value_index in range(N_CHANNELS * IMG_SIZE * IMG_SIZE)
+    ]
+    pd.DataFrame(rows, columns=cols).to_csv(
+        submission_dir / "submission.csv", index=False
+    )
+
+
 def _tensor_from_flow_speed(flow_speed, hx, hy, min_max_stats):
     """Creates an input tensor from a flow speed value.
 
@@ -201,14 +256,9 @@ def _tensor_from_flow_speed(flow_speed, hx, hy, min_max_stats):
     input_channel = np.zeros((1, hx, hy), dtype=np.float32)
     input_channel[0, -1, 1:-1] = flow_speed
     input_tensor = torch.from_numpy(input_channel).unsqueeze(0)
-    input_mins = torch.tensor(0, dtype=torch.float32)
-    input_maxs = torch.tensor(flow_speed, dtype=torch.float32)
-    out_min = min_max_stats[INPUTS][U][MIN]
-    out_max = flow_speed / min_max_stats[INPUTS][U][MAX]
-    n_input_tensor = normalization.rescale(
-        input_tensor, input_mins, input_maxs,
-        out_range=(torch.tensor(out_min), torch.tensor(out_max))
-    )
+    out_min = torch.tensor(min_max_stats[INPUTS][U][MIN])
+    out_max = torch.tensor(min_max_stats[INPUTS][U][MAX])
+    n_input_tensor = normalization.rescale(input_tensor, out_min, out_max) # scale to 0-1
     return n_input_tensor
 
 

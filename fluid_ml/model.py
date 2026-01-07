@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 
+import numpy as np
 import torch
 
 # We bake this in here instead of importing constants

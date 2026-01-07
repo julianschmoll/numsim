@@ -172,11 +172,12 @@ class FluidDataset(Dataset):
 
         self.normalized = False
 
-    def save(self, dataset_path: str | Path, save_np_arrays: bool = True) -> None:
+    def save(self, dataset_path: str | Path, save_np_arrays: bool = False) -> Path:
         """Save the dataset and normalization info to `dataset_path`.
 
         Args:
             dataset_path (Path): Folder to save the dataset to.
+            save_np_arrays (bool): Whether to save the numpy arrays of inputs and labels.
 
         Returns:
             Path: Path to the saved dataset statistics.
@@ -184,10 +185,9 @@ class FluidDataset(Dataset):
         folder = Path(dataset_path)
         folder.mkdir(parents=True, exist_ok=True)
 
-        np_save_path = folder / "np_arrays"
-        np_save_path.mkdir(parents=True, exist_ok=True)
-
         if save_np_arrays:
+            np_save_path = folder / "np_arrays"
+            np_save_path.mkdir(parents=True, exist_ok=True)
             np.save(np_save_path / "inputs.npy", self.inputs)
             np.save(np_save_path / "labels.npy", self.labels)
 
