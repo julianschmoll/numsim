@@ -26,7 +26,7 @@ LABELS = "labels"
 U = "u"  # noqa: WPS111
 V = "v"  # noqa: WPS111
 RANDOM_SPLIT = "random_split"
-RANDOM_SPLIT_SEED = "random_split_seed"
+RANDOM_SEED = "random_seed"
 MIN = "min"
 MAX = "max"
 
@@ -65,6 +65,7 @@ DEFAULT_HIDDEN_CHANNELS = 16
 DEFAULT_OUTPUT_ACTIVATION = None
 DEFAULT_USE_BIAS = True
 DEFAULT_PADDING_MODE = "zeros"
+DEFAULT_RANDOM_SEED = 0
 
 # Normalization constants
 EPSILON = 1e-9

@@ -5,13 +5,13 @@ import logging
 import json
 import shutil
 from pathlib import Path
+import torch
 
 import visualize
 from constants import *  # noqa: F403, WPS347
 from dataloader import FluidDataset
 import submit
 from train import Trainer
-
 
 def main(config_path: str | Path | None):
     """Entrypoint to train the model.
@@ -22,6 +22,8 @@ def main(config_path: str | Path | None):
     config = get_config(config_path)
     save_config(config)
     save_path = Path(config[PATHS][SAVE_PATH])
+    
+    torch.manual_seed(config.get(RANDOM_SEED, DEFAULT_RANDOM_SEED))
 
     trainer = _train_model(config, save_path)
     _write_submission_data(save_path, trainer)

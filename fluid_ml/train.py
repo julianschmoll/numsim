@@ -38,11 +38,8 @@ def _get_subsets(cfg, dataset):
     n_test = int((n_total - n_train) / 2)
     n_val = n_total - n_train - n_test
     
-    if cfg.get(RANDOM_SPLIT):
-        generator = torch.default_generator if cfg.get(RANDOM_SPLIT_SEED) is None else torch.Generator().manual_seed(cfg.get(RANDOM_SPLIT_SEED))
-        return random_split(dataset, [n_train, n_test, n_val], generator=generator)
-    else:
-        return _sorted_split(dataset, [n_train, n_test, n_val])
+    split_fn = random_split if cfg.get(RANDOM_SPLIT) else _sorted_split
+    return split_fn(dataset, [n_train, n_test, n_val])
 
 
 def _sorted_split(dataset, lengths):

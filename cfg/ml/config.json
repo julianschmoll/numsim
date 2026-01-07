@@ -12,5 +12,5 @@
     "use_bias": true,
     "padding_mode": "zeros",
     "random_split": true,
-    "random_split_seed": 1
+    "random_seed": 1
 }
