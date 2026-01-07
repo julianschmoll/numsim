@@ -99,7 +99,9 @@ def loss_plot(save_path, loss_data, title="Loss Plot"):
     plt.savefig(save_path)
 
 
-def error_visualization(prediction, ground_truth, submission_dir, title=""):
+def error_visualization(  # noqa: WPS210, as it makes the method more readable
+        prediction, ground_truth, submission_dir, title=""
+):
     """Visualizes the error of the prediction.
 
     Args:

@@ -26,6 +26,7 @@ def init_model(submission_dir):
 
     return model
 
+
 def generate_kaggle_submission(model, submission_dir, inputs_file):
     """Generate a submission file from a trained model and inputs.
 
@@ -113,73 +114,89 @@ def generate_interpolation_plots(model, trainer, submission_dir):
     plot_dir = submission_dir / "plots" / "interpolation"
     plot_dir.mkdir(parents=True, exist_ok=True)
 
-    train_loader = trainer.train_loader
-    first_train_sample = train_loader.dataset[0:1]
-    last_train_sample = train_loader.dataset[-1:]
-    training_samples = [first_train_sample, last_train_sample]
+    # first and last samples in the training set
+    training_samples = [
+        trainer.train_loader.dataset[:1], trainer.train_loader.dataset[-1:]
+    ]
 
     for training_sample in training_samples:
-        training_input = training_sample[0]
-        training_label = training_sample[1]
-        den_training_input, den_training_label = normalization.denormalize(
-            training_input, training_label,
-            submission_dir / MIN_MAX_YAML
-        )
-
-        flow_speed = round(float(den_training_input[0, 0, -1, 1:-1].mean()), 2)
-
-        _, den_pred_label = normalization.denormalize(
-            training_input,
-            model(training_input).detach(),
-            submission_dir / MIN_MAX_YAML
-        )
-        visualize.prediction_visualization(
-            den_training_input,
-            den_pred_label,
-            plot_dir,
-            title=f"Prediction with Flow Speed: {flow_speed}"
-        )
-        visualize.error_visualization(
-            den_pred_label,
-            den_training_label,
-            plot_dir,
-            title=f"Error with Flow Speed: {flow_speed}"
-        )
+        _plot_interpolation(model, plot_dir, submission_dir, training_sample)
 
 
-def generate_extrapolation_plots(model, plot_dir, resource_dir, stats):
+def _plot_interpolation(model, plot_dir, submission_dir, training_sample):
+    den_training_input, den_training_label = normalization.denormalize(
+        training_sample[0], training_sample[1],
+        submission_dir / MIN_MAX_YAML
+    )
+    flow_speed = round(
+        float(
+            den_training_input[0, 0, -1, 1:-1].mean()
+        ), 2
+    )
+
+    _, den_pred_label = normalization.denormalize(
+        training_sample[0],
+        model(training_sample[0]).detach(),
+        submission_dir / MIN_MAX_YAML
+    )
+    plot_subdir = plot_dir / f"flow_speed_{flow_speed}"
+    plot_subdir.mkdir(parents=True, exist_ok=True)
+
+    visualize.prediction_visualization(
+        den_training_input,
+        den_pred_label,
+        plot_subdir,
+        title=f"Prediction with Flow Speed: {flow_speed}"
+    )
+    visualize.error_visualization(
+        den_pred_label,
+        den_training_label,
+        plot_subdir,
+        title=f"Error with Flow Speed: {flow_speed}"
+    )
+
+
+def generate_extrapolation_plots(model, save_path, stats):
+    """Saves visualizations of model predictions for extrapolation scenarios.
+
+    Args:
+        model: The trained model for making predictions.
+        save_path: The directory to save the submission to.
+        stats: Normalization statistics for inputs and labels.
+    """
+    plot_dir = Path(save_path) / "plots" / "extrapolation"
+    plot_dir.mkdir(parents=True, exist_ok=True)
+    resource_dir = Path(__file__).resolve().parent.parent / RESOURCES
+
     _extrapolate_flow_seeds(model, plot_dir, resource_dir, stats, [0.25, 3.0])
     _extrapolate_resolution(model, plot_dir, resource_dir, stats, [(41, 41)])
     _extrapolate_boundary(model, plot_dir, stats)
 
 
 def _extrapolate_boundary(model, plot_dir, stats):
-    # from here we don't have ground truth data,
-    # as we could simply flip/rotate the tensor
-    # to make those interpolation problems
-
     # extrapolation with negative flow speed
     input_tensor = _tensor_from_flow_speed(-1.0, IMG_SIZE, IMG_SIZE, stats)
-    neg_speed_prediction = model(input_tensor).detach()
     visualize.prediction_visualization(
-        input_tensor, neg_speed_prediction, plot_dir, f"Negative Flow Speed"
+        input_tensor, model(input_tensor).detach(), plot_dir, "Negative Flow Speed"
     )
 
     # extrapolation with boundary at different position
-    flow_speed = 1.0
+    # ToDo: Change to bottom boundary
     input_channel = np.zeros((1, IMG_SIZE, IMG_SIZE), dtype=np.float32)
-    input_channel[0, 1:-1, -1] = flow_speed
+    input_channel[0, 1:-1, -1] = 1.0
     input_tensor = torch.from_numpy(input_channel).unsqueeze(0)
-    out_min = torch.tensor(stats[INPUTS][U][MIN])
-    out_max = torch.tensor(stats[INPUTS][U][MAX])
-    n_input_tensor = normalization.rescale(input_tensor, out_min, out_max)
+    out_range = [
+        torch.tensor(stats[INPUTS][U][MIN]),
+        torch.tensor(stats[INPUTS][U][MAX])
+    ]
+    n_input_tensor = normalization.rescale(input_tensor, *out_range)
     other_boundary_prediction = normalization.rescale(
         model(n_input_tensor).detach(), torch.tensor(.0), torch.tensor(.1),
-        out_range=(out_min, out_max)
+        out_range=out_range
     )
 
     visualize.prediction_visualization(
-        input_tensor, other_boundary_prediction, plot_dir, f"Right Boundary"
+        input_tensor, other_boundary_prediction, plot_dir, "Right Boundary"
     )
 
 
@@ -258,8 +275,8 @@ def _tensor_from_flow_speed(flow_speed, hx, hy, min_max_stats):
     input_tensor = torch.from_numpy(input_channel).unsqueeze(0)
     out_min = torch.tensor(min_max_stats[INPUTS][U][MIN])
     out_max = torch.tensor(min_max_stats[INPUTS][U][MAX])
-    n_input_tensor = normalization.rescale(input_tensor, out_min, out_max) # scale to 0-1
-    return n_input_tensor
+    # scale to 0-1
+    return normalization.rescale(input_tensor, out_min, out_max)
 
 
 if __name__ == "__main__":

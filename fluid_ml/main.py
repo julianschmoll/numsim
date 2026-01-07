@@ -37,18 +37,13 @@ def _write_submission_data(save_path, trainer):
         (trainer.test_losses, "Test Loss"),
     ], title="Training, Test and Validation Loss Over Epochs", )
 
-
     model = submit.init_model(save_path)
     submit.generate_kaggle_submission(
         model, save_path, inputs_path
     )
     submit.generate_interpolation_plots(model, trainer, save_path)
-    extrapolation_path = Path(save_path) / "plots" / "extrapolation"
-    extrapolation_path.mkdir(parents=True, exist_ok=True)
-    resource_dir = Path(__file__).resolve().parent.parent / RESOURCES
-
     submit.generate_extrapolation_plots(
-        model, extrapolation_path, resource_dir, trainer.dataset.stats
+        model, save_path, trainer.dataset.stats
     )
 
     submit.run_notebook(

@@ -177,7 +177,7 @@ class FluidDataset(Dataset):
 
         Args:
             dataset_path (Path): Folder to save the dataset to.
-            save_np_arrays (bool): Whether to save the numpy arrays of inputs and labels.
+            save_np_arrays (bool): Whether to save the np arrays of inputs & labels.
 
         Returns:
             Path: Path to the saved dataset statistics.
