@@ -206,11 +206,12 @@ def _extrapolate_boundary(model, plot_dir, stats):
 
 def _extrapolate_resolution(model, plot_dir, resource_dir, stats, resolutions):
     for resolution in resolutions:
-        plt_subdir = plot_dir / f"{hx}x{hy}_resolution"
+        plt_subdir = plot_dir / f"{resolution[0]}x{resolution[1]}_resolution"
         plt_subdir.mkdir(parents=True, exist_ok=True)
         input_tensor = _tensor_from_flow_speed(1.0, *resolution, stats)
+        # ToDo: rename this file to match better naming convention with non square
         truth = torch.from_numpy(
-            np.load(Path(resource_dir) / f"{hx}_cells_labels.npy")
+            np.load(Path(resource_dir) / f"{resolution[0]}_cells_labels.npy")
         )
         _, prediction = normalization.denormalize(
             input_tensor,
