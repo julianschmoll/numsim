@@ -94,12 +94,12 @@ class FluidCNN(torch.nn.Module):
         """Predicts lid driven cavity scenario.
 
         Args:
-            flow_speed: Speed of flow at lid.
+            flow_speed: Normalized flow speed of flow at lid.
             hx: Width of the domain.
             hy: Height of the domain.
 
         Returns:
-            Predicted tensor.
+            Input tensor, Predicted tensor.
         """
         input_channel = np.zeros((1, hx, hy), dtype=np.float32)
         input_channel[0, -1, 1:-1] = flow_speed
@@ -109,20 +109,6 @@ class FluidCNN(torch.nn.Module):
         with torch.no_grad():
             output = self.forward(input_tensor.to(device))
         return input_tensor.detach(), output.detach()
-
-
-class Sine(torch.nn.Module):
-    """Sine activation function."""
-    def forward(self, input_tensor):
-        """Forward pass of the Sine activation function.
-
-        Args:
-            input_tensor (torch.Tensor): Input tensor to the activation function.
-
-        Returns:
-            torch.Tensor: Output tensor after applying sine activation.
-        """
-        return torch.sin(input_tensor)
 
 
 # this has to be named like this so the submission system can read the model
