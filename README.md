@@ -53,7 +53,7 @@ There are a few default config files in `cfg/ml`.
 After training, the model will be saved in the `models` folder and a pdf with summary plots will be saved alongside.
 The pdf is automatically generated from a jupyter notebook. For this you need to have a LaTeX installation.
 
-The whole Data Generation and Training process can be run with `run_pipeline [-g generation_config] [-t training_config].
+The whole Data Generation and Training process can be run with `run_pipeline [-g generation_config] [-t training_config]`.
 
 ## Linting
 
