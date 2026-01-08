@@ -1,0 +1,16 @@
+{
+    "epochs": 5000,
+    "batch_size": 4,
+    "activation": "LeakyReLU",
+    "lr": 5e-05,
+    "num_hidden_layers": 5,
+    "kernel_size": 7,
+    "in_channels": 1,
+    "out_channels": 2,
+    "hidden_channels": 64,
+    "output_activation": null,
+    "use_bias": true,
+    "padding_mode": "zeros",
+    "random_split": true,
+    "random_seed": 1
+}
