@@ -63,7 +63,10 @@ def _train_model(config, save_path):
     save_model_init(config)
 
     trainer = Trainer(dataset, config=config)
-    trainer.train()
+    try:
+        trainer.train()
+    except KeyboardInterrupt:
+        trainer.log.info("Training interrupted by user. Saving...")
     trainer.save_stats()
     return trainer
 
