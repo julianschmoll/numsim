@@ -37,7 +37,7 @@ def _get_subsets(cfg, dataset):
     n_train = int(cfg.get(TRAIN_RATIO, DEFAULT_TRAIN_RATIO) * n_total)
     n_test = int((n_total - n_train) / 2)
     n_val = n_total - n_train - n_test
-    
+
     split_fn = random_split if cfg.get(RANDOM_SPLIT) else _sorted_split
     return split_fn(dataset, [n_train, n_test, n_val])
 
@@ -71,7 +71,7 @@ def _sorted_split(dataset, lengths):
         start_idx = end_idx
 
     return sets
-import numpy as np
+
 
 class Trainer:  # noqa: WPS230, pylint: disable=too-many-instance-attributes
     """Trainer class for training a FluidCNN model on a FluidDataset."""

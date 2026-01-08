@@ -1,0 +1,15 @@
+{
+    "epochs": 4000,
+    "batch_size": 16,
+    "activation": "ReLU",
+    "lr": 1e-03,
+    "num_hidden_layers": 5,
+    "kernel_size": 7,
+    "in_channels": 1,
+    "out_channels": 2,
+    "hidden_channels": 16,
+    "output_activation": null,
+    "use_bias": true,
+    "padding_mode": "zeros",
+    "random_split": true
+}
