@@ -143,7 +143,7 @@ def generate_extrapolation_plots(model, save_path, stats):
     """
     plot_dir = Path(save_path) / "plots" / "extrapolation"
     plot_dir.mkdir(parents=True, exist_ok=True)
-    resource_dir = Path(__file__).resolve().parent.parent / RESOURCES
+    resource_dir = Path(__file__).resolve().parent.parent / RESOURCES / "true_np_arrays"
 
     prediction_plot.extrapolate_flow_speeds(
         model,
@@ -157,7 +157,7 @@ def generate_extrapolation_plots(model, save_path, stats):
         plot_dir,
         resource_dir,
         stats,
-        [(41, 41)]
+        [(10, 10), (25, 25), (30, 30), (41, 41)]
     )
     prediction_plot.extrapolate_boundary(model, plot_dir, stats)
 
