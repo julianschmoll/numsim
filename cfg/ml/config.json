@@ -1,5 +1,5 @@
 {
-    "epochs": 10000,
+    "epochs": 20000,
     "batch_size": 32,
     "activation": "CELU",
     "learning_rate": 5e-05,
@@ -12,7 +12,7 @@
     "use_bias": true,
     "padding_mode": "zeros",
     "random_split": false,
-    "random_seed": 1,
+    "random_seed": 42,
     "weight_decay": 0.0,
     "use_early_stopping": true,
     "early_stopping_patience": 300

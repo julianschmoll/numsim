@@ -32,12 +32,12 @@ echo "----------------------------------------"
 echo "Building and Running Simulations..."
 echo "----------------------------------------"
 
-rm -rf build
-mkdir -p build && cd build
+rm -rf ./solver/build/
+mkdir -p ./solver/build && cd ./solver/build
 cmake ..
 make install
 mpirun numsim_parallel "$GEN_CONFIG"
-cd ..
+cd ../..
 
 echo "----------------------------------------"
 echo "Training ML Model..."

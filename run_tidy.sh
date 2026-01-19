@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ARGS=("-D" "CMAKE_EXPORT_COMPILE_COMMANDS=ON" "-D" "CMAKE_BUILD_TYPE=Debug" "-D" "CMAKE_CXX_FLAGS=\"-fno-caret-diagnostics\"")
-SRC=$(pwd)/src
+SRC=$(pwd)/solver/src
 
 mkdir -p "clang-tidy-build"
 cd "clang-tidy-build"

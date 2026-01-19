@@ -2,10 +2,10 @@
 #include "settings.h"
 #include "simulation/simulation.h"
 
-#include <iostream>
 #include <iomanip>
-#include <sstream>
+#include <iostream>
 #include <mpi.h>
+#include <sstream>
 
 void runSimulation(const Settings &settings, const std::string &folderName) {
     Simulation simulation{settings, folderName};

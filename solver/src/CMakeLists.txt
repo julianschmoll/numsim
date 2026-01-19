@@ -6,31 +6,31 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(${PROJECT_NAME}
     # main stuff
-    settings.cpp
-    main.cpp
+        settings.cpp
+        main.cpp
 
     #grid stuff
-    grid/array2d.cpp
-    grid/staggeredGrid.cpp
-    grid/dataField.cpp
+        grid/array2d.cpp
+        grid/staggeredGrid.cpp
+        grid/dataField.cpp
 
     # solver stuff
-    simulation/simulation.cpp
-    simulation/pressureSolver/pressureSolver.cpp
-    simulation/pressureSolver/redBlackSolver.cpp
-    simulation/pressureSolver/conjugateGradientSolver.cpp
-    simulation/discreteOperators.cpp
-    simulation/partitioning.cpp
+        simulation/simulation.cpp
+        simulation/pressureSolver/pressureSolver.cpp
+        simulation/pressureSolver/redBlackSolver.cpp
+        simulation/pressureSolver/conjugateGradientSolver.cpp
+        simulation/discreteOperators.cpp
+        simulation/partitioning.cpp
 
     # outputWriter stuff
-    outputWriter/outputWriter.cpp
-    outputWriter/outputWriterParaview.cpp
-    outputWriter/outputWriterText.cpp
-    outputWriter/outputWriterTextParallel.cpp
-    outputWriter/outputWriterParaviewParallel.cpp
+        outputWriter/outputWriter.cpp
+        outputWriter/outputWriterParaview.cpp
+        outputWriter/outputWriterText.cpp
+        outputWriter/outputWriterTextParallel.cpp
+        outputWriter/outputWriterParaviewParallel.cpp
 )
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(${PROJECT_NAME} PRIVATE .)
 
 find_package(VTK REQUIRED COMPONENTS CommonCore CommonDataModel IOXML)
 

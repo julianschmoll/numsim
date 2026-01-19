@@ -40,11 +40,11 @@ void RedBlackSolver::solve() {
         localPressureError_ = 0.0;
         // rb = 0 is red, rb=1 is black pass
         for (int rb = 0; rb < 2; ++rb) {
-            #pragma omp parallel for reduction(+ : localPressureError_)
+#pragma omp parallel for reduction(+ : localPressureError_)
             for (int j = beginJ; j < endJ; ++j) {
                 // offset is 0 or 1 depending on the color of the cell
                 const int offset = (beginI + rb + globalOffset + j) & 1;
-                #pragma omp simd reduction(+ : localPressureError_)
+#pragma omp simd reduction(+ : localPressureError_)
                 for (int i = beginI + offset; i < endI; i += 2) {
                     const double pDxx = (p(i - 1, j) + p(i + 1, j)) * invDx2;
                     const double pDyy = (p(i, j - 1) + p(i, j + 1)) * invDy2;
