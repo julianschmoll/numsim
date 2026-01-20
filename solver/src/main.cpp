@@ -46,10 +46,6 @@ int main(int argc, char *argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &ownRankNo);
     MPI_Comm_size(MPI_COMM_WORLD, &nRanks);
 
-#ifdef USE_CG
-    settings.pressureSolver = IterSolverType::CG;
-#endif
-
     if (settings.generateTrainingData) {
         generateTrainingData(settings);
     } else {
