@@ -4,6 +4,7 @@
 #include <iostream>
 
 enum class IterSolverType { SOR, GaussSeidel, CG };
+enum class BoundaryType { InflowNoSlip, Outflow };
 
 /**
  * @class Settings
@@ -36,6 +37,18 @@ struct Settings {
 
     /// factor for donor-cell scheme
     double alpha = 0.5;
+
+    /// boundary type of bottom border
+    BoundaryType boundaryBottom = BoundaryType::InflowNoSlip;
+
+    /// boundary type of top border
+    BoundaryType boundaryTop = BoundaryType::InflowNoSlip;
+
+    /// boundary type of left border
+    BoundaryType boundaryLeft = BoundaryType::InflowNoSlip;
+
+    /// boundary type of right border
+    BoundaryType boundaryRight = BoundaryType::InflowNoSlip;
 
     /// prescribed values of u,v at bottom of domain
     std::array<double, 2> dirichletBcBottom;

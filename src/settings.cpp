@@ -73,6 +73,27 @@ void Settings::loadFromFile(const std::string &filename) {
     if (settings.count("alpha"))
         alpha = std::stod(settings["alpha"]);
 
+    if (settings.count("boundaryBottom")) {
+        if (settings["boundaryBottom"] == "Outflow") {
+            boundaryBottom = BoundaryType::Outflow;
+        }
+    }
+    if (settings.count("boundaryTop")) {
+        if (settings["boundaryTop"] == "Outflow") {
+            boundaryTop = BoundaryType::Outflow;
+        }
+    }
+    if (settings.count("boundaryLeft")) {
+        if (settings["boundaryLeft"] == "Outflow") {
+            boundaryLeft = BoundaryType::Outflow;
+        }
+    }
+    if (settings.count("boundaryRight")) {
+        if (settings["boundaryRight"] == "Outflow") {
+            boundaryRight = BoundaryType::Outflow;
+        }
+    }
+
     if (settings.count("dirichletBottomX"))
         dirichletBcBottom[0] = std::stod(settings["dirichletBottomX"]);
     if (settings.count("dirichletBottomY"))
@@ -139,12 +160,14 @@ void Settings::printSettings() const {
               << "  endTime: " << endTime << " s, re: " << re << ", g: (" << g[0] << "," << g[1] << "), tau: " << tau << ", maximum dt: " << maximumDt
               << std::endl
 
+              << "  Boundary Types: bottom: (" << (boundaryBottom == BoundaryType::InflowNoSlip ? "Inflow/NoSlip" : "Outflow") << ")"
+              << ", top: " << (boundaryTop == BoundaryType::InflowNoSlip ? "Inflow/NoSlip" : "Outflow")
+              << ", left: " << (boundaryLeft == BoundaryType::InflowNoSlip ? "Inflow/NoSlip" : "Outflow")
+              << ", right: " << (boundaryRight == BoundaryType::InflowNoSlip ? "Inflow/NoSlip" : "Outflow") << std::endl
+
               << "  dirichletBC: bottom: (" << dirichletBcBottom[0] << "," << dirichletBcBottom[1] << ")"
-
               << ", top: (" << dirichletBcTop[0] << "," << dirichletBcTop[1] << ")"
-
               << ", left: (" << dirichletBcLeft[0] << "," << dirichletBcLeft[1] << ")"
-
               << ", right: (" << dirichletBcRight[0] << "," << dirichletBcRight[1] << ")" << std::endl
 
               << "  useDonorCell: " << std::boolalpha << useDonorCell << ", alpha: " << alpha << std::endl
