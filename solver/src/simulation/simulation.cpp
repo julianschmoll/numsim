@@ -343,3 +343,17 @@ void Simulation::setVelocities() {
         }
     }
 }
+
+void Simulation::saveState() {
+    DEBUG(std::cout << "Simulation::saveState" << std::endl);
+    uCheckpoint_ = discOps_->u();
+    vCheckpoint_ = discOps_->v();
+    pCheckpoint_ = discOps_->p();
+}
+
+void Simulation::reloadLastState() {
+    DEBUG(std::cout << "Simulation::reloadLastState" << std::endl);
+    discOps_->u() = uCheckpoint_;
+    discOps_->v() = vCheckpoint_;
+    discOps_->p() = pCheckpoint_;
+}

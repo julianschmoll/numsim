@@ -4,6 +4,7 @@
 #include "settings.h"
 #include "simulation/discreteOperators.h"
 #include "simulation/pressureSolver/pressureSolver.h"
+#include "grid/dataField.h"
 
 /**
  * @struct TimeSteppingInfo
@@ -26,6 +27,16 @@ public:
      * Runs the simulation.
      */
     void run();
+
+    /**
+     * Saves current state of u, v and p.
+     */
+    void saveState();
+
+    /**
+     * Reloads saved states of u,v and p.
+     */
+    void reloadLastState();
 
     /**
      * Constructs simulation object.
@@ -52,6 +63,15 @@ private:
 
     // Time step size used in the simulation loop
     double timeStepWidth_ = 0.1;
+
+    // Old state of u to reload in precice
+    DataField uCheckpoint_;
+
+    // Old state of v to reload with precice
+    DataField vCheckpoint_;
+
+    // Old state of p to reload with precice
+    DataField pCheckpoint_;
 
     /**
      * Sets boundary values of u and v.
