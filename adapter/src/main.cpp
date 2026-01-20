@@ -1,6 +1,7 @@
 #include "macros.h"
 #include "settings.h"
 #include "simulation/simulation.h"
+#include "precice/precice.hpp"
 
 #include <iomanip>
 #include <iostream>
@@ -13,18 +14,6 @@ void runSimulation(const Settings &settings, const std::string &folderName) {
 }
 
 int main(int argc, char *argv[]) {
-    // we need an input file being specified
-    if (argc != 2) {
-        std::cout << "usage: " << argv[0] << " <filename>" << std::endl;
-        return EXIT_FAILURE;
-    }
-    const std::string filename = argv[1];
-
-    Settings settings;
-    settings.loadFromFile(filename);
-
-    DEBUG(settings.printSettings());
-
     MPI_Init(&argc, &argv);
 
     int ownRankNo = 0;
@@ -32,9 +21,21 @@ int main(int argc, char *argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &ownRankNo);
     MPI_Comm_size(MPI_COMM_WORLD, &nRanks);
 
-#ifdef USE_CG
-    settings.pressureSolver = IterSolverType::CG;
-#endif
+    // we need an input file being specified
+    if (argc != 3) {
+        std::cout << "The adapter was called with an incorrect number of arguments.\n";
+        std::cout << "Usage: ./numsim_adapter [precice config] [scenario file]\n\n";
+        std::cout << "Parameter description\n";
+        std::cout << "    precice config:  Path and filename of preCICE configuration\n";
+        std::cout << "    scenario file:   Path and filename of settings file for the solver\n";
+        return EXIT_FAILURE;
+    }
+    const std::string preciceConfigPath(argv[1]);
+    const std::string settingsPath(argv[2]);
+
+    Settings settings;
+    settings.loadFromFile(settingsPath);
+    DEBUG(settings.printSettings());
 
     runSimulation(settings, "out");
 
