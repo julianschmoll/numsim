@@ -10,6 +10,7 @@
 - [ ] Herleitung der Kraftvektoren auf Festkörper (fabio)
     - Implementierung soll nur in eine Richtung kraft auswirken (orthogonal zur Wand, parallel vernachlässigen wir)
     - Was wenn Festkörper Rand berührt?
+- [ ] Check Acceleration of precice to use in the advance method
 
 - [ ] Konfiguration überlegen von Tube
 - [ ] Überlegung wie wir Zellen klassifizieren (fluid, solid, interface)
