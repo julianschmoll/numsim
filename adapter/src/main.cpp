@@ -8,10 +8,6 @@
 #include <mpi.h>
 #include <sstream>
 
-void runSimulation(const Settings &settings, const std::string &folderName) {
-    Simulation simulation{settings, folderName};
-    simulation.run();
-}
 
 int main(int argc, char *argv[]) {
     MPI_Init(&argc, &argv);
@@ -37,7 +33,47 @@ int main(int argc, char *argv[]) {
     settings.loadFromFile(settingsPath);
     DEBUG(settings.printSettings());
 
-    runSimulation(settings, "out");
+    Simulation simulation(settings, "out");
+    precice::Participant participant("Fluid", preciceConfigPath, ownRankNo, nRanks);
+
+    participant.initialize();
+    // prepare step (set boundaries once I guess)
+
+    while (participant.isCouplingOngoing()) {
+        if (participant.requiresWritingCheckpoint()) {
+            DEBUG(std::cout << "Writing iteration checkpoint\n");
+            simulation.saveState();
+        }
+
+        double dt = participant.getMaxTimeStepSize();
+
+        // Read Boundary Data and apply conditions
+        // participant.readData(...)
+
+        participant.startProfilingSection("Fluid Solver Step");
+        // Solve Fluid and Calculate Forces
+        participant.stopLastProfilingSection();
+
+        // Write with write data
+        // participant.writeData(...);
+
+
+        // Advance time step
+        participant.advance(dt);
+
+        // Reload Checkpoint if convergence failed
+        if (participant.requiresReadingCheckpoint()) {
+            DEBUG(std::cout << "Reading iteration checkpoint\n");
+            simulation.reloadLastState();
+        } else {
+            DEBUG(std::cout << "Advancing in time\n");
+            // Update velocities for mass conservation
+            // save output
+        }
+    }
+
+    participant.finalize();
+    DEBUG(std::cout << "Finalizing\n");
 
     MPI_Finalize();
     return EXIT_SUCCESS;
