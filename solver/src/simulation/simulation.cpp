@@ -52,6 +52,12 @@ Simulation::Simulation(const Settings &settings, const std::string &folderName) 
     outputWriterText_ = std::make_unique<OutputWriterTextParallel>(discOps_, *partitioning_, folderName);
 }
 
+void Simulation::writeOutput(const double currentTime, const int currentSec, const int lastSec) const {
+    if (currentSec > lastSec && !settings_.generateTrainingData) [[unlikely]] {
+        outputWriterParaview_->writeFile(currentTime);
+    }
+}
+
 void Simulation::run() {
 
     const auto start = std::chrono::high_resolution_clock::now();
@@ -80,14 +86,11 @@ void Simulation::run() {
         const int lastSec = static_cast<int>(currentTime);
         currentTime += timeStepWidth_;
         const int currentSec = static_cast<int>(currentTime);
-        const bool writeOutput = (currentSec > lastSec) && !settings_.generateTrainingData;
 
         printConsoleInfo(currentTime, timeSteppingInfo);
         DEBUG(outputWriterText_->writeFile(currentTime));
 
-        if (writeOutput) [[unlikely]] {
-            outputWriterParaview_->writeFile(currentTime);
-        }
+        writeOutput(currentTime, currentSec, lastSec);
         setBoundaryUV();
     }
 

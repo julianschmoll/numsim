@@ -45,6 +45,13 @@ public:
      */
     explicit Simulation(const Settings &settings, const std::string &folderName);
 
+    void writeOutput(double currentTime, int currentSec, int lastSec) const;
+
+    /**
+     * Updates final velocities based on solved pressure.
+     */
+    void setVelocities();
+
 private:
     // Grid width in x and y directions
     std::array<double, 2> meshWidth_{};
@@ -97,11 +104,6 @@ private:
      * Sets rhs of the poisson equation to solve pressure with.
      */
     void setRightHandSide();
-
-    /**
-     * Updates final velocities based on solved pressure.
-     */
-    void setVelocities();
 
     /**
      * Prints current progress of the simulation.

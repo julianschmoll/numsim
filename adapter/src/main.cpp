@@ -45,6 +45,7 @@ int main(int argc, char *argv[]) {
             simulation.saveState();
         }
 
+        // ToDo: Handle solver time step being smaller than precice time step
         double dt = participant.getMaxTimeStepSize();
 
         // Read Boundary Data and apply conditions
@@ -57,7 +58,6 @@ int main(int argc, char *argv[]) {
         // Write with write data
         // participant.writeData(...);
 
-
         // Advance time step
         participant.advance(dt);
 
@@ -67,8 +67,8 @@ int main(int argc, char *argv[]) {
             simulation.reloadLastState();
         } else {
             DEBUG(std::cout << "Advancing in time\n");
-            // Update velocities for mass conservation
-            // save output
+            simulation.setVelocities();
+            // simulation.writeOutput(...);
         }
     }
 
