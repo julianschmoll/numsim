@@ -87,7 +87,7 @@ def get_config(config_path: str | Path | None) -> dict:
 
     current_file_path = Path(__file__).resolve()
     train_files_path = (current_file_path.parent.parent /
-                        BUILD / TRAIN)
+                        "solver" / BUILD / TRAIN)
     model_path = (current_file_path.parent.parent /
                   MODELS / get_unique_folder_name())
     model_path.mkdir(parents=True, exist_ok=True)

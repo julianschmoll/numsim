@@ -1,0 +1,29 @@
+# this should match the config file for fluid
+geometry:
+  generator: "tube_generator"
+  length: 8.0           # Physical Size X in Fluid
+  height: 2.0           # Physical Size Y in Fluid
+  wall_thickness: 0.2     # Thickness of the wall (height)
+  n_elements_length: 80   # Elements along the wall length (should match nCells)
+
+# I think this is the material properties we will need
+material:
+  youngs_modulus: 10000.0
+  poissons_ratio: 0.3
+  density: 1.0
+
+# definition where walls are located, we only aim to support
+# walls at top and bottom since the fluid solver can only solve
+# force in y direction but this way we stay more flexible.
+# offset is positive in direction pointing into the domain
+walls:
+  top:
+    active: true
+    offset: 0.2
+    fixed_start: true
+    fixed_end: true
+  bottom:
+    active: true
+    offset: 0.2
+    fixed_start: true
+    fixed_end: true

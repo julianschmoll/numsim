@@ -128,6 +128,11 @@ void Settings::loadFromFile(const std::string &filename) {
             throw std::runtime_error("Unnknown solver type for \"pressureSolver\": use \"SOR\" or \"GaussSeidel\".");
         }
     }
+
+#ifdef USE_CG
+    pressureSolver = IterSolverType::CG;
+#endif
+
     if (settings.count("omega"))
         omega = std::stod(settings["omega"]);
     if (settings.count("epsilon"))

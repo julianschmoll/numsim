@@ -55,6 +55,12 @@ Simulation::Simulation(const Settings &settings, const std::string &folderName) 
     outputWriterText_ = std::make_unique<OutputWriterTextParallel>(discOps_, *partitioning_, folderName);
 }
 
+void Simulation::writeOutput(const double currentTime, const int currentSec, const int lastSec) const {
+    if (currentSec > lastSec && !settings_.generateTrainingData) [[unlikely]] {
+        outputWriterParaview_->writeFile(currentTime);
+    }
+}
+
 void Simulation::run() {
 
     const auto start = std::chrono::high_resolution_clock::now();
@@ -85,16 +91,12 @@ void Simulation::run() {
         const int lastSec = static_cast<int>(currentTime);
         currentTime += timeStepWidth_;
         const int currentSec = static_cast<int>(currentTime);
-        const bool writeOutput = (currentSec > lastSec) && !settings_.generateTrainingData;
 
         printConsoleInfo(currentTime, timeSteppingInfo);
         DEBUG(outputWriterText_->writeFile(currentTime));
 
-        // if (writeOutput) [[unlikely]] {
-        //    outputWriterParaview_->writeFile(currentTime);
-        // }
-        outputWriterParaview_->writeFile(currentTime);
-        setBoundaryUV(currentTime); // ToDo: Necessary at all?
+        writeOutput(currentTime, currentSec, lastSec);
+        setBoundaryUV(currentTime);
     }
 
     if (settings_.generateTrainingData)
@@ -477,4 +479,18 @@ void Simulation::setVelocities() {
             v(i, j) = g(i, j) - timeStepWidth_ * discOps_->computeDpDy(i, j);
         }
     }
+}
+
+void Simulation::saveState() {
+    DEBUG(std::cout << "Simulation::saveState" << std::endl);
+    uCheckpoint_ = discOps_->u();
+    vCheckpoint_ = discOps_->v();
+    pCheckpoint_ = discOps_->p();
+}
+
+void Simulation::reloadLastState() {
+    DEBUG(std::cout << "Simulation::reloadLastState" << std::endl);
+    discOps_->u() = uCheckpoint_;
+    discOps_->v() = vCheckpoint_;
+    discOps_->p() = pCheckpoint_;
 }
