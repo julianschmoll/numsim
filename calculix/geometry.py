@@ -30,7 +30,7 @@ class Geometry:
         self.generate()
 
     def generate(self):
-        orientations = ["Bottom", "Top"]
+        orientations = ["bottom", "top"]
         for orientation in orientations:
             if self.cfg['walls'][orientation]['active']:
                 self._wall_data.append(self.add_wall(orientation))
