@@ -65,7 +65,7 @@ void Simulation::run() {
     std::vector uv = {&discOps_->u(), &discOps_->v()};
     std::vector fg = {&discOps_->f(), &discOps_->g()};
 
-    setBoundaryUV();
+    setBoundaryUV(currentTime);
     setBoundaryFG();
 
     while (currentTime < settings_.endTime) {
@@ -80,7 +80,7 @@ void Simulation::run() {
         pressureSolver_->solve();
 
         setVelocities();
-        setBoundaryUV();
+        setBoundaryUV(currentTime);
         partitioning_->exchange(uv);
 
         const int lastSec = static_cast<int>(currentTime);
@@ -94,7 +94,7 @@ void Simulation::run() {
         if (writeOutput) [[unlikely]] {
             outputWriterParaview_->writeFile(currentTime);
         }
-        setBoundaryUV();
+        setBoundaryUV(currentTime); // ToDo: Necessary at all?
     }
 
     if (settings_.generateTrainingData)
@@ -130,7 +130,7 @@ void Simulation::printConsoleInfo(double currentTime, const TimeSteppingInfo &ti
     }
 }
 
-void Simulation::setBoundaryUV() {
+void Simulation::setBoundaryUV(double currentTime) {
     auto &u = discOps_->u();
     auto &v = discOps_->v();
 

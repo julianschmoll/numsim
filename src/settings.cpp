@@ -74,24 +74,20 @@ void Settings::loadFromFile(const std::string &filename) {
         alpha = std::stod(settings["alpha"]);
 
     if (settings.count("boundaryBottom")) {
-        if (settings["boundaryBottom"] == "Outflow") {
+        if (settings["boundaryBottom"] == "Outflow")
             boundaryBottom = BoundaryType::Outflow;
-        }
     }
     if (settings.count("boundaryTop")) {
-        if (settings["boundaryTop"] == "Outflow") {
+        if (settings["boundaryTop"] == "Outflow")
             boundaryTop = BoundaryType::Outflow;
-        }
     }
     if (settings.count("boundaryLeft")) {
-        if (settings["boundaryLeft"] == "Outflow") {
+        if (settings["boundaryLeft"] == "Outflow")
             boundaryLeft = BoundaryType::Outflow;
-        }
     }
     if (settings.count("boundaryRight")) {
-        if (settings["boundaryRight"] == "Outflow") {
+        if (settings["boundaryRight"] == "Outflow")
             boundaryRight = BoundaryType::Outflow;
-        }
     }
 
     if (settings.count("dirichletBottomX"))
@@ -113,6 +109,13 @@ void Settings::loadFromFile(const std::string &filename) {
         dirichletBcRight[0] = std::stod(settings["dirichletRightX"]);
     if (settings.count("dirichletRightY"))
         dirichletBcRight[1] = std::stod(settings["dirichletRightY"]);
+
+    if (settings.count("amplitude"))
+        dirichletAmplitude = std::stod(settings["amplitude"]);
+    if (settings.count("frequency"))
+        dirichletFrequency = std::stod(settings["frequency"]);
+    if (settings.count("timeShift"))
+        dirichletTimeShift = std::stod(settings["timeShift"]);
 
     if (settings.count("pressureSolver")) {
         if (settings["pressureSolver"] == "SOR") {

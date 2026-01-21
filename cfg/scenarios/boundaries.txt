@@ -13,7 +13,7 @@ gY = 0.0
 boundaryBottom = InflowNoSlip
 boundaryTop    = InflowNoSlip
 boundaryLeft   = InflowNoSlip
-boundaryRight  = Outflow
+boundaryRight  = InflowNoSlip
 
 # Dirichlet boundary conditions
 dirichletBottomX = 0

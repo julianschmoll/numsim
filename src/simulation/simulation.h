@@ -56,7 +56,7 @@ private:
     /**
      * Sets boundary values of u and v.
      */
-    void setBoundaryUV();
+    void setBoundaryUV(double currentTime);
 
     /**
      * Sets boundary values of F and G.
