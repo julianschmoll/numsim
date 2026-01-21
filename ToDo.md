@@ -5,20 +5,22 @@
     - [ ] Outflow BC
 - [ ] Function als Geschwindigkeitsinput implementieren (für debugging purposes)
 
-- [ ] Precice integration testen (koppeln mit solverdummy) (julian)
-  - Dafür wrapper oder ein bisschen code architektur überlegen
+- [x] Precice integration testen (koppeln mit solverdummy) (julian)
+  - [x] Dafür wrapper oder ein bisschen code architektur überlegen
+
 - [ ] Herleitung der Kraftvektoren auf Festkörper (fabio)
     - Implementierung soll nur in eine Richtung kraft auswirken (orthogonal zur Wand, parallel vernachlässigen wir)
     - Was wenn Festkörper Rand berührt?
 
-- [ ] Konfiguration überlegen von Tube
-- [ ] Überlegung wie wir Zellen klassifizieren (fluid, solid, interface)
-    - Fabian: evtl levelset methode anschauen
-    - Julian: evtl anhand von Distanzfeldern arbeiten
-    - Bene: evtl anhand von geometrischen überlegungen (bounding box etc)
+- [ ] Check Acceleration of precice to use in the advance method
 
-- [ ] Calculix installieren
-  - [ ] Calculix Config Files checken und 2d tube erstellen (dafür bedarf es noch keiner preCICE koppellung)
+- [x] Konfiguration überlegen von Tube
+- [ ] Überlegung wie wir Zellen klassifizieren (fluid, solid, interface)
+
+- [x] Calculix installieren
+  - [x] Calculix Config Files checken und 2d tube erstellen (dafür bedarf es noch keiner preCICE koppellung) (julian)
+  - [ ] Entrypoint für Calculix Simulation Schreiben (julian)
+
 - [ ] Fenics installieren und testen
 
 - [ ] Fluid-Solver und Structure Solver koppeln mit preCICE
@@ -30,4 +32,3 @@
   - Precice
   - Architektur Adapter
   - Herleitung Kraftvektoren
-- 

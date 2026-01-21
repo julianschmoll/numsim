@@ -68,7 +68,7 @@ struct Settings {
     int nSamples;
 
     /// range of reynolds number for training
-    std::array<double, 2>  reynoldsRange;
+    std::array<double, 2> reynoldsRange;
 
     /// range of velocity for training
     std::array<double, 2> velocityRange;

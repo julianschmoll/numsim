@@ -1,3 +1,3 @@
 lint:
-	flake8 fluid_ml
-	pylint fluid_ml
+	flake8 fluid_ml calculix
+	pylint fluid_ml calculix

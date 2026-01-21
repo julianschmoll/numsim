@@ -2,10 +2,10 @@
 #include "settings.h"
 #include "simulation/simulation.h"
 
-#include <iostream>
 #include <iomanip>
-#include <sstream>
+#include <iostream>
 #include <mpi.h>
+#include <sstream>
 
 void runSimulation(const Settings &settings, const std::string &folderName) {
     Simulation simulation{settings, folderName};
@@ -45,10 +45,6 @@ int main(int argc, char *argv[]) {
     int nRanks = 0;
     MPI_Comm_rank(MPI_COMM_WORLD, &ownRankNo);
     MPI_Comm_size(MPI_COMM_WORLD, &nRanks);
-
-#ifdef USE_CG
-    settings.pressureSolver = IterSolverType::CG;
-#endif
 
     if (settings.generateTrainingData) {
         generateTrainingData(settings);

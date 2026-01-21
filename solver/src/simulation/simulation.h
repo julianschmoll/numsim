@@ -4,6 +4,7 @@
 #include "settings.h"
 #include "simulation/discreteOperators.h"
 #include "simulation/pressureSolver/pressureSolver.h"
+#include "grid/dataField.h"
 
 /**
  * @struct TimeSteppingInfo
@@ -28,11 +29,28 @@ public:
     void run();
 
     /**
+     * Saves current state of u, v and p.
+     */
+    void saveState();
+
+    /**
+     * Reloads saved states of u,v and p.
+     */
+    void reloadLastState();
+
+    /**
      * Constructs simulation object.
      *
      * @param settings Settings to run simulation with.
      */
     explicit Simulation(const Settings &settings, const std::string &folderName);
+
+    void writeOutput(double currentTime, int currentSec, int lastSec) const;
+
+    /**
+     * Updates final velocities based on solved pressure.
+     */
+    void setVelocities();
 
 private:
     // Grid width in x and y directions
@@ -52,6 +70,15 @@ private:
 
     // Time step size used in the simulation loop
     double timeStepWidth_ = 0.1;
+
+    // Old state of u to reload in precice
+    DataField uCheckpoint_;
+
+    // Old state of v to reload with precice
+    DataField vCheckpoint_;
+
+    // Old state of p to reload with precice
+    DataField pCheckpoint_;
 
     /**
      * Sets boundary values of u and v.
@@ -77,11 +104,6 @@ private:
      * Sets rhs of the poisson equation to solve pressure with.
      */
     void setRightHandSide();
-
-    /**
-     * Updates final velocities based on solved pressure.
-     */
-    void setVelocities();
 
     /**
      * Prints current progress of the simulation.

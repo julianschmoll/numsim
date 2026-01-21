@@ -44,6 +44,26 @@ public:
     DataField &operator=(DataField &&other) noexcept;
 
     /**
+     * Copy constructor for DataField.
+     *
+     * Needed to save checkpoints for preCICE.
+     *
+     * @param other The DataField object to copy from.
+     * @return New Datafield.
+     */
+    DataField(const DataField &other);
+
+    /**
+     * Copy assignment operator for DataField.
+     *
+     * Needed to load checkpoints for preCICE.
+     *
+     * @param other The DataField object to copy from.
+     * @return Copy of DataField.
+     */
+    DataField& operator=(const DataField& other) noexcept;
+
+    /**
      * Destructor for DataField.
      */
     ~DataField() override;

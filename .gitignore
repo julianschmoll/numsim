@@ -261,3 +261,6 @@ __marimo__/
 
 # Saved models
 models
+
+# Simulation output
+out
