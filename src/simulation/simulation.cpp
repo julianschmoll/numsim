@@ -85,10 +85,9 @@ void Simulation::run() {
         printConsoleInfo(currentTime, timeSteppingInfo);
         DEBUG(outputWriterText_->writeFile(currentTime));
 
-        //if (writeOutput) [[unlikely]] {
-        //    outputWriterParaview_->writeFile(currentTime);
-        //}
-        outputWriterParaview_->writeFile(currentTime);
+        if (writeOutput) [[unlikely]] {
+            outputWriterParaview_->writeFile(currentTime);
+        }
         setBoundaryUV();
     }
 
@@ -128,117 +127,117 @@ void Simulation::setBoundaryUV() {
 
     if (partitioning_->ownContainsBoundary<Direction::Bottom>()) {
         switch (settings_.boundaryBottom) {
-            case BoundaryType::InflowNoSlip: {
-                const auto uBottom = settings_.dirichletBcBottom[0];
-                const auto vBottom = settings_.dirichletBcBottom[1];
+        case BoundaryType::InflowNoSlip: {
+            const auto uBottom = settings_.dirichletBcBottom[0];
+            const auto vBottom = settings_.dirichletBcBottom[1];
 
-                for (int i = u.beginI(); i < u.endI(); ++i) {
-                    u(i, u.beginJ()) = 2.0 * uBottom - u(i, u.beginJ() + 1);
-                }
-
-                for (int i = v.beginI(); i < v.endI(); ++i) {
-                    v(i, v.beginJ()) = vBottom;
-                }
-                break;
+            for (int i = u.beginI(); i < u.endI(); ++i) {
+                u(i, u.beginJ()) = 2.0 * uBottom - u(i, u.beginJ() + 1);
             }
 
-            case BoundaryType::Outflow: {
-                for (int i = u.beginI(); i < u.endI(); ++i) {
-                    u(i, u.beginJ()) = u(i, u.beginJ() + 1);
-                }
-
-                for (int i = v.beginI(); i < v.endI(); ++i) {
-                    v(i, v.beginJ()) = v(i, v.beginJ() + 1);
-                }
-                break;
+            for (int i = v.beginI(); i < v.endI(); ++i) {
+                v(i, v.beginJ()) = vBottom;
             }
+            break;
+        }
+
+        case BoundaryType::Outflow: {
+            for (int i = u.beginI(); i < u.endI(); ++i) {
+                u(i, u.beginJ()) = u(i, u.beginJ() + 1);
+            }
+
+            for (int i = v.beginI(); i < v.endI(); ++i) {
+                v(i, v.beginJ()) = v(i, v.beginJ() + 1);
+            }
+            break;
+        }
         }
     }
 
     if (partitioning_->ownContainsBoundary<Direction::Top>()) {
         switch (settings_.boundaryTop) {
-            case BoundaryType::InflowNoSlip: {
-                const auto uTop = settings_.dirichletBcTop[0];
-                const auto vTop = settings_.dirichletBcTop[1];
+        case BoundaryType::InflowNoSlip: {
+            const auto uTop = settings_.dirichletBcTop[0];
+            const auto vTop = settings_.dirichletBcTop[1];
 
-                for (int i = u.beginI(); i < u.endI(); ++i) {
-                    u(i, u.endJ() - 1) = 2.0 * uTop - u(i, u.endJ() - 2);
-                }
-
-                for (int i = v.beginI(); i < v.endI(); ++i) {
-                    v(i, v.endJ() - 1) = vTop;
-                }
-                break;
+            for (int i = u.beginI(); i < u.endI(); ++i) {
+                u(i, u.endJ() - 1) = 2.0 * uTop - u(i, u.endJ() - 2);
             }
 
-            case BoundaryType::Outflow: {
-                for (int i = u.beginI(); i < u.endI(); ++i) {
-                    u(i, u.endJ() - 1) = u(i, u.endJ() - 2);
-                }
-
-                for (int i = v.beginI(); i < v.endI(); ++i) {
-                    v(i, v.endJ() - 1) = v(i, v.endJ() - 2);
-                }
-                break;
+            for (int i = v.beginI(); i < v.endI(); ++i) {
+                v(i, v.endJ() - 1) = vTop;
             }
+            break;
+        }
+
+        case BoundaryType::Outflow: {
+            for (int i = u.beginI(); i < u.endI(); ++i) {
+                u(i, u.endJ() - 1) = u(i, u.endJ() - 2);
+            }
+
+            for (int i = v.beginI(); i < v.endI(); ++i) {
+                v(i, v.endJ() - 1) = v(i, v.endJ() - 2);
+            }
+            break;
+        }
         }
     }
 
     if (partitioning_->ownContainsBoundary<Direction::Left>()) {
         switch (settings_.boundaryLeft) {
-            case BoundaryType::InflowNoSlip: {
-                const auto uLeft = settings_.dirichletBcLeft[0];
-                const auto vLeft = settings_.dirichletBcLeft[1];
+        case BoundaryType::InflowNoSlip: {
+            const auto uLeft = settings_.dirichletBcLeft[0];
+            const auto vLeft = settings_.dirichletBcLeft[1];
 
-                for (int j = u.beginJ(); j < u.endJ(); ++j) {
-                    u(u.beginI(), j) = uLeft;
-                }
-
-                for (int j = v.beginJ(); j < v.endJ(); ++j) {
-                    v(v.beginI(), j) = 2.0 * vLeft - v(v.beginI() + 1, j);
-                }
-                break;
+            for (int j = u.beginJ(); j < u.endJ(); ++j) {
+                u(u.beginI(), j) = uLeft;
             }
 
-            case BoundaryType::Outflow: {
-                for (int j = u.beginJ(); j < u.endJ(); ++j) {
-                    u(u.beginI(), j) = u(u.beginI() + 1, j);
-                }
-
-                for (int j = v.beginJ(); j < v.endJ(); ++j) {
-                    v(v.beginI(), j) = v(v.beginI() + 1, j);
-                }
-                break;
+            for (int j = v.beginJ(); j < v.endJ(); ++j) {
+                v(v.beginI(), j) = 2.0 * vLeft - v(v.beginI() + 1, j);
             }
+            break;
+        }
+
+        case BoundaryType::Outflow: {
+            for (int j = u.beginJ(); j < u.endJ(); ++j) {
+                u(u.beginI(), j) = u(u.beginI() + 1, j);
+            }
+
+            for (int j = v.beginJ(); j < v.endJ(); ++j) {
+                v(v.beginI(), j) = v(v.beginI() + 1, j);
+            }
+            break;
+        }
         }
     }
 
     if (partitioning_->ownContainsBoundary<Direction::Right>()) {
         switch (settings_.boundaryRight) {
-            case BoundaryType::InflowNoSlip: {
-                const auto uRight = settings_.dirichletBcRight[0];
-                const auto vRight = settings_.dirichletBcRight[1];
+        case BoundaryType::InflowNoSlip: {
+            const auto uRight = settings_.dirichletBcRight[0];
+            const auto vRight = settings_.dirichletBcRight[1];
 
-                for (int j = u.beginJ(); j < u.endJ(); ++j) {
-                    u(u.endI() - 1, j) = uRight;
-                }
-
-                for (int j = v.beginJ(); j < v.endJ(); ++j) {
-                    v(v.endI() - 1, j) = 2.0 * vRight - v(v.endI() - 2, j);
-                }
-                break;
+            for (int j = u.beginJ(); j < u.endJ(); ++j) {
+                u(u.endI() - 1, j) = uRight;
             }
 
-            case BoundaryType::Outflow: {
-                for (int j = u.beginJ(); j < u.endJ(); ++j) {
-                    u(u.endI() - 1, j) = u(u.endI() - 2, j);
-                }
-
-                for (int j = v.beginJ(); j < v.endJ(); ++j) {
-                    v(v.endI() - 1, j) = v(v.endI() - 2, j);
-                }
-                break;
+            for (int j = v.beginJ(); j < v.endJ(); ++j) {
+                v(v.endI() - 1, j) = 2.0 * vRight - v(v.endI() - 2, j);
             }
+            break;
+        }
+
+        case BoundaryType::Outflow: {
+            for (int j = u.beginJ(); j < u.endJ(); ++j) {
+                u(u.endI() - 1, j) = u(u.endI() - 2, j);
+            }
+
+            for (int j = v.beginJ(); j < v.endJ(); ++j) {
+                v(v.endI() - 1, j) = v(v.endI() - 2, j);
+            }
+            break;
+        }
         }
     }
 }
@@ -366,6 +365,42 @@ void Simulation::setPreliminaryVelocities() {
             g(i, j) = v(i, j) + timeStepWidth_ * (invRe * diffusion - convection + settings_.g[1]);
         }
     }
+
+    if (settings_.boundaryBottom == BoundaryType::Outflow && partitioning_->ownContainsBoundary<Direction::Bottom>()) {
+        for (int i = u.beginI(); i < u.endI(); ++i) {
+            f(i, u.beginJ()) = f(i, u.beginJ() + 1);
+        }
+        for (int i = v.beginI(); i < v.endI(); ++i) {
+            g(i, v.beginJ()) = g(i, v.beginJ() + 1);
+        }
+    }
+
+    if (settings_.boundaryTop == BoundaryType::Outflow && partitioning_->ownContainsBoundary<Direction::Top>()) {
+        for (int i = u.beginI(); i < u.endI(); ++i) {
+            f(i, u.endJ() - 1) = f(i, u.endJ() - 2);
+        }
+        for (int i = v.beginI(); i < v.endI(); ++i) {
+            g(i, v.endJ() - 1) = g(i, v.endJ() - 2);
+        }
+    }
+
+    if (settings_.boundaryLeft == BoundaryType::Outflow && partitioning_->ownContainsBoundary<Direction::Left>()) {
+        for (int j = u.beginJ(); j < u.endJ(); ++j) {
+            f(u.beginI(), j) = f(u.beginI() + 1, j);
+        }
+        for (int j = v.beginJ(); j < v.endJ(); ++j) {
+            g(v.beginI(), j) = g(v.beginI() + 1, j);
+        }
+    }
+
+    if (settings_.boundaryRight == BoundaryType::Outflow && partitioning_->ownContainsBoundary<Direction::Right>()) {
+        for (int j = u.beginJ(); j < u.endJ(); ++j) {
+            f(u.endI() - 1, j) = f(u.endI() - 2, j);
+        }
+        for (int j = v.beginJ(); j < v.endJ(); ++j) {
+            g(v.endI() - 1, j) = g(v.endI() - 2, j);
+        }
+    }
 }
 
 void Simulation::setRightHandSide() {
@@ -405,6 +440,42 @@ void Simulation::setVelocities() {
     for (int j = v.beginJ() + 1; j < v.endJ() - 1; j++) {
         for (int i = v.beginI() + 1; i < v.endI() - 1; i++) {
             v(i, j) = g(i, j) - timeStepWidth_ * discOps_->computeDpDy(i, j);
+        }
+    }
+
+    if (settings_.boundaryBottom == BoundaryType::Outflow && partitioning_->ownContainsBoundary<Direction::Bottom>()) {
+        for (int i = u.beginI(); i < u.endI(); ++i) {
+            u(i, u.beginJ()) = u(i, u.beginJ() + 1);
+        }
+        for (int i = v.beginI(); i < v.endI(); ++i) {
+            v(i, v.beginJ()) = v(i, v.beginJ() + 1);
+        }
+    }
+
+    if (settings_.boundaryTop == BoundaryType::Outflow && partitioning_->ownContainsBoundary<Direction::Top>()) {
+        for (int i = u.beginI(); i < u.endI(); ++i) {
+            u(i, u.endJ() - 1) = u(i, u.endJ() - 2);
+        }
+        for (int i = v.beginI(); i < v.endI(); ++i) {
+            v(i, v.endJ() - 1) = v(i, v.endJ() - 2);
+        }
+    }
+
+    if (settings_.boundaryLeft == BoundaryType::Outflow && partitioning_->ownContainsBoundary<Direction::Left>()) {
+        for (int j = u.beginJ(); j < u.endJ(); ++j) {
+            u(u.beginI(), j) = u(u.beginI() + 1, j);
+        }
+        for (int j = v.beginJ(); j < v.endJ(); ++j) {
+            v(v.beginI(), j) = v(v.beginI() + 1, j);
+        }
+    }
+
+    if (settings_.boundaryRight == BoundaryType::Outflow && partitioning_->ownContainsBoundary<Direction::Right>()) {
+        for (int j = u.beginJ(); j < u.endJ(); ++j) {
+            u(u.endI() - 1, j) = u(u.endI() - 2, j);
+        }
+        for (int j = v.beginJ(); j < v.endJ(); ++j) {
+            v(v.endI() - 1, j) = v(v.endI() - 2, j);
         }
     }
 }
