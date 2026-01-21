@@ -2,9 +2,8 @@
 #include "grid/dataField.h"
 #include <cmath>
 
-ConjugateGradientSolver::ConjugateGradientSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning, double epsilon,
-                                                 int maximumNumberOfIterations)
-    : PressureSolver(std::move(grid), std::move(partitioning), epsilon, maximumNumberOfIterations), direction_(grid_->p().size(), grid_->meshWidth()),
+ConjugateGradientSolver::ConjugateGradientSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning, const Settings &settings)
+    : PressureSolver(std::move(grid), std::move(partitioning), settings), direction_(grid_->p().size(), grid_->meshWidth()),
       dx2_(grid_->dx() * grid_->dx()), dy2_(grid_->dy() * grid_->dy()), invDx2_(1.0 / dx2_), invDy2_(1.0 / dy2_) {}
 
 double ConjugateGradientSolver::applyDiffusionOperator(const DataField &d, int i, int j) const {
@@ -99,7 +98,7 @@ void ConjugateGradientSolver::solve() {
     }
     partitioning_->exchange(d);
 
-    while (rNew > epsilon_ * epsilon_) {
+    while (rNew > settings_.epsilon * settings_.epsilon) {
         const double alpha = calculateAlpha();
         updatePressure(alpha);
         const double rOld = rNew;

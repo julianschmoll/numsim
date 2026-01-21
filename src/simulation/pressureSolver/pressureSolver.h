@@ -2,6 +2,7 @@
 
 #include "grid/staggeredGrid.h"
 #include "simulation/partitioning.h"
+#include "settings.h"
 #include <memory>
 
 /**
@@ -19,7 +20,7 @@ public:
      * @param epsilon Convergence threshold for the residual.
      * @param maximumNumberOfIterations Maximum number of iterations.
      */
-    PressureSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning, double epsilon, int maximumNumberOfIterations);
+    PressureSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning, const Settings &settings);
 
     /**
      * Destructs Pressure solver.
@@ -44,12 +45,9 @@ protected:
     /// Pointer to partitioning
     std::shared_ptr<Partitioning> partitioning_;
 
+    // Configuration settings for the simulation
+    Settings settings_;
+
     /// object holding the needed field variables for rhs and p
     std::shared_ptr<StaggeredGrid> grid_;
-
-    /// Convergence threshold for the residual
-    double epsilon_;
-
-    /// Maximum number of iterations allowed in the solver
-    double maxNumberOfIterations_;
 };

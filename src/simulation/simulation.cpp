@@ -8,6 +8,7 @@
 #include <chrono>
 #include <iostream>
 #include <ostream>
+#include <cmath>
 
 Simulation::Simulation(const Settings &settings, const std::string &folderName) {
     settings_ = settings;
@@ -35,18 +36,16 @@ Simulation::Simulation(const Settings &settings, const std::string &folderName) 
         if (partitioning_->onPrimaryRank())
             std::cout << " -- Using (Red-Black) SOR solver." << std::endl;
         pressureSolver_ =
-                std::make_unique<RedBlackSolver>(discOps_, partitioning_, settings_.epsilon,
-                                                 settings_.maximumNumberOfIterations, settings_.omega);
+                std::make_unique<RedBlackSolver>(discOps_, partitioning_, settings_);
     } else if (settings_.pressureSolver == IterSolverType::GaussSeidel) {
         if (partitioning_->onPrimaryRank())
             std::cout << " -- Using (Red-Black) Gauss-Seidel solver." << std::endl;
-        pressureSolver_ = std::make_unique<RedBlackSolver>(discOps_, partitioning_, settings_.epsilon,
-                                                           settings_.maximumNumberOfIterations, 1);
+        settings_.omega = 1;
+        pressureSolver_ = std::make_unique<RedBlackSolver>(discOps_, partitioning_, settings_);
     } else {
         if (partitioning_->onPrimaryRank())
             std::cout << " -- Using Conjugate Gradient solver." << std::endl;
-        pressureSolver_ = std::make_unique<ConjugateGradientSolver>(discOps_, partitioning_, settings_.epsilon,
-                                                                    settings_.maximumNumberOfIterations);
+        pressureSolver_ = std::make_unique<ConjugateGradientSolver>(discOps_, partitioning_, settings_);
     }
 
     partitioning_->barrier();
@@ -91,9 +90,10 @@ void Simulation::run() {
         printConsoleInfo(currentTime, timeSteppingInfo);
         DEBUG(outputWriterText_->writeFile(currentTime));
 
-        if (writeOutput) [[unlikely]] {
-            outputWriterParaview_->writeFile(currentTime);
-        }
+        // if (writeOutput) [[unlikely]] {
+        //    outputWriterParaview_->writeFile(currentTime);
+        // }
+        outputWriterParaview_->writeFile(currentTime);
         setBoundaryUV(currentTime); // ToDo: Necessary at all?
     }
 
@@ -134,11 +134,13 @@ void Simulation::setBoundaryUV(double currentTime) {
     auto &u = discOps_->u();
     auto &v = discOps_->v();
 
+    double speed_variance = settings_.dirichletAmplitude * sin(settings_.dirichletFrequency * (settings_.dirichletTimeShift + currentTime) * M_PI);
+
     if (partitioning_->ownContainsBoundary<Direction::Bottom>()) {
         switch (settings_.boundaryBottom) {
             case BoundaryType::InflowNoSlip: {
-                const auto uBottom = settings_.dirichletBcBottom[0];
-                const auto vBottom = settings_.dirichletBcBottom[1];
+                const auto uBottom = settings_.dirichletBcBottom[0] + speed_variance * settings_.dirichletBcBottom[0];
+                const auto vBottom = settings_.dirichletBcBottom[1] + speed_variance * settings_.dirichletBcBottom[1];
 
                 for (int i = u.beginI(); i < u.endI(); ++i) {
                     u(i, u.beginJ()) = 2.0 * uBottom - u(i, u.beginJ() + 1);
@@ -166,8 +168,8 @@ void Simulation::setBoundaryUV(double currentTime) {
     if (partitioning_->ownContainsBoundary<Direction::Top>()) {
         switch (settings_.boundaryTop) {
             case BoundaryType::InflowNoSlip: {
-                const auto uTop = settings_.dirichletBcTop[0];
-                const auto vTop = settings_.dirichletBcTop[1];
+                const auto uTop = settings_.dirichletBcTop[0] + speed_variance * settings_.dirichletBcTop[0];
+                const auto vTop = settings_.dirichletBcTop[1] + speed_variance * settings_.dirichletBcTop[1];
 
                 for (int i = u.beginI(); i < u.endI(); ++i) {
                     u(i, u.endJ() - 1) = 2.0 * uTop - u(i, u.endJ() - 2);
@@ -195,8 +197,8 @@ void Simulation::setBoundaryUV(double currentTime) {
     if (partitioning_->ownContainsBoundary<Direction::Left>()) {
         switch (settings_.boundaryLeft) {
             case BoundaryType::InflowNoSlip: {
-                const auto uLeft = settings_.dirichletBcLeft[0];
-                const auto vLeft = settings_.dirichletBcLeft[1];
+                const auto uLeft = settings_.dirichletBcLeft[0] + speed_variance * settings_.dirichletBcLeft[0];
+                const auto vLeft = settings_.dirichletBcLeft[1] + speed_variance * settings_.dirichletBcLeft[1];
 
                 for (int j = u.beginJ(); j < u.endJ(); ++j) {
                     u(u.beginI(), j) = uLeft;
@@ -224,8 +226,8 @@ void Simulation::setBoundaryUV(double currentTime) {
     if (partitioning_->ownContainsBoundary<Direction::Right>()) {
         switch (settings_.boundaryRight) {
             case BoundaryType::InflowNoSlip: {
-                const auto uRight = settings_.dirichletBcRight[0];
-                const auto vRight = settings_.dirichletBcRight[1];
+                const auto uRight = settings_.dirichletBcRight[0] + speed_variance * settings_.dirichletBcRight[0];
+                const auto vRight = settings_.dirichletBcRight[1] + speed_variance * settings_.dirichletBcRight[1];
 
                 for (int j = u.beginJ(); j < u.endJ(); ++j) {
                     u(u.endI() - 1, j) = uRight;
