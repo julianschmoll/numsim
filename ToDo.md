@@ -1,11 +1,11 @@
 # ToDo Projekt
 
 - [ ] Inflow und Outflow Boundary Conditions implementieren (Bene)
-    - [ ] Inflow BC
-    - [ ] Outflow BC
+    - [x] Inflow BC
+    - [x] Outflow BC
     - [ ] Testen ob das tut mit openFOAM
 
-- [ ] Function als Geschwindigkeitsinput implementieren (für debugging purposes)
+- [x] Function als Geschwindigkeitsinput implementieren (für debugging purposes)
 
 - [x] Precice integration testen (koppeln mit solverdummy) (julian)
   - [x] Dafür wrapper oder ein bisschen code architektur überlegen
