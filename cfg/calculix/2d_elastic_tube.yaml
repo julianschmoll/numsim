@@ -1,10 +1,10 @@
 # this should match the config file for fluid
 geometry:
   generator: "tube_generator"
-  length: 2.0           # Physical Size X in Fluid
+  length: 8.0           # Physical Size X in Fluid
   height: 2.0           # Physical Size Y in Fluid
   wall_thickness: 0.2     # Thickness of the wall (height)
-  n_elements_length: 21   # Elements along the wall length (should match nCells)
+  n_elements_length: 80   # Elements along the wall length (should match nCells)
 
 # I think this is the material properties we will need
 material:
