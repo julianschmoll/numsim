@@ -8,10 +8,23 @@ import writer
 
 
 def main(scenario_cfg, precice_cfg_path, cleanup=True):
-    simulation_folder = Path(__file__).resolve().parent / "simulation"
+    simulation_folder = Path(__file__).resolve().parent / "out"
     geometry = Geometry(scenario_cfg)
+
+    mesh_name = "Solid-Nodes-Mesh"
+    interface_name = "Solid-Interface"
+
+    inp_path = geometry.write_file(
+        simulation_folder / "geo.inp",
+        mesh_name=mesh_name,
+        interface_name=interface_name,
+        )
+
     sim_out = simulation.run(
-        geometry.write_file(simulation_folder / "geo.inp"), precice_cfg_path
+        inp_path,
+        precice_cfg_path,
+        mesh_name=mesh_name,
+        interface_name=interface_name,
     )
     writer.convert_to_vtk(sim_out, "out/output.vtk")
     if cleanup:

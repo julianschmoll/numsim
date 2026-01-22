@@ -6,8 +6,9 @@ import yaml
 
 @contextmanager
 def precice_env_setup(environment):
-    """Creates the config files required by the CalculiX adapter."""
-    yaml_target = Path("config.yml")
+    """Creates the config files required by the CalculiX adapter in the input file folder."""
+    work_dir = Path(environment.get("work_dir", Path.cwd()))
+    yaml_target = work_dir / "config.yml"
     source_xml = Path(environment["cfg_path"]).resolve()
     yaml_data = {
         "participants": {
@@ -22,6 +23,8 @@ def precice_env_setup(environment):
         },
         "precice-config-file": str(source_xml)
     }
+
+    work_dir.mkdir(parents=True, exist_ok=True)
     with open(yaml_target, "w") as yaml_file:
         yaml.dump(yaml_data, yaml_file, sort_keys=False, default_flow_style=False)
     try:
@@ -30,24 +33,32 @@ def precice_env_setup(environment):
         if yaml_target.exists():
             yaml_target.unlink()
 
-def run(inp_file, precice_cfg, participant="Solid", ccx_cmd="ccx_preCICE"):
+def run(inp_file, precice_cfg, participant="Solid", ccx_cmd="ccx_preCICE",
+        mesh_name="Solid-Nodes-Mesh", interface_name="Solid-Interface",
+        read_data="DisplacementDelta", write_data="Force"):
+    inp_path = Path(inp_file).resolve()
+    work_dir = inp_path.parent
+    inp_stem_name = inp_path.with_suffix("").name
+
     environment = {
         "cfg_path": precice_cfg,
         "participant": participant,
-        "mesh_name": "Solid-Nodes-Mesh",
-        "interface": "Solid-Interface",
-        "read_data": "DisplacementDelta",
-        "write_data": "Force",
+        "mesh_name": mesh_name,
+        "interface": interface_name,
+        "read_data": read_data,
+        "write_data": write_data,
+        "work_dir": work_dir,
     }
+
     with precice_env_setup(environment):
-        inp_stem = str(Path(inp_file).with_suffix(""))
         run_cmd = [
             ccx_cmd,
-            "-i", inp_stem,
+            "-i", inp_stem_name,
             "-precice-participant", participant
         ]
-        subprocess.run(run_cmd, check=True)
-    return Path(f"{inp_stem}.frd")
+        subprocess.run(run_cmd, check=True, cwd=work_dir)
+
+    return work_dir / f"{inp_stem_name}.frd"
 
 
 def cleanup(sim_folder, remove_spooles=True):

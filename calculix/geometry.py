@@ -87,13 +87,14 @@ class Geometry:
 
         return f"E{orientation}", self._current_element_id - nx, self._current_element_id - 1
 
-    def write_file(self, filepath):
+    def write_file(self, filepath, mesh_name="Nall", interface_name="Sinterface"):
         filepath = Path(filepath)
-        if not filepath.parent.exists():
-            filepath.parent.mkdir(parents=True, exist_ok=True)
+        work_dir = filepath.parent
+        if not work_dir.exists():
+            work_dir.mkdir(parents=True, exist_ok=True)
 
         with open(filepath, "w") as f:
-            f.write("** HEADING\n*NODE, NSET=Nall\n")
+            f.write("** HEADING\n*NODE, NSET=" + mesh_name + "\n")
             f.write("\n".join(self._all_nodes) + "\n")
             f.write("*ELEMENT, TYPE=CPE8, ELSET=Eall\n")
             f.write("\n".join(self._all_elements) + "\n")
@@ -104,19 +105,32 @@ class Geometry:
             if self._fix_nodes:
                 f.write("*NSET, NSET=Nfix\n" + ", ".join(map(str, self._fix_nodes)) + "\n")
 
+            total_nodes = self._current_node_id - 1
+            if total_nodes > 0:
+                f.write(f"*NSET, NSET=N{interface_name}N\n1, {total_nodes}, 1\n")
+
             f.write("*MATERIAL, NAME=ELASTIC\n*ELASTIC\n")
             f.write(f"{self.cfg['material']['youngs_modulus']}, {self.cfg['material']['poissons_ratio']}\n")
             f.write(f"*DENSITY\n{self.cfg['material']['density']}\n")
             f.write("*SOLID SECTION, ELSET=Eall, MATERIAL=ELASTIC\n1.0\n")
-            f.write("*SURFACE, NAME=Sinterface\n" + "\n".join(self._interface_faces) + "\n")
+            f.write(f"*SURFACE, NAME={interface_name}\n" + "\n".join(self._interface_faces) + "\n")
             f.write("*STEP, NLGEOM, INC=1000")
             f.write("\n*DYNAMIC\n0.005, 10.0\n*BOUNDARY\n")
 
             if self._fix_nodes:
                 f.write("Nfix, 1, 3\n")
 
-            f.write("Nall, 3, 3\n")
+            f.write(f"{mesh_name}, 3, 3\n")
             f.write("*NODE FILE\nU\n*EL FILE\nS\n*END STEP\n")
 
-        # remove extension from filepath
+        # minimal nam file for the adapter
+        inp_stem = filepath.with_suffix("").name
+        nam_target = work_dir / f"{inp_stem}.nam"
+        nam_lines = []
+        if total_nodes > 0:
+            nam_lines.append(f"N{interface_name}N")
+        nam_lines.append(interface_name)
+        with open(nam_target, "w") as nam_f:
+            nam_f.write("\n".join(nam_lines) + "\n")
+
         return filepath.parent / filepath.stem
