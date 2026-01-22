@@ -14,7 +14,7 @@ def precice_env_setup(environment):
         "participants": {
             environment["participant"]: {
                 "interfaces": [{
-                    "nodes-mesh-with-connectivity": environment["mesh_name"],
+                    "nodes-mesh": environment["mesh_name"],
                     "patch": environment["interface"],
                     "read-data": [environment["read_data"]],
                     "write-data": [environment["write_data"]],
