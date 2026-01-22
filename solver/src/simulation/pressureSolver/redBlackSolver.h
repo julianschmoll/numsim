@@ -3,6 +3,7 @@
 #include "grid/staggeredGrid.h"
 #include "pressureSolver.h"
 #include "simulation/partitioning.h"
+#include "settings.h"
 #include <memory>
 
 /**
@@ -25,8 +26,7 @@ public:
      * @param maximumNumberOfIterations Maximum number of iterations.
      * @param omega Relaxation factor (1.0 for Gauss-Seidel, otherwise SOR).
      */
-    RedBlackSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning, double epsilon, int maximumNumberOfIterations,
-                   double omega);
+    RedBlackSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning, const Settings &settings);
 
     /**
      * Solves the poisson problem for the pressure.
