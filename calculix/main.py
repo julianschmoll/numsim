@@ -7,15 +7,15 @@ import simulation
 import writer
 
 
-def main(scenario_cfg, precice_cfg_path):
+def main(scenario_cfg, precice_cfg_path, cleanup=True):
     simulation_folder = Path(__file__).resolve().parent / "simulation"
     geometry = Geometry(scenario_cfg)
-    # ToDo: This is currently running plain calulix, no coupling yet
     sim_out = simulation.run(
         geometry.write_file(simulation_folder / "geo.inp"), precice_cfg_path
     )
     writer.convert_to_vtk(sim_out, "out/output.vtk")
-    simulation.cleanup(simulation_folder, remove_spooles=True)
+    if cleanup:
+        simulation.cleanup(simulation_folder, remove_spooles=True)
 
 
 # entry point for solid simulation with calculix and precice
@@ -33,8 +33,15 @@ if __name__ == "__main__":
         default=None,
         help="Scenario to run with calculix",
     )
-    args = parser.parse_args()
 
+    parser.add_argument(
+        "--cleanup",
+        type=bool,
+        default=True,
+        help="Clean up simulation files after run",
+    )
+
+    args = parser.parse_args()
     precice_cfg = args.precice_cfg
     if not precice_cfg:
         precice_cfg = (Path(__file__).resolve().parent.parent
@@ -47,4 +54,4 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.INFO)
 
-    main(scenario, precice_cfg)
+    main(scenario, precice_cfg, cleanup=args.cleanup)
