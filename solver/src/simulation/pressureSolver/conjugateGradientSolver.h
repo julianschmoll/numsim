@@ -22,8 +22,7 @@ public:
      * @param epsilon Convergence threshold for the residual.
      * @param maximumNumberOfIterations Maximum number of iterations.
      */
-    ConjugateGradientSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning, double epsilon,
-                            int maximumNumberOfIterations);
+    ConjugateGradientSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning, const Settings &settings);
 
     /**
      * Solves pressure based on Conjugate Gradient Method.

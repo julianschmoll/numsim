@@ -4,6 +4,7 @@
 #include <iostream>
 
 enum class IterSolverType { SOR, GaussSeidel, CG };
+enum class BoundaryType { InflowNoSlip, Outflow };
 
 /**
  * @class Settings
@@ -37,6 +38,18 @@ struct Settings {
     /// factor for donor-cell scheme
     double alpha = 0.5;
 
+    /// boundary type of bottom border
+    BoundaryType boundaryBottom = BoundaryType::InflowNoSlip;
+
+    /// boundary type of top border
+    BoundaryType boundaryTop = BoundaryType::InflowNoSlip;
+
+    /// boundary type of left border
+    BoundaryType boundaryLeft = BoundaryType::InflowNoSlip;
+
+    /// boundary type of right border
+    BoundaryType boundaryRight = BoundaryType::InflowNoSlip;
+
     /// prescribed values of u,v at bottom of domain
     std::array<double, 2> dirichletBcBottom;
 
@@ -48,6 +61,15 @@ struct Settings {
 
     /// prescribed values of u,v at right of domain
     std::array<double, 2> dirichletBcRight;
+
+    /// boundary flow speed variation amplitude
+    double dirichletAmplitude = 0.0;
+
+    /// boundary flow speed variation frequency
+    double dirichletFrequency = 0.0;
+
+    /// boundary flow speed time shift
+    double dirichletTimeShift = 0.0;
 
     /// which pressure solver to use, "GaussSeidel" or "SOR"
     IterSolverType pressureSolver = IterSolverType::SOR;

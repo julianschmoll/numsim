@@ -5,9 +5,8 @@
 #include <limits>
 #include <vector>
 
-RedBlackSolver::RedBlackSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning, double epsilon,
-                               int maximumNumberOfIterations, double omega)
-    : PressureSolver(std::move(grid), std::move(partitioning), epsilon, maximumNumberOfIterations), omega_(omega) {}
+RedBlackSolver::RedBlackSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning, const Settings &settings)
+    : PressureSolver(std::move(grid), std::move(partitioning), settings) {}
 
 void RedBlackSolver::solve() {
     int it = 0;
@@ -29,14 +28,14 @@ void RedBlackSolver::solve() {
     const int beginJ = p.beginJ() + 1;
     const int endJ = p.endJ() - 1;
 
-    const double epsilonSquared = epsilon_ * epsilon_;
-    const double oneMinusOmega = 1 - omega_;
-    const double omegaTimesScalingFactor = omega_ * scalingFactor;
+    const double epsilonSquared = settings_.epsilon * settings_.epsilon;
+    const double oneMinusOmega = 1 - settings_.omega;
+    const double omegaTimesScalingFactor = settings_.omega * scalingFactor;
 
     auto [i0, j0] = partitioning_->nodeOffset();
     const int globalOffset = (i0 + j0) % 2;
 
-    while (globalPressureError_ > epsilonSquared && it < maxNumberOfIterations_) {
+    while (globalPressureError_ > epsilonSquared && it < settings_.maximumNumberOfIterations) {
         localPressureError_ = 0.0;
         // rb = 0 is red, rb=1 is black pass
         for (int rb = 0; rb < 2; ++rb) {
