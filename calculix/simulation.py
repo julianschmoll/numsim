@@ -33,6 +33,7 @@ def precice_env_setup(environment):
         if yaml_target.exists():
             yaml_target.unlink()
 
+
 def run(inp_file, precice_cfg, participant="Solid", ccx_cmd="ccx_preCICE",
         mesh_name="Solid-Nodes-Mesh", interface_name="Solid-Interface",
         read_data="DisplacementDelta", write_data="Force"):
@@ -53,7 +54,8 @@ def run(inp_file, precice_cfg, participant="Solid", ccx_cmd="ccx_preCICE",
     with precice_env_setup(environment):
         run_cmd = [
             ccx_cmd,
-            "-i", inp_stem_name,
+            "-i",
+            inp_stem_name,
             "-precice-participant", participant
         ]
         subprocess.run(run_cmd, check=True, cwd=work_dir)
@@ -61,13 +63,40 @@ def run(inp_file, precice_cfg, participant="Solid", ccx_cmd="ccx_preCICE",
     return work_dir / f"{inp_stem_name}.frd"
 
 
-def cleanup(sim_folder, remove_spooles=True):
-    """Method to clean up all calculix files except paraview output."""
+def cleanup(sim_folder, exclude=None):
+    """Method to clean up all calculix files except specifically excluded."""
     sim_folder = Path(sim_folder)
-    spooles_file = Path(__file__).resolve().parent / "spooles.out"
 
-    if remove_spooles and spooles_file.exists():
-        spooles_file.unlink()
+    patterns = [
+        "precice*",
+        "exchange*",
+        "m2n*",
+        "*.nam",
+        "*.sur",
+        "*.log",
+        "*.lock",
+        "spooles.out",
+        "*.cvg",
+        "*.dat",
+        "*.inp",
+        "*.sta",
+        "*.12d"
+    ]
 
-    if sim_folder.exists() and sim_folder.is_dir():
-        shutil.rmtree(sim_folder)
+    if not exclude:
+        exclude = []
+
+    if isinstance(exclude, str):
+        exclude = [exclude]
+
+    if not isinstance(exclude, list):
+        raise TypeError("exclude must be a string or list")
+
+    for pattern in patterns:
+        for p in sim_folder.glob(pattern):
+            if p.name in exclude:
+                continue
+            if p.is_dir():
+                shutil.rmtree(p, ignore_errors=True)
+            else:
+                p.unlink()

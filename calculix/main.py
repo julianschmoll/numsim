@@ -26,9 +26,9 @@ def main(scenario_cfg, precice_cfg_path, cleanup=True):
         mesh_name=mesh_name,
         interface_name=interface_name,
     )
-    writer.convert_to_vtk(sim_out, "out/output.vtk")
+    writer.convert_to_vtk(sim_out, "out/solid.vtk")
     if cleanup:
-        simulation.cleanup(simulation_folder, remove_spooles=True)
+        simulation.cleanup(simulation_folder)
 
 
 # entry point for solid simulation with calculix and precice

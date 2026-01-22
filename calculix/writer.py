@@ -14,15 +14,23 @@ def convert_to_vtk(file_to_convert, output_path):
 
     converter = Converter(str(file_to_convert), [cleaned_suffix])
     converter.run()
-    # The converter does not let us specify an output file
-    tmp_output_file = (file_to_convert.parent
+
+    # The converter does not let us specify an output filename or path
+    output_path = Path(output_path)
+    converter_output = (file_to_convert.parent
                        / f"{file_to_convert.stem}.{cleaned_suffix}")
 
-    output_path = Path(output_path)
+    if converter_output == output_path:
+        return output_path
 
     if not output_path.parent.exists():
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    shutil.copy(tmp_output_file, output_path)
+    vtk_files = sorted(file_to_convert.parent.glob(f"{file_to_convert.stem}*.{cleaned_suffix}"))
 
+    for idx, vtk_file in enumerate(vtk_files):
+        shutil.copy(
+            vtk_file,
+            output_path.parent / f"{output_path.stem}_{idx:04d}.{cleaned_suffix}"
+        )
     return output_path
