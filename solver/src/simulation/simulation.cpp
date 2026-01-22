@@ -85,8 +85,8 @@ void Simulation::run() {
         pressureSolver_->solve();
 
         setVelocities();
-        setBoundaryUV(currentTime);
         partitioning_->exchange(uv);
+        setBoundaryUV(currentTime);
 
         const int lastSec = static_cast<int>(currentTime);
         currentTime += timeStepWidth_;
@@ -96,7 +96,6 @@ void Simulation::run() {
         DEBUG(outputWriterText_->writeFile(currentTime));
 
         writeOutput(currentTime, currentSec, lastSec);
-        setBoundaryUV(currentTime);
     }
 
     if (settings_.generateTrainingData)
