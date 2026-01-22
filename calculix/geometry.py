@@ -109,7 +109,8 @@ class Geometry:
             f.write(f"*DENSITY\n{self.cfg['material']['density']}\n")
             f.write("*SOLID SECTION, ELSET=Eall, MATERIAL=ELASTIC\n1.0\n")
             f.write("*SURFACE, NAME=Sinterface\n" + "\n".join(self._interface_faces) + "\n")
-            f.write("*STEP, NLGEOM\n*STATIC\n*BOUNDARY\n")
+            f.write("*STEP, NLGEOM, INC=1000")
+            f.write("\n*DYNAMIC\n0.005, 10.0\n*BOUNDARY\n")
 
             if self._fix_nodes:
                 f.write("Nfix, 1, 3\n")
