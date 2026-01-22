@@ -11,7 +11,7 @@ def main(scenario_cfg, precice_cfg_path, cleanup=True):
     simulation_folder = Path(__file__).resolve().parent / "out"
     geometry = Geometry(scenario_cfg)
 
-    mesh_name = "Solid-Nodes-Mesh"
+    mesh_name = "Solid-Mesh"
     interface_name = "Solid-Interface"
 
     inp_path = geometry.write_file(
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     precice_cfg = args.precice_cfg
     if not precice_cfg:
         precice_cfg = (Path(__file__).resolve().parent.parent
-                       / "cfg" / "precice" / "dummy_config.xml")
+                       / "cfg" / "precice" / "2d_elastic_tube.xml")
 
     scenario = args.scenario
     if not scenario:
