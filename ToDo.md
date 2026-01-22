@@ -31,7 +31,7 @@
 
 - [x] Calculix Config Files checken und 2d tube erstellen (dafür bedarf es noch keiner preCICE koppellung) (julian)
 - [x] Entrypoint für Calculix Simulation Schreiben (julian)
-- [ ] Calculix Coupling testen mit OpenFOAM
+- [ ] Calculix Coupling testen mit OpenFOAM (julian)
 
 - [ ] Fluid-Solver und Calculix koppeln mit preCICE
   - Hängt von Kraftvektoren und Boundary conditions ab
