@@ -24,7 +24,7 @@
   - [ ] fabio
   - [ ] bene
 
-openFOAM installieren
+- openFOAM installieren
   - [x] julian
   - [ ] fabio
   - [ ] bene
