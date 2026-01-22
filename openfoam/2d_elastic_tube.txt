@@ -1,8 +1,8 @@
 # Settings file for numsim program
-# Run ./numsim boundaries.txt
+# Run ./numsim lid_driven_cavity.txt
 
 # Problem description
-physicalSizeX = 4.0   # physical size of the domain
+physicalSizeX = 8.0   # physical size of the domain
 physicalSizeY = 2.0
 endTime = 10.0        # duration of the simulation
 re = 1000             # Reynolds number
@@ -15,7 +15,7 @@ boundaryTop    = InflowNoSlip
 boundaryLeft   = InflowNoSlip
 boundaryRight  = Outflow
 
-# Dirichlet boundary mean flow speed
+# Dirichlet boundary conditions
 dirichletBottomX = 0
 dirichletBottomY = 0
 dirichletTopX    = 0
@@ -31,7 +31,7 @@ frequency = 2
 timeShift = 0
 
 # Discretization parameters
-nCellsX = 40          # number of cells in x and y direction
+nCellsX = 80          # number of cells in x and y direction
 nCellsY = 20
 useDonorCell = true   # if donor cell discretization should be used, possible values: true false
 alpha = 0.5           # factor for donor-cell scheme, 0 is equivalent to central differences
@@ -43,4 +43,3 @@ pressureSolver = SOR  # which pressure solver to use, possible values: GaussSeid
 omega = 1.6           # overrelaxation factor, only for SOR solver
 epsilon = 1e-5        # tolerance for 2-norm of residual
 maximumNumberOfIterations = 1e4    # maximum number of iterations in the solver
-

@@ -9,15 +9,26 @@ re = 1000             # Reynolds number
 gX = 0.0              # external forces, set to (gX,gY) = (0,-9.81) to account for gravity
 gY = 0.0
 
+# Boundary conditions
+boundaryBottom = InflowNoSlip
+boundaryTop    = InflowNoSlip
+boundaryLeft   = InflowNoSlip
+boundaryRight  = Outflow
+
 # Dirichlet boundary conditions
 dirichletBottomX = 0
 dirichletBottomY = 0
 dirichletTopX    = 0
 dirichletTopY    = 0
-dirichletLeftX   = 0
+dirichletLeftX   = 1
 dirichletLeftY   = 0
 dirichletRightX  = 0
 dirichletRightY  = 0
+
+# Dirichlet boundary flow speed variation (scales with mean flow speed)
+amplitude = 0.5
+frequency = 2
+timeShift = 0
 
 # Discretization parameters
 nCellsX = 80          # number of cells in x and y direction
