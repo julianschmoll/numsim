@@ -22,7 +22,7 @@
 - Calculix installieren
   - [x] julian
   - [ ] fabio
-  - [ ] bene
+  - [x] bene
 
 - openFOAM installieren
   - [x] julian
