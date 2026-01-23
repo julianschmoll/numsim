@@ -1,0 +1,27 @@
+dimensions      [0 2 -2 0 0 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{{
+    left
+    {{
+        {left_bc}
+    }}
+    right
+    {{
+        {right_bc}
+    }}
+    bottom
+    {{
+        {botom_bc}
+    }}
+    top
+    {{
+        {top_bc}
+    }}
+    frontAndBack
+    {{
+        type            empty;
+    }}
+}}

@@ -1,0 +1,8 @@
+numberOfSubdomains {nSubdomains};
+method          simple;
+
+simpleCoeffs
+{{
+    n               (4 1 1);
+    delta           0.001;
+}}

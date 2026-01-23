@@ -3,7 +3,7 @@
 - [ ] Inflow und Outflow Boundary Conditions implementieren (Bene)
     - [x] Inflow BC
     - [x] Outflow BC
-    - [ ] Testen ob das tut mit openFOAM
+    - [ ] Testen ob das tut mit openFOAM (julian)
 
 - [x] Function als Geschwindigkeitsinput implementieren (für debugging purposes)
 
@@ -12,12 +12,13 @@
 
 - [ ] Herleitung der Kraftvektoren auf Festkörper (fabio)
     - Implementierung soll nur in eine Richtung kraft auswirken (orthogonal zur Wand, parallel vernachlässigen wir)
-    - Was wenn Festkörper Rand berührt?
+    - Was, wenn Festkörper Rand berührt?
 
 - [ ] Check Acceleration of precice to use in the advance method
 
-- [x] Konfiguration überlegen von Tube
-- [ ] Überlegung wie wir Zellen klassifizieren (fluid, solid, interface)
+- [x] Konfiguration überlegen von Tube (julian)
+
+- [ ] Überlegung wie wir Zellen klassifizieren (fluid, solid, interface) (bene)
 
 - Calculix installieren
   - [x] julian
@@ -31,6 +32,7 @@ openFOAM installieren
 
 - [x] Calculix Config Files checken und 2d tube erstellen (dafür bedarf es noch keiner preCICE koppellung) (julian)
 - [x] Entrypoint für Calculix Simulation Schreiben (julian)
+- [ ] OpenFOAM entrypoint schreiben (would be nice to read our fluid config and simulate same scenario with openFOAM) (julian)
 - [ ] Calculix Coupling testen mit OpenFOAM
 
 - [ ] Fluid-Solver und Calculix koppeln mit preCICE

@@ -1,0 +1,30 @@
+application     pimpleFoam;
+
+startFrom       startTime;
+startTime       0;
+stopAt          endTime;
+endTime         {endTime};
+deltaT          {maximumDt};
+
+writeControl    timeStep;
+writeInterval   100;
+purgeWrite      0;
+writeFormat     ascii;
+writePrecision  6;
+writeCompression off;
+timeFormat      general;
+timePrecision   6;
+runTimeModifiable true;
+adjustTimeStep  no;
+
+// Load preCICE adapter
+libs ("libpreciceAdapterFunctionObject.so");
+
+functions
+{{
+    preCICE_Adapter
+    {{
+        type preciceAdapterFunctionObject;
+        errors strict;
+    }}
+}}
