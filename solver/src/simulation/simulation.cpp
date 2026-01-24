@@ -89,6 +89,8 @@ void Simulation::run() {
         partitioning_->exchange(uv);
         setBoundaryUV(currentTime);
 
+        calculateForces();
+
         const int lastSec = static_cast<int>(currentTime);
         currentTime += timeStepWidth_;
         const int currentSec = static_cast<int>(currentTime);
@@ -536,6 +538,36 @@ void Simulation::setVelocities() {
         for (int i = v.beginI() + 1; i < v.endI() - 1; i++) {
             if (discOps_->isSolid(i, j)) continue;
             v(i, j) = g(i, j) - timeStepWidth_ * discOps_->computeDpDy(i, j);
+        }
+    }
+}
+
+void Simulation::calculateForces() {
+    auto &v = discOps_->v();
+    auto &p = discOps_->p();
+
+    const double invRe = 1.0 / settings_.re;
+    const double dx = discOps_->dx();
+
+    // collect forces orthogonal to top boundary
+    for (int i = v.beginI(); i < v.endI(); ++i) {
+        for (int j = v.endJ() - 2; j >= v.beginJ() - 1; --j) {
+            if (discOps_->isFluid(i, j)) {
+                const double vDy = discOps_->computeDvDy(i, j);
+                discOps_->fTop(i) = -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j + 1) * p(i, j)) / 2);
+                break;
+            }
+        }
+    }
+
+    // collect forces orthogonal to bottom boundary
+    for (int i = v.beginI(); i < v.endI(); ++i) {
+        for (int j = v.beginJ() + 1; j < v.endJ() - 1; ++j) {
+            if (discOps_->isFluid(i, j)) {
+                const double vDy = discOps_->computeDvDy(i, j);
+                discOps_->fBottom(i) = -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j - 1) * p(i, j)) / 2);
+                break;
+            }
         }
     }
 }

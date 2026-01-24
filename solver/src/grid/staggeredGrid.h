@@ -45,6 +45,9 @@ protected:
     std::vector<double> newDisplacementsTop_;
     std::vector<double> newDisplacementsBottom_;
 
+    std::vector<double> fTop_;
+    std::vector<double> fBottom_;
+
 public:
     /**
      * Destructs Staggered Grid instance.
@@ -127,6 +130,12 @@ public:
      * @return The value at specified position.
      */
     double rhs(int i, int j);
+
+    double &fTop(int i);
+    double &fBottom(int i);
+
+    std::vector<double> &fTop();
+    std::vector<double> &fBottom();
 
     /// DataField for velocity in x direction.
     DataField &u();

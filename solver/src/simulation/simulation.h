@@ -52,6 +52,8 @@ public:
      */
     void setVelocities();
 
+    void calculateForces();
+
 private:
     // Grid width in x and y directions
     std::array<double, 2> meshWidth_{};

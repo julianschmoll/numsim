@@ -36,6 +36,9 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
         oldDisplacementsBottom_.resize(pWidth, 0);
     }
 
+    fTop_.resize(pWidth, 0);
+    fBottom_.resize(pWidth, 0);
+
     // We initialize this field with a border of solid.
     // This should also not be changed by the displacements since it would break the velocity boundarie conditions.
     for (int j = -1; j <= nCells[1]; j++) { // TODO: move the begin and end methods to Array2d? They don't use DataField specific information.
@@ -121,6 +124,22 @@ DataField &StaggeredGrid::g() {
 
 DataField &StaggeredGrid::rhs() {
     return rhs_;
+}
+
+double &StaggeredGrid::fTop(int i) {
+    return fTop_[i];
+}
+
+double &StaggeredGrid::fBottom(int i) {
+    return fBottom_[i];
+}
+
+std::vector<double> &StaggeredGrid::fTop() {
+    return fTop_;
+}
+
+std::vector<double> &StaggeredGrid::fBottom() {
+    return fBottom_;
 }
 
 double StaggeredGrid::dx() const {
