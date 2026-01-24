@@ -26,7 +26,7 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
         uWidth += 1;
     }
 
-    structure_ = Array2d<CellType>({pWidth, pHeight});
+    structure_ = Array2d<bool>({pWidth, pHeight});
     if (partitioning.ownContainsBoundary<Direction::Top>()) {
         newDisplacementsTop_.resize(pWidth, 0);
         oldDisplacementsTop_.resize(pWidth, 0);
@@ -42,19 +42,19 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
     // We initialize this field with a border of solid.
     // This should also not be changed by the displacements since it would break the velocity boundarie conditions.
     for (int j = -1; j <= nCells[1]; j++) { // TODO: move the begin and end methods to Array2d? They don't use DataField specific information.
-        structure_(-1, j) = CellType::Solid;
-        structure_(nCells[0], j) = CellType::Solid;
+        structure_(-1, j) = Solid;
+        structure_(nCells[0], j) = Solid;
     }
     for (int i = -1; i <= nCells[0]; i++) {
-        structure_(i, -1) = CellType::Solid;
-        structure_(i, nCells[1]) = CellType::Solid;
+        structure_(i, -1) = Solid;
+        structure_(i, nCells[1]) = Solid;
     }
 
     // TODO: Testcode:
     for (int j = -1; j <= nCells[1]; j++) { 
         for (int i = -1; i <= nCells[0]; i++) {
             if (j <= 0.2 * i) {
-                structure_(i, j) = CellType::Solid;
+                structure_(i, j) = Solid;
             }
         }
     }
@@ -151,9 +151,9 @@ double StaggeredGrid::dy() const {
 }
 
 bool StaggeredGrid::isFluid(int i, int j) const {
-    return structure_(i, j) == CellType::Fluid;
+    return !structure_(i, j);
 }
 
 bool StaggeredGrid::isSolid(int i, int j) const {
-    return structure_(i, j) == CellType::Solid;
+    return structure_(i, j);
 }

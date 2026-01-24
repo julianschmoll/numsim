@@ -11,6 +11,11 @@
  * @brief Staggered Grid for numerical solving of poission problem.
  */
 class StaggeredGrid {
+
+    enum CellType {
+        Fluid = false, Solid = true
+    };
+
     /// Mesh width of the grid
     const std::array<double, 2> meshWidth_;
 
@@ -36,7 +41,7 @@ protected:
     /// Field for storing rhs of the poission equation.
     DataField rhs_;
 
-    Array2d<CellType> structure_;
+    Array2d<bool> structure_;
 
     // TODO: Bessere Möglichkeit? Wir brauchen die Zeitableitung...
     std::vector<double> oldDisplacementsTop_;
