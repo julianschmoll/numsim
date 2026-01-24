@@ -45,6 +45,7 @@ void RedBlackSolver::solve() {
                 const int offset = (beginI + rb + globalOffset + j) & 1;
 #pragma omp simd reduction(+ : localPressureError_)
                 for (int i = beginI + offset; i < endI; i += 2) {
+                    if (grid_->isSolid(i, j)) continue;
                     const double pDxx = (p(i - 1, j) + p(i + 1, j)) * invDx2;
                     const double pDyy = (p(i, j - 1) + p(i, j + 1)) * invDy2;
                     const double pNew = oneMinusOmega * p(i, j) + omegaTimesScalingFactor * (pDxx + pDyy - rhs(i, j));

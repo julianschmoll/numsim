@@ -125,6 +125,9 @@ public:
      */
     double computeDpDy(int i, int j) const;
 
+    double computeDdDtBottom(int i) const;
+    double computeDdDtTop(int i) const;
+    
 private:
     double alpha_;
 };

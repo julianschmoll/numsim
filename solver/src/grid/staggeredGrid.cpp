@@ -1,4 +1,5 @@
 #include "grid/staggeredGrid.h"
+#include "grid/array2d.h"
 #include "grid/dataField.h"
 #include "macros.h"
 #include "simulation/partitioning.h"
@@ -18,14 +19,43 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
 
     // Add additional row/col as a new boundary to the top/right, otherwise the owner of the cells on the partition boundary cannot compute new
     // values.
-    bool topBoundaryPartition = partitioning.ownContainsBoundary<Direction::Top>();
-    bool rightBoundaryPartition = partitioning.ownContainsBoundary<Direction::Right>();
-    if (!topBoundaryPartition) {
+    if (!partitioning.ownContainsBoundary<Direction::Top>()) {
         vHeight += 1;
     }
-    if (!rightBoundaryPartition) {
+    if (!partitioning.ownContainsBoundary<Direction::Right>()) {
         uWidth += 1;
     }
+
+    structure_ = Array2d<CellType>({pWidth, pHeight});
+    if (partitioning.ownContainsBoundary<Direction::Top>()) {
+        newDisplacementsTop_.resize(pWidth, 0);
+        oldDisplacementsTop_.resize(pWidth, 0);
+    }
+    if (partitioning.ownContainsBoundary<Direction::Bottom>()) {
+        newDisplacementsBottom_.resize(pWidth, 0);
+        oldDisplacementsBottom_.resize(pWidth, 0);
+    }
+
+    // We initialize this field with a border of solid.
+    // This should also not be changed by the displacements since it would break the velocity boundarie conditions.
+    for (int j = -1; j <= nCells[1]; j++) { // TODO: move the begin and end methods to Array2d? They don't use DataField specific information.
+        structure_(-1, j) = CellType::Solid;
+        structure_(nCells[0], j) = CellType::Solid;
+    }
+    for (int i = -1; i <= nCells[0]; i++) {
+        structure_(i, -1) = CellType::Solid;
+        structure_(i, nCells[1]) = CellType::Solid;
+    }
+
+    // TODO: Testcode:
+    for (int j = -1; j <= nCells[1]; j++) { 
+        for (int i = -1; i <= nCells[0]; i++) {
+            if (j <= 0.2 * i) {
+                structure_(i, j) = CellType::Solid;
+            }
+        }
+    }
+    std::cout << structure_ << std::endl;
 
     p_ = DataField({pWidth, pHeight}, meshWidth, {0.5, 0.5}, P_ID);
     rhs_ = DataField({pWidth, pHeight}, meshWidth, {0.5, 0.5}, RHS_ID);
@@ -99,4 +129,12 @@ double StaggeredGrid::dx() const {
 
 double StaggeredGrid::dy() const {
     return meshWidth_[1];
+}
+
+bool StaggeredGrid::isFluid(int i, int j) const {
+    return structure_(i, j) == CellType::Fluid;
+}
+
+bool StaggeredGrid::isSolid(int i, int j) const {
+    return structure_(i, j) == CellType::Solid;
 }

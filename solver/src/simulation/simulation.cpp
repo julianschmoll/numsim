@@ -5,6 +5,7 @@
 #include "settings.h"
 #include "simulation/pressureSolver/conjugateGradientSolver.h"
 #include "simulation/pressureSolver/redBlackSolver.h"
+#include <cassert>
 #include <chrono>
 #include <iostream>
 #include <ostream>
@@ -77,8 +78,8 @@ void Simulation::run() {
         TimeSteppingInfo timeSteppingInfo = computeTimeStepWidth(currentTime);
         timeStepWidth_ = timeSteppingInfo.timeStepWidth;
 
+        setBoundaryFG(); // TODO: Korrekt? Die Reihenfolge von setBoundaryFG() und setPreliminaryVelocities() sollte hier keine Rolle spielen.
         setPreliminaryVelocities();
-        setBoundaryFG();
         partitioning_->exchange(fg);
 
         setRightHandSide();
@@ -135,13 +136,13 @@ void Simulation::setBoundaryUV(double currentTime) {
     auto &u = discOps_->u();
     auto &v = discOps_->v();
 
-    double speed_variance = settings_.dirichletAmplitude * sin(settings_.dirichletFrequency * (settings_.dirichletTimeShift + currentTime) * M_PI);
+    double speedVariance = settings_.dirichletAmplitude * sin(settings_.dirichletFrequency * (settings_.dirichletTimeShift + currentTime) * M_PI);
 
     if (partitioning_->ownContainsBoundary<Direction::Bottom>()) {
         switch (settings_.boundaryBottom) {
             case BoundaryType::InflowNoSlip: {
-                const auto uBottom = settings_.dirichletBcBottom[0] + speed_variance * settings_.dirichletBcBottom[0];
-                const auto vBottom = settings_.dirichletBcBottom[1] + speed_variance * settings_.dirichletBcBottom[1];
+                const auto uBottom = settings_.dirichletBcBottom[0] + speedVariance * settings_.dirichletBcBottom[0];
+                const auto vBottom = settings_.dirichletBcBottom[1] + speedVariance * settings_.dirichletBcBottom[1];
 
                 for (int i = u.beginI(); i < u.endI(); ++i) {
                     u(i, u.beginJ()) = 2.0 * uBottom - u(i, u.beginJ() + 1);
@@ -163,14 +164,29 @@ void Simulation::setBoundaryUV(double currentTime) {
                 }
                 break;
             }
+
+            case BoundaryType::CoupledElastic: {
+                for (int i = v.beginI(); i < v.endI(); ++i) {
+                    for (int j = v.beginJ(); j < v.endJ(); ++j) {
+                        if (discOps_->isFluid(i, j)) {
+                            // TODO: Elastic boundary is not allowed to cross partition borders! Simply move outside of check?
+                            // TODO: what happens if j == -1 -> Always solid
+                            // TODO: set boundary with displacements
+                            v(i, j - 1) = discOps_->computeDdDtBottom(i);
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
         }
     }
 
     if (partitioning_->ownContainsBoundary<Direction::Top>()) {
         switch (settings_.boundaryTop) {
             case BoundaryType::InflowNoSlip: {
-                const auto uTop = settings_.dirichletBcTop[0] + speed_variance * settings_.dirichletBcTop[0];
-                const auto vTop = settings_.dirichletBcTop[1] + speed_variance * settings_.dirichletBcTop[1];
+                const auto uTop = settings_.dirichletBcTop[0] + speedVariance * settings_.dirichletBcTop[0];
+                const auto vTop = settings_.dirichletBcTop[1] + speedVariance * settings_.dirichletBcTop[1];
 
                 for (int i = u.beginI(); i < u.endI(); ++i) {
                     u(i, u.endJ() - 1) = 2.0 * uTop - u(i, u.endJ() - 2);
@@ -192,14 +208,29 @@ void Simulation::setBoundaryUV(double currentTime) {
                 }
                 break;
             }
+
+            case BoundaryType::CoupledElastic: {
+                for (int i = v.beginI(); i < v.endI(); ++i) {
+                    for (int j = v.endJ() + 1; j >= v.beginJ(); --j) {
+                        if (discOps_->isFluid(i, j)) {
+                            // TODO: Elastic boundary is not allowed to cross partition borders! Simply move outside of check?
+                            // TODO: what happens if j == -1 -> Always solid
+                            // TODO: what happens if j == v.endJ() + 1
+                            v(i, j + 1) = discOps_->computeDdDtTop(i);
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
         }
     }
 
     if (partitioning_->ownContainsBoundary<Direction::Left>()) {
         switch (settings_.boundaryLeft) {
             case BoundaryType::InflowNoSlip: {
-                const auto uLeft = settings_.dirichletBcLeft[0] + speed_variance * settings_.dirichletBcLeft[0];
-                const auto vLeft = settings_.dirichletBcLeft[1] + speed_variance * settings_.dirichletBcLeft[1];
+                const auto uLeft = settings_.dirichletBcLeft[0] + speedVariance * settings_.dirichletBcLeft[0];
+                const auto vLeft = settings_.dirichletBcLeft[1] + speedVariance * settings_.dirichletBcLeft[1];
 
                 for (int j = u.beginJ(); j < u.endJ(); ++j) {
                     u(u.beginI(), j) = uLeft;
@@ -221,14 +252,18 @@ void Simulation::setBoundaryUV(double currentTime) {
                 }
                 break;
             }
+
+            case BoundaryType::CoupledElastic: {
+                assert(false);
+            }
         }
     }
 
     if (partitioning_->ownContainsBoundary<Direction::Right>()) {
         switch (settings_.boundaryRight) {
             case BoundaryType::InflowNoSlip: {
-                const auto uRight = settings_.dirichletBcRight[0] + speed_variance * settings_.dirichletBcRight[0];
-                const auto vRight = settings_.dirichletBcRight[1] + speed_variance * settings_.dirichletBcRight[1];
+                const auto uRight = settings_.dirichletBcRight[0] + speedVariance * settings_.dirichletBcRight[0];
+                const auto vRight = settings_.dirichletBcRight[1] + speedVariance * settings_.dirichletBcRight[1];
 
                 for (int j = u.beginJ(); j < u.endJ(); ++j) {
                     u(u.endI() - 1, j) = uRight;
@@ -250,6 +285,10 @@ void Simulation::setBoundaryUV(double currentTime) {
                 }
                 break;
             }
+
+            case BoundaryType::CoupledElastic: {
+                assert(false);
+            }
         }
     }
 }
@@ -260,6 +299,14 @@ void Simulation::setBoundaryFG() {
 
     auto &u = discOps_->u();
     auto &v = discOps_->v();
+
+    // TODO: Hier werden Randwerte von u und v einfach kopiert. Wir sollten das mit der anderen Methode zusammenlegen.
+    // TODO: Dass ich zum testen weniger implementieren muss werd ich einfach das ganze Feld kopieren.
+
+    f = u;
+    g = v;
+
+    return;
 
     if (partitioning_->ownContainsBoundary<Direction::Bottom>()) {
         switch (settings_.boundaryBottom) {
@@ -284,6 +331,8 @@ void Simulation::setBoundaryFG() {
                 }
                 break;
             }
+
+            case BoundaryType::CoupledElastic: {}
         }
     }
 
@@ -310,6 +359,8 @@ void Simulation::setBoundaryFG() {
                 }
                 break;
             }
+
+            case BoundaryType::CoupledElastic: {}
         }
     }
 
@@ -336,6 +387,8 @@ void Simulation::setBoundaryFG() {
                 }
                 break;
             }
+
+            case BoundaryType::CoupledElastic: {}
         }
     }
 
@@ -362,6 +415,8 @@ void Simulation::setBoundaryFG() {
                 }
                 break;
             }
+
+            case BoundaryType::CoupledElastic: {}
         }
     }
 }
@@ -412,6 +467,7 @@ void Simulation::setPreliminaryVelocities() {
 
     for (int j = u.beginJ() + 1; j < u.endJ() - 1; j++) {
         for (int i = u.beginI() + 1; i < u.endI() - 1; i++) {
+            if (discOps_->isSolid(i, j)) continue;
             const double uDxx = discOps_->computeD2uDx2(i, j);
             const double u2Dx = discOps_->computeDu2Dx(i, j);
             const double uDyy = discOps_->computeD2uDy2(i, j);
@@ -426,6 +482,7 @@ void Simulation::setPreliminaryVelocities() {
 
     for (int j = v.beginJ() + 1; j < v.endJ() - 1; j++) {
         for (int i = v.beginI() + 1; i < v.endI() - 1; i++) {
+            if (discOps_->isSolid(i, j)) continue;
             const double vDxx = discOps_->computeD2vDx2(i, j);
             const double v2Dy = discOps_->computeDv2Dy(i, j);
             const double vDyy = discOps_->computeD2vDy2(i, j);
@@ -453,6 +510,7 @@ void Simulation::setRightHandSide() {
 
     for (int j = rhs.beginJ() + 1; j < rhs.endJ() - 1; j++) {
         for (int i = rhs.beginI() + 1; i < rhs.endI() - 1; i++) {
+            if (discOps_->isSolid(i, j)) continue;
             const double diffF = (f(i, j) - f(i - 1, j)) * invDx;
             const double diffG = (g(i, j) - g(i, j - 1)) * invDy;
             rhs(i, j) = invTimeStep * (diffF + diffG);
@@ -466,6 +524,7 @@ void Simulation::setVelocities() {
 
     for (int j = u.beginJ() + 1; j < u.endJ() - 1; j++) {
         for (int i = u.beginI() + 1; i < u.endI() - 1; i++) {
+            if (discOps_->isSolid(i, j)) continue;
             u(i, j) = f(i, j) - timeStepWidth_ * discOps_->computeDpDx(i, j);
         }
     }
@@ -475,6 +534,7 @@ void Simulation::setVelocities() {
 
     for (int j = v.beginJ() + 1; j < v.endJ() - 1; j++) {
         for (int i = v.beginI() + 1; i < v.endI() - 1; i++) {
+            if (discOps_->isSolid(i, j)) continue;
             v(i, j) = g(i, j) - timeStepWidth_ * discOps_->computeDpDy(i, j);
         }
     }

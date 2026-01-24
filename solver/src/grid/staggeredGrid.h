@@ -1,8 +1,10 @@
 #pragma once
 
 #include "../simulation/partitioning.h"
+#include "grid/array2d.h"
 #include "grid/dataField.h"
 #include <array>
+#include <vector>
 
 /**
  * @class StaggeredGrid
@@ -33,6 +35,15 @@ protected:
 
     /// Field for storing rhs of the poission equation.
     DataField rhs_;
+
+    Array2d<CellType> structure_;
+
+    // TODO: Bessere Möglichkeit? Wir brauchen die Zeitableitung...
+    std::vector<double> oldDisplacementsTop_;
+    std::vector<double> oldDisplacementsBottom_;
+
+    std::vector<double> newDisplacementsTop_;
+    std::vector<double> newDisplacementsBottom_;
 
 public:
     /**
@@ -148,4 +159,7 @@ public:
      * @return Mesh width in y direction.
      */
     double dy() const;
+
+    bool isFluid(int i, int j) const;
+    bool isSolid(int i, int j) const;
 };
