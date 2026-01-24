@@ -3,7 +3,6 @@
 #include "macros.h"
 #include "simulation/partitioning.h"
 #include <limits>
-#include <vector>
 
 RedBlackSolver::RedBlackSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning, const Settings &settings)
     : PressureSolver(std::move(grid), std::move(partitioning), settings) {}
@@ -22,11 +21,11 @@ void RedBlackSolver::solve() {
 
     globalPressureError_ = std::numeric_limits<double>::max();
 
-    const int beginI = p.beginI() + 1;
-    const int endI = p.endI() - 1;
+    const int beginI = grid_->beginI(p) + 1;
+    const int endI = grid_->endI(p) - 1;
 
-    const int beginJ = p.beginJ() + 1;
-    const int endJ = p.endJ() - 1;
+    const int beginJ = grid_->beginJ(p) + 1;
+    const int endJ = grid_->endJ(p) - 1;
 
     const double epsilonSquared = settings_.epsilon * settings_.epsilon;
     const double oneMinusOmega = 1 - settings_.omega;

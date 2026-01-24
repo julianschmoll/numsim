@@ -24,35 +24,35 @@ Simulation::Simulation(const Settings &settings, const std::string &folderName) 
     if (settings_.useDonorCell) {
         if (partitioning_->onPrimaryRank())
             std::cout << " -- Using Donor Cell." << std::endl;
-        discOps_ = std::make_unique<DiscreteOperators>(partitioning_->nCellsLocal(), meshWidth_, *partitioning_,
+        discr_ = std::make_unique<DiscreteOperators>(partitioning_->nCellsLocal(), meshWidth_, *partitioning_,
                                                        settings_.alpha);
     } else {
         if (partitioning_->onPrimaryRank())
             std::cout << " -- Using Central Differences." << std::endl;
-        discOps_ = std::make_unique<DiscreteOperators>(partitioning_->nCellsLocal(), meshWidth_, *partitioning_, 0.0);
+        discr_ = std::make_unique<DiscreteOperators>(partitioning_->nCellsLocal(), meshWidth_, *partitioning_, 0.0);
     }
 
     if (settings_.pressureSolver == IterSolverType::SOR) {
         if (partitioning_->onPrimaryRank())
             std::cout << " -- Using (Red-Black) SOR solver." << std::endl;
         pressureSolver_ =
-                std::make_unique<RedBlackSolver>(discOps_, partitioning_, settings_);
+                std::make_unique<RedBlackSolver>(discr_, partitioning_, settings_);
     } else if (settings_.pressureSolver == IterSolverType::GaussSeidel) {
         if (partitioning_->onPrimaryRank())
             std::cout << " -- Using (Red-Black) Gauss-Seidel solver." << std::endl;
         settings_.omega = 1;
-        pressureSolver_ = std::make_unique<RedBlackSolver>(discOps_, partitioning_, settings_);
+        pressureSolver_ = std::make_unique<RedBlackSolver>(discr_, partitioning_, settings_);
     } else {
         if (partitioning_->onPrimaryRank())
             std::cout << " -- Using Conjugate Gradient solver." << std::endl;
-        pressureSolver_ = std::make_unique<ConjugateGradientSolver>(discOps_, partitioning_, settings_);
+        pressureSolver_ = std::make_unique<ConjugateGradientSolver>(discr_, partitioning_, settings_);
     }
 
     partitioning_->barrier();
     DEBUG(partitioning_->printPartitioningInfo());
 
-    outputWriterParaview_ = std::make_unique<OutputWriterParaviewParallel>(discOps_, *partitioning_, folderName);
-    outputWriterText_ = std::make_unique<OutputWriterTextParallel>(discOps_, *partitioning_, folderName);
+    outputWriterParaview_ = std::make_unique<OutputWriterParaviewParallel>(discr_, *partitioning_, folderName);
+    outputWriterText_ = std::make_unique<OutputWriterTextParallel>(discr_, *partitioning_, folderName);
 }
 
 void Simulation::writeOutput(const double currentTime, const int currentSec, const int lastSec) const {
@@ -67,8 +67,8 @@ void Simulation::run() {
 
     double currentTime = 0.0;
 
-    std::vector uv = {&discOps_->u(), &discOps_->v()};
-    std::vector fg = {&discOps_->f(), &discOps_->g()};
+    std::vector uv = {&discr_->u(), &discr_->v()};
+    std::vector fg = {&discr_->f(), &discr_->g()};
 
     setBoundaryUV(currentTime);
     setBoundaryFG();
@@ -132,34 +132,34 @@ void Simulation::printConsoleInfo(double currentTime, const TimeSteppingInfo &ti
 }
 
 void Simulation::setBoundaryUV(double currentTime) {
-    auto &u = discOps_->u();
-    auto &v = discOps_->v();
+    auto &u = discr_->u();
+    auto &v = discr_->v();
 
-    double speed_variance = settings_.dirichletAmplitude * sin(settings_.dirichletFrequency * (settings_.dirichletTimeShift + currentTime) * M_PI);
+    double speedVariance = settings_.dirichletAmplitude * sin(settings_.dirichletFrequency * (settings_.dirichletTimeShift + currentTime) * M_PI);
 
     if (partitioning_->ownContainsBoundary<Direction::Bottom>()) {
         switch (settings_.boundaryBottom) {
             case BoundaryType::InflowNoSlip: {
-                const auto uBottom = settings_.dirichletBcBottom[0] + speed_variance * settings_.dirichletBcBottom[0];
-                const auto vBottom = settings_.dirichletBcBottom[1] + speed_variance * settings_.dirichletBcBottom[1];
+                const auto uBottom = settings_.dirichletBcBottom[0] + speedVariance * settings_.dirichletBcBottom[0];
+                const auto vBottom = settings_.dirichletBcBottom[1] + speedVariance * settings_.dirichletBcBottom[1];
 
-                for (int i = u.beginI(); i < u.endI(); ++i) {
-                    u(i, u.beginJ()) = 2.0 * uBottom - u(i, u.beginJ() + 1);
+                for (int i = discr_->beginI(u); i < discr_->endI(u); ++i) {
+                    u(i, discr_->beginJ(u)) = 2.0 * uBottom - u(i, discr_->beginJ(u) + 1);
                 }
 
-                for (int i = v.beginI(); i < v.endI(); ++i) {
-                    v(i, v.beginJ()) = vBottom;
+                for (int i = discr_->beginI(v); i < discr_->endI(v); ++i) {
+                    v(i, discr_->beginJ(v)) = vBottom;
                 }
                 break;
             }
 
             case BoundaryType::Outflow: {
-                for (int i = u.beginI(); i < u.endI(); ++i) {
-                    u(i, u.beginJ()) = u(i, u.beginJ() + 1);
+                for (int i = discr_->beginI(u); i < discr_->endI(u); ++i) {
+                    u(i, discr_->beginJ(u)) = u(i, discr_->beginJ(u) + 1);
                 }
 
-                for (int i = v.beginI(); i < v.endI(); ++i) {
-                    v(i, v.beginJ()) = v(i, v.beginJ() + 1);
+                for (int i = discr_->beginI(v); i < discr_->endI(v); ++i) {
+                    v(i, discr_->beginJ(v)) = v(i, discr_->beginJ(v) + 1);
                 }
                 break;
             }
@@ -169,26 +169,26 @@ void Simulation::setBoundaryUV(double currentTime) {
     if (partitioning_->ownContainsBoundary<Direction::Top>()) {
         switch (settings_.boundaryTop) {
             case BoundaryType::InflowNoSlip: {
-                const auto uTop = settings_.dirichletBcTop[0] + speed_variance * settings_.dirichletBcTop[0];
-                const auto vTop = settings_.dirichletBcTop[1] + speed_variance * settings_.dirichletBcTop[1];
+                const auto uTop = settings_.dirichletBcTop[0] + speedVariance * settings_.dirichletBcTop[0];
+                const auto vTop = settings_.dirichletBcTop[1] + speedVariance * settings_.dirichletBcTop[1];
 
-                for (int i = u.beginI(); i < u.endI(); ++i) {
-                    u(i, u.endJ() - 1) = 2.0 * uTop - u(i, u.endJ() - 2);
+                for (int i = discr_->beginI(u); i < discr_->endI(u); ++i) {
+                    u(i, discr_->endJ(u) - 1) = 2.0 * uTop - u(i, discr_->endJ(u) - 2);
                 }
 
-                for (int i = v.beginI(); i < v.endI(); ++i) {
-                    v(i, v.endJ() - 1) = vTop;
+                for (int i = discr_->beginI(v); i < discr_->endI(v); ++i) {
+                    v(i, discr_->endJ(v) - 1) = vTop;
                 }
                 break;
             }
 
             case BoundaryType::Outflow: {
-                for (int i = u.beginI(); i < u.endI(); ++i) {
-                    u(i, u.endJ() - 1) = u(i, u.endJ() - 2);
+                for (int i = discr_->beginI(u); i < discr_->endI(u); ++i) {
+                    u(i, discr_->endJ(u) - 1) = u(i, discr_->endJ(u) - 2);
                 }
 
-                for (int i = v.beginI(); i < v.endI(); ++i) {
-                    v(i, v.endJ() - 1) = v(i, v.endJ() - 2);
+                for (int i = discr_->beginI(v); i < discr_->endI(v); ++i) {
+                    v(i, discr_->endJ(v) - 1) = v(i, discr_->endJ(v) - 2);
                 }
                 break;
             }
@@ -198,26 +198,26 @@ void Simulation::setBoundaryUV(double currentTime) {
     if (partitioning_->ownContainsBoundary<Direction::Left>()) {
         switch (settings_.boundaryLeft) {
             case BoundaryType::InflowNoSlip: {
-                const auto uLeft = settings_.dirichletBcLeft[0] + speed_variance * settings_.dirichletBcLeft[0];
-                const auto vLeft = settings_.dirichletBcLeft[1] + speed_variance * settings_.dirichletBcLeft[1];
+                const auto uLeft = settings_.dirichletBcLeft[0] + speedVariance * settings_.dirichletBcLeft[0];
+                const auto vLeft = settings_.dirichletBcLeft[1] + speedVariance * settings_.dirichletBcLeft[1];
 
-                for (int j = u.beginJ(); j < u.endJ(); ++j) {
-                    u(u.beginI(), j) = uLeft;
+                for (int j = discr_->beginJ(u); j < discr_->endJ(u); ++j) {
+                    u(discr_->beginI(u), j) = uLeft;
                 }
 
-                for (int j = v.beginJ(); j < v.endJ(); ++j) {
-                    v(v.beginI(), j) = 2.0 * vLeft - v(v.beginI() + 1, j);
+                for (int j = discr_->beginJ(v); j < discr_->endJ(v); ++j) {
+                    v(discr_->beginI(v), j) = 2.0 * vLeft - v(discr_->beginI(v) + 1, j);
                 }
                 break;
             }
 
             case BoundaryType::Outflow: {
-                for (int j = u.beginJ(); j < u.endJ(); ++j) {
-                    u(u.beginI(), j) = u(u.beginI() + 1, j);
+                for (int j = discr_->beginJ(u); j < discr_->endJ(u); ++j) {
+                    u(discr_->beginI(u), j) = u(discr_->beginI(u) + 1, j);
                 }
 
-                for (int j = v.beginJ(); j < v.endJ(); ++j) {
-                    v(v.beginI(), j) = v(v.beginI() + 1, j);
+                for (int j = discr_->beginJ(v); j < discr_->endJ(v); ++j) {
+                    v(discr_->beginI(v), j) = v(discr_->beginI(v) + 1, j);
                 }
                 break;
             }
@@ -227,26 +227,26 @@ void Simulation::setBoundaryUV(double currentTime) {
     if (partitioning_->ownContainsBoundary<Direction::Right>()) {
         switch (settings_.boundaryRight) {
             case BoundaryType::InflowNoSlip: {
-                const auto uRight = settings_.dirichletBcRight[0] + speed_variance * settings_.dirichletBcRight[0];
-                const auto vRight = settings_.dirichletBcRight[1] + speed_variance * settings_.dirichletBcRight[1];
+                const auto uRight = settings_.dirichletBcRight[0] + speedVariance * settings_.dirichletBcRight[0];
+                const auto vRight = settings_.dirichletBcRight[1] + speedVariance * settings_.dirichletBcRight[1];
 
-                for (int j = u.beginJ(); j < u.endJ(); ++j) {
-                    u(u.endI() - 1, j) = uRight;
+                for (int j = discr_->beginJ(u); j < discr_->endJ(u); ++j) {
+                    u(discr_->endI(u) - 1, j) = uRight;
                 }
 
-                for (int j = v.beginJ(); j < v.endJ(); ++j) {
-                    v(v.endI() - 1, j) = 2.0 * vRight - v(v.endI() - 2, j);
+                for (int j = discr_->beginJ(v); j < discr_->endJ(v); ++j) {
+                    v(discr_->endI(v) - 1, j) = 2.0 * vRight - v(discr_->endI(v) - 2, j);
                 }
                 break;
             }
 
             case BoundaryType::Outflow: {
-                for (int j = u.beginJ(); j < u.endJ(); ++j) {
-                    u(u.endI() - 1, j) = u(u.endI() - 2, j);
+                for (int j = discr_->beginJ(u); j < discr_->endJ(u); ++j) {
+                    u(discr_->endI(u) - 1, j) = u(discr_->endI(u) - 2, j);
                 }
 
-                for (int j = v.beginJ(); j < v.endJ(); ++j) {
-                    v(v.endI() - 1, j) = v(v.endI() - 2, j);
+                for (int j = discr_->beginJ(v); j < discr_->endJ(v); ++j) {
+                    v(discr_->endI(v) - 1, j) = v(discr_->endI(v) - 2, j);
                 }
                 break;
             }
@@ -255,32 +255,32 @@ void Simulation::setBoundaryUV(double currentTime) {
 }
 
 void Simulation::setBoundaryFG() {
-    auto &f = discOps_->f();
-    auto &g = discOps_->g();
+    auto &f = discr_->f();
+    auto &g = discr_->g();
 
-    auto &u = discOps_->u();
-    auto &v = discOps_->v();
+    auto &u = discr_->u();
+    auto &v = discr_->v();
 
     if (partitioning_->ownContainsBoundary<Direction::Bottom>()) {
         switch (settings_.boundaryBottom) {
             case BoundaryType::InflowNoSlip: {
-                for (int i = f.beginI(); i < f.endI(); ++i) {
-                    f(i, f.beginJ()) = u(i, f.beginJ());
+                for (int i = discr_->beginI(f); i < discr_->endI(f); ++i) {
+                    f(i, discr_->beginJ(f)) = u(i, discr_->beginJ(f));
                 }
 
-                for (int i = g.beginI(); i < g.endI(); ++i) {
-                    g(i, g.beginJ()) = v(i, g.beginJ());
+                for (int i = discr_->beginI(g); i < discr_->endI(g); ++i) {
+                    g(i, discr_->beginJ(g)) = v(i, discr_->beginJ(g));
                 }
                 break;
             }
 
             case BoundaryType::Outflow: {
-                for (int i = f.beginI(); i < f.endI(); ++i) {
-                    f(i, f.beginJ()) = f(i, f.beginJ() + 1);
+                for (int i = discr_->beginI(f); i < discr_->endI(f); ++i) {
+                    f(i, discr_->beginJ(f)) = f(i, discr_->beginJ(f) + 1);
                 }
 
-                for (int i = g.beginI(); i < g.endI(); ++i) {
-                    g(i, g.beginJ()) = g(i, g.beginJ() + 1);
+                for (int i = discr_->beginI(g); i < discr_->endI(g); ++i) {
+                    g(i, discr_->beginJ(g)) = g(i, discr_->beginJ(g) + 1);
                 }
                 break;
             }
@@ -290,23 +290,23 @@ void Simulation::setBoundaryFG() {
     if (partitioning_->ownContainsBoundary<Direction::Top>()) {
         switch (settings_.boundaryTop) {
             case BoundaryType::InflowNoSlip: {
-                for (int i = f.beginI(); i < f.endI(); ++i) {
-                    f(i, f.endJ() - 1) = u(i, f.endJ() - 1);
+                for (int i = discr_->beginI(f); i < discr_->endI(f); ++i) {
+                    f(i, discr_->endJ(f) - 1) = u(i, discr_->endJ(f) - 1);
                 }
 
-                for (int i = g.beginI(); i < g.endI(); ++i) {
-                    g(i, g.endJ() - 1) = v(i, g.endJ() - 1);
+                for (int i = discr_->beginI(g); i < discr_->endI(g); ++i) {
+                    g(i, discr_->endJ(g) - 1) = v(i, discr_->endJ(g) - 1);
                 }
                 break;
             }
 
             case BoundaryType::Outflow: {
-                for (int i = f.beginI(); i < f.endI(); ++i) {
-                    f(i, f.endJ() - 1) = f(i, f.endJ() - 2);
+                for (int i = discr_->beginI(f); i < discr_->endI(f); ++i) {
+                    f(i, discr_->endJ(f) - 1) = f(i, discr_->endJ(f) - 2);
                 }
 
-                for (int i = g.beginI(); i < g.endI(); ++i) {
-                    g(i, g.endJ() - 1) = g(i, g.endJ() - 2);
+                for (int i = discr_->beginI(g); i < discr_->endI(g); ++i) {
+                    g(i, discr_->endJ(g) - 1) = g(i, discr_->endJ(g) - 2);
                 }
                 break;
             }
@@ -316,23 +316,23 @@ void Simulation::setBoundaryFG() {
     if (partitioning_->ownContainsBoundary<Direction::Left>()) {
         switch (settings_.boundaryLeft) {
             case BoundaryType::InflowNoSlip: {
-                for (int j = f.beginJ(); j < f.endJ(); ++j) {
-                    f(f.beginI(), j) = u(f.beginI(), j);
+                for (int j = discr_->beginJ(f); j < discr_->endJ(f); ++j) {
+                    f(discr_->beginI(f), j) = u(discr_->beginI(f), j);
                 }
 
-                for (int j = g.beginJ(); j < g.endJ(); ++j) {
-                    g(g.beginI(), j) = v(g.beginI(), j);
+                for (int j = discr_->beginJ(g); j < discr_->endJ(g); ++j) {
+                    g(discr_->beginI(g), j) = v(discr_->beginI(g), j);
                 }
                 break;
             }
 
             case BoundaryType::Outflow: {
-                for (int j = f.beginJ(); j < f.endJ(); ++j) {
-                    f(f.beginI(), j) = f(f.beginI() + 1, j);
+                for (int j = discr_->beginJ(f); j < discr_->endJ(f); ++j) {
+                    f(discr_->beginI(f), j) = f(discr_->beginI(f) + 1, j);
                 }
 
-                for (int j = g.beginJ(); j < g.endJ(); ++j) {
-                    g(g.beginI(), j) = g(g.beginI() + 1, j);
+                for (int j = discr_->beginJ(g); j < discr_->endJ(g); ++j) {
+                    g(discr_->beginI(g), j) = g(discr_->beginI(g) + 1, j);
                 }
                 break;
             }
@@ -342,23 +342,23 @@ void Simulation::setBoundaryFG() {
     if (partitioning_->ownContainsBoundary<Direction::Right>()) {
         switch (settings_.boundaryRight) {
             case BoundaryType::InflowNoSlip: {
-                for (int j = f.beginJ(); j < f.endJ(); ++j) {
-                    f(f.endI() - 1, j) = u(f.endI() - 1, j);
+                for (int j = discr_->beginJ(f); j < discr_->endJ(f); ++j) {
+                    f(discr_->endI(f) - 1, j) = u(discr_->endI(f) - 1, j);
                 }
 
-                for (int j = g.beginJ(); j < g.endJ(); ++j) {
-                    g(g.endI() - 1, j) = v(g.endI() - 1, j);
+                for (int j = discr_->beginJ(g); j < discr_->endJ(g); ++j) {
+                    g(discr_->endI(g) - 1, j) = v(discr_->endI(g) - 1, j);
                 }
                 break;
             }
 
             case BoundaryType::Outflow: {
-                for (int j = f.beginJ(); j < f.endJ(); ++j) {
-                    f(f.endI() - 1, j) = f(f.endI() - 2, j);
+                for (int j = discr_->beginJ(f); j < discr_->endJ(f); ++j) {
+                    f(discr_->endI(f) - 1, j) = f(discr_->endI(f) - 2, j);
                 }
 
-                for (int j = g.beginJ(); j < g.endJ(); ++j) {
-                    g(g.endI() - 1, j) = g(g.endI() - 2, j);
+                for (int j = discr_->beginJ(g); j < discr_->endJ(g); ++j) {
+                    g(discr_->endI(g) - 1, j) = g(discr_->endI(g) - 2, j);
                 }
                 break;
             }
@@ -367,16 +367,16 @@ void Simulation::setBoundaryFG() {
 }
 
 TimeSteppingInfo Simulation::computeTimeStepWidth(double currentTime) {
-    const double uMaxLocal = discOps_->u().absMax();
-    const double vMaxLocal = discOps_->v().absMax();
+    const double uMaxLocal = discr_->u().absMax();
+    const double vMaxLocal = discr_->v().absMax();
 
     double uMaxGlobal{};
     double vMaxGlobal{};
     MPI_Allreduce(&uMaxLocal, &uMaxGlobal, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
     MPI_Allreduce(&vMaxLocal, &vMaxGlobal, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
-    const double hx = discOps_->dx();
-    const double hy = discOps_->dy();
+    const double hx = discr_->dx();
+    const double hy = discr_->dy();
 
     const double dx2 = hx * hx;
     const double dy2 = hy * hy;
@@ -405,17 +405,17 @@ TimeSteppingInfo Simulation::computeTimeStepWidth(double currentTime) {
 void Simulation::setPreliminaryVelocities() {
     const double invRe = 1.0 / settings_.re;
 
-    auto &u = discOps_->u();
-    auto &v = discOps_->v();
-    auto &f = discOps_->f();
-    auto &g = discOps_->g();
+    auto &u = discr_->u();
+    auto &v = discr_->v();
+    auto &f = discr_->f();
+    auto &g = discr_->g();
 
-    for (int j = u.beginJ() + 1; j < u.endJ() - 1; j++) {
-        for (int i = u.beginI() + 1; i < u.endI() - 1; i++) {
-            const double uDxx = discOps_->computeD2uDx2(i, j);
-            const double u2Dx = discOps_->computeDu2Dx(i, j);
-            const double uDyy = discOps_->computeD2uDy2(i, j);
-            const double uvDy = discOps_->computeDuvDy(i, j);
+    for (int j = discr_->beginJ(u) + 1; j < discr_->endJ(u) - 1; j++) {
+        for (int i = discr_->beginI(u) + 1; i < discr_->endI(u) - 1; i++) {
+            const double uDxx = discr_->computeD2uDx2(i, j);
+            const double u2Dx = discr_->computeDu2Dx(i, j);
+            const double uDyy = discr_->computeD2uDy2(i, j);
+            const double uvDy = discr_->computeDuvDy(i, j);
 
             const double convection = u2Dx + uvDy;
             const double diffusion = uDxx + uDyy;
@@ -424,12 +424,12 @@ void Simulation::setPreliminaryVelocities() {
         }
     }
 
-    for (int j = v.beginJ() + 1; j < v.endJ() - 1; j++) {
-        for (int i = v.beginI() + 1; i < v.endI() - 1; i++) {
-            const double vDxx = discOps_->computeD2vDx2(i, j);
-            const double v2Dy = discOps_->computeDv2Dy(i, j);
-            const double vDyy = discOps_->computeD2vDy2(i, j);
-            const double uvDx = discOps_->computeDuvDx(i, j);
+    for (int j = discr_->beginJ(v) + 1; j < discr_->endJ(v) - 1; j++) {
+        for (int i = discr_->beginI(v) + 1; i < discr_->endI(v) - 1; i++) {
+            const double vDxx = discr_->computeD2vDx2(i, j);
+            const double v2Dy = discr_->computeDv2Dy(i, j);
+            const double vDyy = discr_->computeD2vDy2(i, j);
+            const double uvDx = discr_->computeDuvDx(i, j);
 
             const double convection = v2Dy + uvDx;
             const double diffusion = vDxx + vDyy;
@@ -440,19 +440,19 @@ void Simulation::setPreliminaryVelocities() {
 }
 
 void Simulation::setRightHandSide() {
-    const auto &dx = discOps_->dx();
-    const auto &dy = discOps_->dy();
+    const auto &dx = discr_->dx();
+    const auto &dy = discr_->dy();
 
-    const auto &f = discOps_->f();
-    const auto &g = discOps_->g();
-    auto &rhs = discOps_->rhs();
+    const auto &f = discr_->f();
+    const auto &g = discr_->g();
+    auto &rhs = discr_->rhs();
 
     const double invTimeStep = 1.0 / timeStepWidth_;
     const double invDx = 1.0 / dx;
     const double invDy = 1.0 / dy;
 
-    for (int j = rhs.beginJ() + 1; j < rhs.endJ() - 1; j++) {
-        for (int i = rhs.beginI() + 1; i < rhs.endI() - 1; i++) {
+    for (int j = discr_->beginJ(rhs) + 1; j < discr_->endJ(rhs) - 1; j++) {
+        for (int i = discr_->beginI(rhs) + 1; i < discr_->endI(rhs) - 1; i++) {
             const double diffF = (f(i, j) - f(i - 1, j)) * invDx;
             const double diffG = (g(i, j) - g(i, j - 1)) * invDy;
             rhs(i, j) = invTimeStep * (diffF + diffG);
@@ -461,35 +461,35 @@ void Simulation::setRightHandSide() {
 }
 
 void Simulation::setVelocities() {
-    auto &u = discOps_->u();
-    auto &f = discOps_->f();
+    auto &u = discr_->u();
+    auto &f = discr_->f();
 
-    for (int j = u.beginJ() + 1; j < u.endJ() - 1; j++) {
-        for (int i = u.beginI() + 1; i < u.endI() - 1; i++) {
-            u(i, j) = f(i, j) - timeStepWidth_ * discOps_->computeDpDx(i, j);
+    for (int j = discr_->beginJ(u) + 1; j < discr_->endJ(u) - 1; j++) {
+        for (int i = discr_->beginI(u) + 1; i < discr_->endI(u) - 1; i++) {
+            u(i, j) = f(i, j) - timeStepWidth_ * discr_->computeDpDx(i, j);
         }
     }
 
-    auto &v = discOps_->v();
-    auto &g = discOps_->g();
+    auto &v = discr_->v();
+    auto &g = discr_->g();
 
-    for (int j = v.beginJ() + 1; j < v.endJ() - 1; j++) {
-        for (int i = v.beginI() + 1; i < v.endI() - 1; i++) {
-            v(i, j) = g(i, j) - timeStepWidth_ * discOps_->computeDpDy(i, j);
+    for (int j = discr_->beginJ(v) + 1; j < discr_->endJ(v) - 1; j++) {
+        for (int i = discr_->beginI(v) + 1; i < discr_->endI(v) - 1; i++) {
+            v(i, j) = g(i, j) - timeStepWidth_ * discr_->computeDpDy(i, j);
         }
     }
 }
 
 void Simulation::saveState() {
     DEBUG(std::cout << "Simulation::saveState" << std::endl);
-    uCheckpoint_ = discOps_->u();
-    vCheckpoint_ = discOps_->v();
-    pCheckpoint_ = discOps_->p();
+    uCheckpoint_ = discr_->u();
+    vCheckpoint_ = discr_->v();
+    pCheckpoint_ = discr_->p();
 }
 
 void Simulation::reloadLastState() {
     DEBUG(std::cout << "Simulation::reloadLastState" << std::endl);
-    discOps_->u() = uCheckpoint_;
-    discOps_->v() = vCheckpoint_;
-    discOps_->p() = pCheckpoint_;
+    discr_->u() = uCheckpoint_;
+    discr_->v() = vCheckpoint_;
+    discr_->p() = pCheckpoint_;
 }

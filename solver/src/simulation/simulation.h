@@ -57,7 +57,7 @@ private:
     std::array<double, 2> meshWidth_{};
 
     // Discrete operators for grid data
-    std::shared_ptr<DiscreteOperators> discOps_;
+    std::shared_ptr<DiscreteOperators> discr_;
 
     // Writer for exporting simulation results for Paraview
     std::unique_ptr<OutputWriter> outputWriterParaview_;

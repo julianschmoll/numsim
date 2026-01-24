@@ -18,8 +18,8 @@ void ConjugateGradientSolver::updatePressure(double alpha) {
     DataField &d = direction_;
 
     // paralleisierbar
-    for (int j = d.beginJ() + 1; j < d.endJ() - 1; ++j) {
-        for (int i = d.beginI() + 1; i < d.endI() - 1; ++i) {
+    for (int j = grid_->beginJ(d) + 1; j < grid_->endJ(d) - 1; ++j) {
+        for (int i = grid_->beginI(d) + 1; i < grid_->endI(d) - 1; ++i) {
             p(i, j) += alpha * d(i, j);
         }
     }
@@ -32,8 +32,8 @@ void ConjugateGradientSolver::updateDirection(double beta) {
     DataField &d = direction_;
 
     // paralleisierbar
-    for (int j = d.beginJ() + 1; j < d.endJ() - 1; ++j) {
-        for (int i = d.beginI() + 1; i < d.endI() - 1; ++i) {
+    for (int j = grid_->beginJ(d) + 1; j < grid_->endJ(d) - 1; ++j) {
+        for (int i = grid_->beginI(d) + 1; i < grid_->endI(d) - 1; ++i) {
             d(i, j) = rhs(i, j) + beta * d(i, j);
         }
     }
@@ -46,8 +46,8 @@ double ConjugateGradientSolver::decreaseResidual(const DataField &d, double alph
     DataField &rhs = grid_->rhs();
 
     // paralleisierbar
-    for (int j = d.beginJ() + 1; j < d.endJ() - 1; ++j) {
-        for (int i = d.beginI() + 1; i < d.endI() - 1; ++i) {
+    for (int j = grid_->beginJ(d) + 1; j < grid_->endJ(d) - 1; ++j) {
+        for (int i = grid_->beginI(d) + 1; i < grid_->endI(d) - 1; ++i) {
             rhs(i, j) -= alpha * applyDiffusionOperator(d, i, j); // rhs becomes residual
             localSquareResidual += rhs(i, j) * rhs(i, j);
         }
@@ -67,8 +67,8 @@ double ConjugateGradientSolver::calculateAlpha() {
     double dAdDotLocal = 0;
 
     // paralleisierbar
-    for (int j = d.beginJ() + 1; j < d.endJ() - 1; ++j) {
-        for (int i = d.beginI() + 1; i < d.endI() - 1; ++i) {
+    for (int j = grid_->beginJ(d) + 1; j < grid_->endJ(d) - 1; ++j) {
+        for (int i = grid_->beginI(d) + 1; i < grid_->endI(d) - 1; ++i) {
             rdDotLocal += rhs(i, j) * d(i, j);
             dAdDotLocal += d(i, j) * applyDiffusionOperator(d, i, j);
         }
@@ -91,8 +91,8 @@ void ConjugateGradientSolver::solve() {
     double rNew = r0;
 
     // initial descent direction equals residual
-    for (int j = d.beginJ() + 1; j < d.endJ() - 1; ++j) {
-        for (int i = d.beginI() + 1; i < d.endI() - 1; ++i) {
+    for (int j = grid_->beginJ(d) + 1; j < grid_->endJ(d) - 1; ++j) {
+        for (int i = grid_->beginI(d) + 1; i < grid_->endI(d) - 1; ++i) {
             d(i, j) = rhs(i, j);
         }
     }

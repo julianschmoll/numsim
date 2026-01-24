@@ -17,6 +17,8 @@ public:
      */
     DiscreteOperators(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, const Partitioning &partitioning, double alpha);
 
+    DiscreteOperators() = default;
+
     /**
      * Computes du²/dx
      *

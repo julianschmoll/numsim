@@ -34,15 +34,15 @@ void OutputWriterTextParallel::writeFile(double currentTime) {
     // ---------
     // write header lines
     file << "u (" << grid_->u().size()[0] << "x" << grid_->u().size()[1] << "): " << std::endl << std::string(fieldWidth, ' ') << "|";
-    for (int i = grid_->u().beginI(); i < grid_->u().endI(); i++) {
+    for (int i = grid_->u().minI(); i < grid_->u().maxI(); i++) {
         file << std::setw(fieldWidth) << i;
     }
     file << std::endl << std::string(fieldWidth * (grid_->u().size()[0] + 2) + 1, '-') << std::endl;
 
     // write u values
-    for (int j = grid_->u().endJ() - 1; j >= grid_->u().beginJ(); j--) {
+    for (int j = grid_->u().maxJ() - 1; j >= grid_->u().minJ(); j--) {
         file << std::setw(fieldWidth) << j << "|";
-        for (int i = grid_->u().beginI(); i < grid_->u().endI(); i++) {
+        for (int i = grid_->u().minI(); i < grid_->u().maxI(); i++) {
             file << std::setw(fieldWidth) << std::setprecision(fieldWidth - 6) << grid_->u(i, j);
         }
         file << std::endl;
@@ -53,15 +53,15 @@ void OutputWriterTextParallel::writeFile(double currentTime) {
     // ---------
     // write header lines
     file << "v (" << grid_->v().size()[0] << "x" << grid_->v().size()[1] << "): " << std::endl << std::string(fieldWidth, ' ') << "|";
-    for (int i = grid_->v().beginI(); i < grid_->v().endI(); i++) {
+    for (int i = grid_->v().minI(); i < grid_->v().maxI(); i++) {
         file << std::setw(fieldWidth) << i;
     }
     file << std::endl << std::string(fieldWidth * (grid_->v().size()[0] + 2) + 1, '-') << std::endl;
 
     // write v values
-    for (int j = grid_->v().endJ() - 1; j >= grid_->v().beginJ(); j--) {
+    for (int j = grid_->v().maxJ() - 1; j >= grid_->v().minJ(); j--) {
         file << std::setw(fieldWidth) << j << "|";
-        for (int i = grid_->v().beginI(); i < grid_->v().endI(); i++) {
+        for (int i = grid_->v().minI(); i < grid_->v().maxI(); i++) {
             file << std::setw(fieldWidth) << std::setprecision(fieldWidth - 6) << grid_->v(i, j);
         }
         file << std::endl;
@@ -72,15 +72,15 @@ void OutputWriterTextParallel::writeFile(double currentTime) {
     // ---------
     // write header lines
     file << "p (" << grid_->p().size()[0] << "x" << grid_->p().size()[1] << "): " << std::endl << std::string(fieldWidth, ' ') << "|";
-    for (int i = grid_->p().beginI(); i < grid_->p().endI(); i++) {
+    for (int i = grid_->p().minI(); i < grid_->p().maxI(); i++) {
         file << std::setw(fieldWidth) << i;
     }
     file << std::endl << std::string(fieldWidth * (grid_->p().size()[0] + 2) + 1, '-') << std::endl;
 
     // write p values
-    for (int j = grid_->p().endJ() - 1; j >= grid_->p().beginJ(); j--) {
+    for (int j = grid_->p().maxJ() - 1; j >= grid_->p().minJ(); j--) {
         file << std::setw(fieldWidth) << j << "|";
-        for (int i = grid_->p().beginI(); i < grid_->p().endI(); i++) {
+        for (int i = grid_->p().minI(); i < grid_->p().maxI(); i++) {
             file << std::setw(fieldWidth) << std::setprecision(fieldWidth - 6) << grid_->p(i, j);
         }
         file << std::endl;
@@ -91,15 +91,15 @@ void OutputWriterTextParallel::writeFile(double currentTime) {
     // ---------
     // write header lines
     file << "F (" << grid_->u().size()[0] << "x" << grid_->u().size()[1] << "): " << std::endl << std::string(fieldWidth, ' ') << "|";
-    for (int i = grid_->u().beginI(); i < grid_->u().endI(); i++) {
+    for (int i = grid_->u().minI(); i < grid_->u().maxI(); i++) {
         file << std::setw(fieldWidth) << i;
     }
     file << std::endl << std::string(fieldWidth * (grid_->u().size()[0] + 2) + 1, '-') << std::endl;
 
     // write f values
-    for (int j = grid_->u().endJ() - 1; j >= grid_->u().beginJ(); j--) {
+    for (int j = grid_->u().maxJ() - 1; j >= grid_->u().minJ(); j--) {
         file << std::setw(fieldWidth) << j << "|";
-        for (int i = grid_->u().beginI(); i < grid_->u().endI(); i++) {
+        for (int i = grid_->u().minI(); i < grid_->u().maxI(); i++) {
             file << std::setw(fieldWidth) << std::setprecision(fieldWidth - 6) << grid_->f(i, j);
         }
         file << std::endl;
@@ -110,15 +110,15 @@ void OutputWriterTextParallel::writeFile(double currentTime) {
     // ---------
     // write header lines
     file << "G (" << grid_->v().size()[0] << "x" << grid_->v().size()[1] << "): " << std::endl << std::string(fieldWidth, ' ') << "|";
-    for (int i = grid_->v().beginI(); i < grid_->v().endI(); i++) {
+    for (int i = grid_->v().minI(); i < grid_->v().maxI(); i++) {
         file << std::setw(fieldWidth) << i;
     }
     file << std::endl << std::string(fieldWidth * (grid_->v().size()[0] + 2) + 1, '-') << std::endl;
 
     // write g values
-    for (int j = grid_->v().endJ() - 1; j >= grid_->v().beginJ(); j--) {
+    for (int j = grid_->v().maxJ() - 1; j >= grid_->v().minJ(); j--) {
         file << std::setw(fieldWidth) << j << "|";
-        for (int i = grid_->v().beginI(); i < grid_->v().endI(); i++) {
+        for (int i = grid_->v().minI(); i < grid_->v().maxI(); i++) {
             file << std::setw(fieldWidth) << std::setprecision(fieldWidth - 6) << grid_->g(i, j);
         }
         file << std::endl;
@@ -129,15 +129,15 @@ void OutputWriterTextParallel::writeFile(double currentTime) {
     // ---------
     // write header lines
     file << "rhs (" << grid_->p().size()[0] << "x" << grid_->p().size()[1] << "): " << std::endl << std::string(fieldWidth, ' ') << "|";
-    for (int i = grid_->p().beginI(); i < grid_->p().endI(); i++) {
+    for (int i = grid_->p().minI(); i < grid_->p().maxI(); i++) {
         file << std::setw(fieldWidth) << i;
     }
     file << std::endl << std::string(fieldWidth * (grid_->p().size()[0] + 2) + 1, '-') << std::endl;
 
     // write rhs values
-    for (int j = grid_->p().endJ() - 1; j >= grid_->p().beginJ(); j--) {
+    for (int j = grid_->p().maxJ() - 1; j >= grid_->p().minJ(); j--) {
         file << std::setw(fieldWidth) << j << "|";
-        for (int i = grid_->p().beginI(); i < grid_->p().endI(); i++) {
+        for (int i = grid_->p().minI(); i < grid_->p().maxI(); i++) {
             file << std::setw(fieldWidth) << std::setprecision(fieldWidth - 6) << grid_->rhs(i, j);
         }
         file << std::endl;
@@ -171,15 +171,15 @@ void OutputWriterTextParallel::writePressureFile() const {
     // ---------
     // write header lines
     file << "p (" << grid_->p().size()[0] << "x" << grid_->p().size()[1] << "): " << std::endl << std::string(fieldWidth, ' ') << "|";
-    for (int i = grid_->p().beginI(); i < grid_->p().endI(); i++) {
+    for (int i = grid_->p().minI(); i < grid_->p().maxI(); i++) {
         file << std::setw(fieldWidth) << i;
     }
     file << std::endl << std::string(fieldWidth * (grid_->p().size()[0] + 2) + 1, '-') << std::endl;
 
     // write p values
-    for (int j = grid_->p().endJ() - 1; j >= grid_->p().beginJ(); j--) {
+    for (int j = grid_->p().maxJ() - 1; j >= grid_->p().minJ(); j--) {
         file << std::setw(fieldWidth) << j << "|";
-        for (int i = grid_->p().beginI(); i < grid_->p().endI(); i++) {
+        for (int i = grid_->p().minI(); i < grid_->p().maxI(); i++) {
             file << std::setw(fieldWidth) << std::setprecision(fieldWidth - 6) << grid_->p(i, j);
         }
         file << std::endl;

@@ -49,6 +49,10 @@ public:
      */
     StaggeredGrid(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, const Partitioning &partitioning);
 
+    StaggeredGrid();
+
+    StaggeredGrid &operator=(StaggeredGrid &&other) noexcept;
+
     /**
      * Gets Mesh width.
      *
@@ -148,4 +152,32 @@ public:
      * @return Mesh width in y direction.
      */
     double dy() const;
+    
+    /**
+     * Returns the starting index in the j-direction.
+     *
+     * @return First valid j-index.
+     */
+    int beginJ(const DataField &d) const;
+
+    /**
+     * Returns the ending index in the j-direction.
+     *
+     * @return Last valid j-index.
+     */
+    int endJ(const DataField &d) const;
+
+    /**
+     * Returns the starting index in the i-direction.
+     *
+     * @return First valid i-index.
+     */
+    int beginI(const DataField &d) const;
+
+    /**
+     * Returns the ending index in the i-direction.
+     *
+     * @return Last valid i-index.
+     */
+    int endI(const DataField &d) const;
 };

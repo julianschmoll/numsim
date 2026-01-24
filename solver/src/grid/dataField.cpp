@@ -11,10 +11,8 @@ DataField::DataField()
 
 DataField::DataField(const std::array<int, 2> size, const std::array<double, 2> meshWidth, const std::array<double, 2> offset, int fieldID)
     : Array2d(size), meshWidth_(meshWidth), offset_(offset), fieldID_(fieldID) {
-    const int numberX = endI() - beginI();
-    const int numberY = endJ() - beginJ();
 
-    MPI_Type_vector(numberY, 1, numberX, MPI_DOUBLE, &mpiColType_);
+    MPI_Type_vector(cols(), 1, rows(), MPI_DOUBLE, &mpiColType_);
     MPI_Type_commit(&mpiColType_);
 }
 
@@ -88,19 +86,19 @@ int DataField::cols() const {
     return size_[0];
 }
 
-int DataField::beginJ() const {
+int DataField::minJ() const {
     return -1;
 }
 
-int DataField::endJ() const {
+int DataField::maxJ() const {
     return size_[1] - 1; // size = cells + 2
 }
 
-int DataField::beginI() const {
+int DataField::minI() const {
     return -1;
 }
 
-int DataField::endI() const {
+int DataField::maxI() const {
     return size_[0] - 1;
 }
 

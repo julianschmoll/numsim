@@ -215,21 +215,21 @@ public:
         auto type = MPI_DOUBLE;
 
         if constexpr (direction == Direction::Left) {
-            i = field.beginI() + 1;
-            j = field.beginJ();
+            i = field.minI() + 1;
+            j = field.minJ();
             type = field.mpiColType();
             count = 1;
         } else if constexpr (direction == Direction::Right) {
-            i = field.endI() - 2;
-            j = field.beginJ();
+            i = field.maxI() - 2;
+            j = field.minJ();
             type = field.mpiColType();
             count = 1;
         } else if constexpr (direction == Direction::Bottom) {
-            i = field.beginI() + 1;
-            j = field.beginJ() + 1;
+            i = field.minI() + 1;
+            j = field.minJ() + 1;
         } else if constexpr (direction == Direction::Top) {
-            i = field.beginI() + 1;
-            j = field.endJ() - 2;
+            i = field.minI() + 1;
+            j = field.maxJ() - 2;
         } else {
             assert(false);
         }
@@ -254,21 +254,21 @@ public:
         auto type = MPI_DOUBLE;
 
         if constexpr (direction == Direction::Left) {
-            i = field.beginI();
-            j = field.beginJ();
+            i = field.minI();
+            j = field.minJ();
             type = field.mpiColType();
             count = 1;
         } else if constexpr (direction == Direction::Right) {
-            i = field.endI() - 1;
-            j = field.beginJ();
+            i = field.maxI() - 1;
+            j = field.minJ();
             type = field.mpiColType();
             count = 1;
         } else if constexpr (direction == Direction::Bottom) {
-            i = field.beginI() + 1;
-            j = field.beginJ();
+            i = field.minI() + 1;
+            j = field.minJ();
         } else if constexpr (direction == Direction::Top) {
-            i = field.beginI() + 1;
-            j = field.endJ() - 1;
+            i = field.minI() + 1;
+            j = field.maxJ() - 1;
         } else {
             assert(false);
         }

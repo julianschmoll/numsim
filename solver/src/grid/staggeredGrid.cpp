@@ -5,6 +5,9 @@
 #include <array>
 #include <iostream>
 
+StaggeredGrid::StaggeredGrid()
+    : meshWidth_({0,  0}), nCells_({0,  0}) { }
+
 StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, const Partitioning &partitioning)
     : meshWidth_(meshWidth), nCells_(nCells) {
     int vWidth = nCells[0] + 2;
@@ -35,6 +38,16 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
 
     v_ = DataField({vWidth, vHeight}, meshWidth, {0.5, 0.0}, V_ID);
     g_ = DataField({vWidth, vHeight}, meshWidth, {0.5, 0.0}, G_ID);
+}
+
+StaggeredGrid &StaggeredGrid::operator=(StaggeredGrid &&other) noexcept  {
+    p_ = std::move(other.p_);
+    rhs_ = std::move(other.rhs_);
+    u_ = std::move(other.u_);
+    f_ = std::move(other.f_);
+    v_ = std::move(other.v_);
+    g_ = std::move(other.g_);
+    return *this;
 }
 
 const std::array<double, 2> &StaggeredGrid::meshWidth() const {
@@ -100,3 +113,20 @@ double StaggeredGrid::dx() const {
 double StaggeredGrid::dy() const {
     return meshWidth_[1];
 }
+
+int StaggeredGrid::beginJ(const DataField &d) const {
+    return -1;
+}
+
+int StaggeredGrid::endJ(const DataField &d) const {
+    return d.rows() - 1; // size = cells + 2
+}
+
+int StaggeredGrid::beginI(const DataField &d) const {
+    return -1;
+}
+
+int StaggeredGrid::endI(const DataField &d) const {
+    return d.cols() - 1; // size = cells + 2
+}
+

@@ -84,28 +84,28 @@ public:
      *
      * @return First valid j-index.
      */
-    int beginJ() const;
+    int minJ() const;
 
     /**
      * Returns the ending index in the j-direction.
      *
      * @return Last valid j-index.
      */
-    int endJ() const;
+    int maxJ() const;
 
     /**
      * Returns the starting index in the i-direction.
      *
      * @return First valid i-index.
      */
-    int beginI() const;
+    int minI() const;
 
     /**
      * Returns the ending index in the i-direction.
      *
      * @return Last valid i-index.
      */
-    int endI() const;
+    int maxI() const;
 
     /**
      * Sets all values on DataField to 0.
