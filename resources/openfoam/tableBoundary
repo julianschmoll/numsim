@@ -1,0 +1,5 @@
+type            uniformFixedValue;
+uniformValue    table
+(
+$table_entries
+);

@@ -6,27 +6,37 @@ import case
 
 
 def read_config(filename):
-    """Parses the custom key=value config file."""
+    """Parses config. If a key appears multiple times with tuple values, it collects them."""
     config = {}
     with open(filename, 'r') as f:
         for line in f:
             line = line.split('#')[0].strip()
-            if not line:
+            if not line or "=" not in line:
                 continue
-            if "=" in line:
-                key, value = line.split('=', 1)
-                key, value = key.strip(), value.strip()
-                if value.lower() == "true":
-                    config[key] = True
-                elif value.lower() == "false":
-                    config[key] = False
-                else:
-                    try:
-                        config[key] = float(value)
-                        if config[key].is_integer():
-                            config[key] = int(config[key])
-                    except ValueError:
-                        config[key] = value
+
+            key, value = line.split('=', 1)
+            key, value = key.strip(), value.strip()
+
+            # Check if the value is a tuple-style entry: (x, y)
+            if value.startswith('(') and value.endswith(')'):
+                # Strip parentheses and clean up inner formatting
+                clean_val = value.strip('()').replace(',', ' ').strip()
+                # If the key doesn't exist yet, or isn't a list, initialize it
+                if key not in config:
+                    config[key] = []
+                # Store as an OpenFOAM-ready string "(val1 val2)"
+                config[key].append(f"({clean_val})")
+                continue
+            if value.lower() == "true":
+                config[key] = True
+            elif value.lower() == "false":
+                config[key] = False
+            else:
+                try:
+                    num_val = float(value)
+                    config[key] = int(num_val) if num_val.is_integer() else num_val
+                except ValueError:
+                    config[key] = value
     return config
 
 def main(scenario_cfg, precice_cfg_path, cleanup=True):
@@ -38,7 +48,10 @@ def main(scenario_cfg, precice_cfg_path, cleanup=True):
         cfg["coupled"] = False
 
     case.generate(simulation_folder, cfg)
-    case.run(str(simulation_folder.resolve()))
+    case.run(
+        str(simulation_folder.resolve()),
+        Path(scenario_cfg).stem
+    )
 
     # convert to vtk
     if cleanup:

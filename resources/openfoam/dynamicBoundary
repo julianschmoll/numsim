@@ -1,0 +1,7 @@
+type            uniformFixedValue;
+uniformValue    expression;
+uniformValueCoeffs
+{
+    expression      "vector($vx,$vy,0) * (1.0 + $amplitude * sin(6.2831853 * $frequency * (time() - $timeShift)))";
+}
+value           uniform (0 0 0);

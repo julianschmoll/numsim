@@ -11,7 +11,7 @@ application     pimpleFoam;
 
 adjustTimeStep  yes;
 
-maxCo           2; // Allows a Courant number higher than 1
+maxCo 0.3;
 
 maxDeltaT       $maximumDt;
 
