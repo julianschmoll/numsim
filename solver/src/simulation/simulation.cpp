@@ -91,8 +91,6 @@ void Simulation::run() {
 
         calculateForces();
 
-        // TODO: move boundaries
-
         const int lastSec = static_cast<int>(currentTime);
         currentTime += timeStepWidth_;
         const int currentSec = static_cast<int>(currentTime);

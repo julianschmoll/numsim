@@ -42,7 +42,7 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
 
     // We initialize this field with a border of solid.
     // This should also not be changed by the displacements since it would break the velocity boundarie conditions.
-    for (int j = -1; j <= nCells[1]; j++) { // TODO: move the begin and end methods to Array2d? They don't use DataField specific information.
+    for (int j = -1; j <= nCells[1]; j++) {
         structure_(-1, j) = Solid;
         structure_(nCells[0], j) = Solid;
     }
@@ -69,6 +69,42 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
 
     v_ = DataField({vWidth, vHeight}, meshWidth, {0.5, 0.0}, V_ID);
     g_ = DataField({vWidth, vHeight}, meshWidth, {0.5, 0.0}, G_ID);
+}
+
+void  StaggeredGrid::applyDisplacementsToBoundary()  {
+    constexpr double displacementTolerance = 1.0;
+    // TODO: wir sollten diese iterationsmethode irgendwie ändern. Code duplikation, unschön und fehleranfällig...
+    for (int i = v_.beginI(); i < v_.endI(); ++i) {
+        for (int j = v_.endJ() + 1; j >= v_.beginJ(); --j) {
+            if (isFluid(i, j)) {
+                if (newDisplacementsTop_[i + 1] >= displacementTolerance) {
+                    // Solid darüber entfernen, wenn nicht Simulationsrand
+                    if (j + 1 != v_.endJ() - 1) {
+                        structure_(i, j + 1) = Fluid;
+                    }
+                    // TODO: Einsetzen der Displacement-Ableitung?
+                } else if (newDisplacementsTop_[i + 1] <= -displacementTolerance) {
+                    structure_(i, j) = Solid;
+                    // TODO: Einsetzen der Displacement-Ableitung?
+                }
+                break;
+            }
+        }
+    }
+    for (int i = v_.beginI(); i < v_.endI(); ++i) {
+        for (int j = v_.beginJ(); j < v_.endJ() - 1; ++j) {
+            if (isFluid(i, j)) {
+                if (newDisplacementsBottom_[i + 1] >= displacementTolerance) {
+                    structure_(i, j) = Solid;
+                } else if (newDisplacementsBottom_[i + 1] <= -displacementTolerance) {
+                    if (j - 1 != v_.beginJ()) {
+                        structure_(i, j - 1) = Fluid;
+                    }
+                }
+                break;
+            }
+        }
+    }
 }
 
 const std::array<double, 2> &StaggeredGrid::meshWidth() const {

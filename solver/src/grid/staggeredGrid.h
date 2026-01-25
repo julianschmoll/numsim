@@ -178,4 +178,6 @@ public:
 
     bool isFluid(int i, int j) const;
     bool isSolid(int i, int j) const;
+
+    void applyDisplacementsToBoundary();
 };
