@@ -106,11 +106,3 @@ double DiscreteOperators::computeDpDy(const int i, const int j) const {
     const double dp = p_(i, j + 1) - p_(i, j);
     return dp / dy();
 }
-
-double DiscreteOperators::computeDdDtBottom(int i) const {
-    return newDisplacementsBottom_[i] - oldDisplacementsBottom_[i]; // TODO: wie sieht's hier mit den Vorzeichen aus
-}
-
-double DiscreteOperators::computeDdDtTop(int i) const {
-    return newDisplacementsTop_[i] - oldDisplacementsTop_[i]; // TODO: wie sieht's hier mit den Vorzeichen aus
-}

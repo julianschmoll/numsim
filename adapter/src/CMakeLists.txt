@@ -10,6 +10,16 @@ add_executable(${PROJECT_NAME}
         main.cpp
 )
 
+find_package(MPI REQUIRED)
+
+include_directories(${MPI_INCLUDE_PATH})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${MPI_LIBRARIES})
+
+if(MPI_COMPILE_FLAGS)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+            COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
+endif()
+
 # Links to our solver library
 target_link_libraries(${PROJECT_NAME} PRIVATE solver)
 

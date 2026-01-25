@@ -27,14 +27,15 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
         uWidth += 1;
     }
 
+    // TODO: think about parallelism
     structure_ = Array2d<bool>({pWidth, pHeight});
     if (partitioning.ownContainsBoundary<Direction::Top>()) {
-        newDisplacementsTop_.resize(pWidth, 0);
-        oldDisplacementsTop_.resize(pWidth, 0);
+        displacementsTop_.resize(pWidth, 0);
+        topBoundaryPosition_.resize(pWidth, 0); // TODO: initialize
     }
     if (partitioning.ownContainsBoundary<Direction::Bottom>()) {
-        newDisplacementsBottom_.resize(pWidth, 0);
-        oldDisplacementsBottom_.resize(pWidth, 0);
+        displacementsBottom_.resize(pWidth, 0);
+        bottomBoundaryPosition_.resize(pWidth, 0); // TODO: initialize
     }
 
     fTop_.resize(pWidth, 0);
@@ -77,13 +78,13 @@ void  StaggeredGrid::applyDisplacementsToBoundary()  {
     for (int i = v_.beginI(); i < v_.endI(); ++i) {
         for (int j = v_.endJ() + 1; j >= v_.beginJ(); --j) {
             if (isFluid(i, j)) {
-                if (newDisplacementsTop_[i + 1] >= displacementTolerance) {
+                if (displacementsTop_[i + 1] >= displacementTolerance) {
                     // Solid darüber entfernen, wenn nicht Simulationsrand
                     if (j + 1 != v_.endJ() - 1) {
                         structure_(i, j + 1) = Fluid;
                     }
                     // TODO: Einsetzen der Displacement-Ableitung?
-                } else if (newDisplacementsTop_[i + 1] <= -displacementTolerance) {
+                } else if (displacementsTop_[i + 1] <= -displacementTolerance) {
                     structure_(i, j) = Solid;
                     // TODO: Einsetzen der Displacement-Ableitung?
                 }
@@ -94,9 +95,9 @@ void  StaggeredGrid::applyDisplacementsToBoundary()  {
     for (int i = v_.beginI(); i < v_.endI(); ++i) {
         for (int j = v_.beginJ(); j < v_.endJ() - 1; ++j) {
             if (isFluid(i, j)) {
-                if (newDisplacementsBottom_[i + 1] >= displacementTolerance) {
+                if (displacementsBottom_[i + 1] >= displacementTolerance) {
                     structure_(i, j) = Solid;
-                } else if (newDisplacementsBottom_[i + 1] <= -displacementTolerance) {
+                } else if (displacementsBottom_[i + 1] <= -displacementTolerance) {
                     if (j - 1 != v_.beginJ()) {
                         structure_(i, j - 1) = Fluid;
                     }

@@ -53,6 +53,7 @@ int main(int argc, char *argv[]) {
 
         participant.startProfilingSection("Fluid Solver Step");
         // Solve Fluid and Calculate Forces
+        simulation.advanceFluidSolver(dt);
         participant.stopLastProfilingSection();
 
         // Write with write data

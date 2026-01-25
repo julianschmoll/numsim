@@ -44,16 +44,18 @@ protected:
     Array2d<bool> structure_;
 
     // TODO: Bessere Möglichkeit? Wir brauchen die Zeitableitung...
-    std::vector<double> oldDisplacementsTop_;
-    std::vector<double> oldDisplacementsBottom_;
 
-    std::vector<double> newDisplacementsTop_;
-    std::vector<double> newDisplacementsBottom_;
+    std::vector<double> bottomBoundaryPosition_;
+    std::vector<double> topBoundaryPosition_;
 
     std::vector<double> fTop_;
     std::vector<double> fBottom_;
 
 public:
+
+    std::vector<double> displacementsTop_;
+    std::vector<double> displacementsBottom_;
+
     /**
      * Destructs Staggered Grid instance.
      */

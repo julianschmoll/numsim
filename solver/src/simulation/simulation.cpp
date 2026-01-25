@@ -113,6 +113,28 @@ void Simulation::run() {
     }
 }
 
+void Simulation::advanceFluidSolver(double dt) {
+    std::vector uv = {&discOps_->u(), &discOps_->v()};
+    std::vector fg = {&discOps_->f(), &discOps_->g()};
+
+    setBoundaryFG(); // TODO: Korrekt? Die Reihenfolge von setBoundaryFG() und setPreliminaryVelocities() sollte hier keine Rolle spielen.
+    setPreliminaryVelocities();
+    partitioning_->exchange(fg);
+
+    setRightHandSide();
+    pressureSolver_->solve();
+
+    setVelocities();
+    partitioning_->exchange(uv);
+    setBoundaryUV(/* TODO: currentTime */ dt);
+
+    calculateForces();
+}
+
+void Simulation::updateSolid() {
+
+}
+
 void Simulation::printConsoleInfo(double currentTime, const TimeSteppingInfo &timeSteppingInfo) const {
     static double lastProgress10th = 0;
     if (partitioning_->onPrimaryRank()) {
@@ -174,7 +196,7 @@ void Simulation::setBoundaryUV(double currentTime) {
                             // TODO: Elastic boundary is not allowed to cross partition borders! Simply move outside of check?
                             // TODO: what happens if j == -1 -> Always solid
                             // TODO: set boundary with displacements
-                            v(i, j - 1) = discOps_->computeDdDtBottom(i);
+                            v(i, j - 1) = discOps_->displacementsBottom_[i + 1];
                             break;
                         }
                     }
@@ -218,7 +240,7 @@ void Simulation::setBoundaryUV(double currentTime) {
                             // TODO: Elastic boundary is not allowed to cross partition borders! Simply move outside of check?
                             // TODO: what happens if j == -1 -> Always solid
                             // TODO: what happens if j == v.endJ() + 1
-                            v(i, j + 1) = discOps_->computeDdDtTop(i);
+                            v(i, j + 1) = discOps_->displacementsTop_[i + 1];
                             break;
                         }
                     }
@@ -307,120 +329,6 @@ void Simulation::setBoundaryFG() {
 
     f = u;
     g = v;
-
-    return;
-
-    if (partitioning_->ownContainsBoundary<Direction::Bottom>()) {
-        switch (settings_.boundaryBottom) {
-            case BoundaryType::InflowNoSlip: {
-                for (int i = f.beginI(); i < f.endI(); ++i) {
-                    f(i, f.beginJ()) = u(i, f.beginJ());
-                }
-
-                for (int i = g.beginI(); i < g.endI(); ++i) {
-                    g(i, g.beginJ()) = v(i, g.beginJ());
-                }
-                break;
-            }
-
-            case BoundaryType::Outflow: {
-                for (int i = f.beginI(); i < f.endI(); ++i) {
-                    f(i, f.beginJ()) = f(i, f.beginJ() + 1);
-                }
-
-                for (int i = g.beginI(); i < g.endI(); ++i) {
-                    g(i, g.beginJ()) = g(i, g.beginJ() + 1);
-                }
-                break;
-            }
-
-            case BoundaryType::CoupledElastic: {}
-        }
-    }
-
-    if (partitioning_->ownContainsBoundary<Direction::Top>()) {
-        switch (settings_.boundaryTop) {
-            case BoundaryType::InflowNoSlip: {
-                for (int i = f.beginI(); i < f.endI(); ++i) {
-                    f(i, f.endJ() - 1) = u(i, f.endJ() - 1);
-                }
-
-                for (int i = g.beginI(); i < g.endI(); ++i) {
-                    g(i, g.endJ() - 1) = v(i, g.endJ() - 1);
-                }
-                break;
-            }
-
-            case BoundaryType::Outflow: {
-                for (int i = f.beginI(); i < f.endI(); ++i) {
-                    f(i, f.endJ() - 1) = f(i, f.endJ() - 2);
-                }
-
-                for (int i = g.beginI(); i < g.endI(); ++i) {
-                    g(i, g.endJ() - 1) = g(i, g.endJ() - 2);
-                }
-                break;
-            }
-
-            case BoundaryType::CoupledElastic: {}
-        }
-    }
-
-    if (partitioning_->ownContainsBoundary<Direction::Left>()) {
-        switch (settings_.boundaryLeft) {
-            case BoundaryType::InflowNoSlip: {
-                for (int j = f.beginJ(); j < f.endJ(); ++j) {
-                    f(f.beginI(), j) = u(f.beginI(), j);
-                }
-
-                for (int j = g.beginJ(); j < g.endJ(); ++j) {
-                    g(g.beginI(), j) = v(g.beginI(), j);
-                }
-                break;
-            }
-
-            case BoundaryType::Outflow: {
-                for (int j = f.beginJ(); j < f.endJ(); ++j) {
-                    f(f.beginI(), j) = f(f.beginI() + 1, j);
-                }
-
-                for (int j = g.beginJ(); j < g.endJ(); ++j) {
-                    g(g.beginI(), j) = g(g.beginI() + 1, j);
-                }
-                break;
-            }
-
-            case BoundaryType::CoupledElastic: {}
-        }
-    }
-
-    if (partitioning_->ownContainsBoundary<Direction::Right>()) {
-        switch (settings_.boundaryRight) {
-            case BoundaryType::InflowNoSlip: {
-                for (int j = f.beginJ(); j < f.endJ(); ++j) {
-                    f(f.endI() - 1, j) = u(f.endI() - 1, j);
-                }
-
-                for (int j = g.beginJ(); j < g.endJ(); ++j) {
-                    g(g.endI() - 1, j) = v(g.endI() - 1, j);
-                }
-                break;
-            }
-
-            case BoundaryType::Outflow: {
-                for (int j = f.beginJ(); j < f.endJ(); ++j) {
-                    f(f.endI() - 1, j) = f(f.endI() - 2, j);
-                }
-
-                for (int j = g.beginJ(); j < g.endJ(); ++j) {
-                    g(g.endI() - 1, j) = g(g.endI() - 2, j);
-                }
-                break;
-            }
-
-            case BoundaryType::CoupledElastic: {}
-        }
-    }
 }
 
 TimeSteppingInfo Simulation::computeTimeStepWidth(double currentTime) {

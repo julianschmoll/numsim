@@ -54,6 +54,18 @@ public:
 
     void calculateForces();
 
+
+    // preCICE Interface:
+
+    /**
+     * set fluid boundaries, solve for preliminary velocities, pressure and then velocities
+     * calculate forces
+     */
+    void advanceFluidSolver(double dt);
+
+    void updateSolid();
+
+
 private:
     // Grid width in x and y directions
     std::array<double, 2> meshWidth_{};
