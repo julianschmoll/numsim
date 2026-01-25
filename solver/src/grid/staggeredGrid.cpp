@@ -4,6 +4,7 @@
 #include "macros.h"
 #include "simulation/partitioning.h"
 #include <array>
+#include <cassert>
 #include <iostream>
 
 StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, const Partitioning &partitioning)
@@ -127,10 +128,12 @@ DataField &StaggeredGrid::rhs() {
 }
 
 double &StaggeredGrid::fTop(int i) {
-    return fTop_[i];
+    assert(0 <= i + 1 && i + 1 < static_cast<int>(fTop_.size()));
+    return fTop_[i + 1];
 }
 
 double &StaggeredGrid::fBottom(int i) {
+    assert(0 <= i + 1 && i + 1 < static_cast<int>(fBottom_.size()));
     return fBottom_[i];
 }
 

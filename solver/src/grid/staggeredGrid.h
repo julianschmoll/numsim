@@ -136,7 +136,9 @@ public:
      */
     double rhs(int i, int j);
 
+    // for accessing with the same indexing (-1, 0,..., size() - 2)
     double &fTop(int i);
+    // for accessing with the same indexing (-1, 0,..., size() - 2)
     double &fBottom(int i);
 
     std::vector<double> &fTop();
