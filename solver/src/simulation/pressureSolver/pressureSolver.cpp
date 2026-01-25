@@ -9,6 +9,7 @@ void PressureSolver::setBoundaryValues() {
 
     if (partitioning_->ownContainsBoundary<Direction::Bottom>()) {
         switch (settings_.boundaryBottom) {
+            case BoundaryType::CoupledElastic:  // TODO!
             case BoundaryType::InflowNoSlip: {
                 for (int i = p.beginI() + 1; i < p.endI() - 1; i++) {
                     p(i, p.beginJ()) = p(i, p.beginJ() + 1);
@@ -27,6 +28,7 @@ void PressureSolver::setBoundaryValues() {
 
     if (partitioning_->ownContainsBoundary<Direction::Top>()) {
         switch (settings_.boundaryTop) {
+            case BoundaryType::CoupledElastic:  // TODO!
             case BoundaryType::InflowNoSlip: {
                 for (int i = p.beginI() + 1; i < p.endI() - 1; i++) {
                     p(i, p.endJ() - 1) = p(i, p.endJ() - 2);
@@ -45,6 +47,7 @@ void PressureSolver::setBoundaryValues() {
 
     if (partitioning_->ownContainsBoundary<Direction::Left>()) {
         switch (settings_.boundaryLeft) {
+            case BoundaryType::CoupledElastic:  // TODO!
             case BoundaryType::InflowNoSlip: {
                 for (int j = p.beginJ(); j < p.endJ(); j++) {
                     p(p.beginI(), j) = p(p.beginI() + 1, j);
@@ -63,6 +66,7 @@ void PressureSolver::setBoundaryValues() {
 
     if (partitioning_->ownContainsBoundary<Direction::Right>()) {
         switch (settings_.boundaryRight) {
+            case BoundaryType::CoupledElastic:  // TODO!
             case BoundaryType::InflowNoSlip: {
                 for (int j = p.beginJ(); j < p.endJ(); j++) {
                     p(p.endI() - 1, j) = p(p.endI() - 2, j);
