@@ -48,12 +48,18 @@ int main(int argc, char *argv[]) {
         // ToDo: Handle solver time step being smaller than precice time step
         double dt = participant.getMaxTimeStepSize();
 
+        // solverDt = simulation.computeTimeStepWidth()
+        // dt = min(preciceDt, solverDt); https://precice.org/couple-your-code-time-step-sizes.html
+
         // Read Boundary Data and apply conditions
         // participant.readData(...)
 
         participant.startProfilingSection("Fluid Solver Step");
         // Solve Fluid and Calculate Forces
+
+        simulation.setDisplacements();
         simulation.advanceFluidSolver(dt);
+
         participant.stopLastProfilingSection();
 
         // Write with write data
@@ -68,7 +74,8 @@ int main(int argc, char *argv[]) {
             simulation.reloadLastState();
         } else {
             DEBUG(std::cout << "Advancing in time\n");
-            simulation.setVelocities();
+            simulation.updateSolid(); // update solid grid cells, set velocities and pressure, correct u, v
+            //simulation.setVelocities();
             // simulation.writeOutput(...);
         }
     }
