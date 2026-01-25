@@ -33,20 +33,30 @@ z
 
 boundary
 (
-    movingWall
+    left
     {
         type  wall;
-        faces (3);
+        faces (0); // Min X
     }
-    fixedWalls
+    right
     {
         type  wall;
-        faces (0 1 2);
+        faces (1); // Max X
+    }
+    bottom
+    {
+        type  wall;
+        faces (2); // Min Y
+    }
+    top
+    {
+        type  wall;
+        faces (3); // Max Y
     }
     frontAndBack
     {
         type  empty;
-        faces (4 5);
+        faces (4 5); // Z-directions (for 2D)
     }
 );
 
