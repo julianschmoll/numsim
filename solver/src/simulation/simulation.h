@@ -59,6 +59,7 @@ public:
 
     void calculateForces();
 
+    void setSolidBoundaries();
 
     // preCICE Interface:
 

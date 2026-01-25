@@ -27,6 +27,8 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
         uWidth += 1;
     }
 
+    verticalNodeOffset_ =  partitioning.nodeOffset()[1];
+
     // TODO: think about parallelism
     structure_ = Array2d<bool>({pWidth, pHeight});
     if (partitioning.ownContainsBoundary<Direction::Top>()) {
@@ -41,8 +43,7 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
     fTop_.resize(pWidth, 0);
     fBottom_.resize(pWidth, 0);
 
-    // We initialize this field with a border of solid.
-    // This should also not be changed by the displacements since it would break the velocity boundarie conditions.
+    // TODO: only initialize domain boundary with solid?!
     for (int j = -1; j <= nCells[1]; j++) {
         structure_(-1, j) = Solid;
         structure_(nCells[0], j) = Solid;
@@ -73,29 +74,33 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
     g_ = DataField({vWidth, vHeight}, meshWidth, {0.5, 0.0}, G_ID);
 }
 
-void  StaggeredGrid::applyDisplacementsToBoundary()  {
+double StaggeredGrid::globalDomainPosJ(int j) {
+    return (verticalNodeOffset_ + j) * dy(); // TODO: drüber nachdenken.
+}
+
+void StaggeredGrid::applyDisplacementsToBoundary()  {
     // TODO: wir sollten diese iterationsmethode irgendwie ändern. Code duplikation, unschön und fehleranfällig...
     // top
     for (int i = v_.beginI(); i < v_.endI(); ++i) {
         for (int j = v_.endJ() + 1; j >= v_.beginJ(); --j) {
-            if (globalPos(i, j) - 0.5 >= topBoundaryPosition_[i + 1]) { // globalPos(i, j) cell center
+            if (globalDomainPosJ(j) + 1 >= topBoundaryPosition_[i + 1]) { // + hier richtig?
                 structure_(i, j) = Solid;
-            } else {
+            } else if (isSolid(i, j)) { // nur dann müssen wir tatsächlich arbeit investieren
                 structure_(i, j) = Fluid;
+                // update cell contents?
             }
-            // update cell contents?
         }
     }
     // bottom
     for (int i = v_.beginI(); i < v_.endI(); ++i) {
         for (int j = v_.beginJ(); j < v_.endJ() - 1; ++j) {
             // aufpassen, dass wir nicht den echten simulationsrand verändern!
-            if (globalPos(i, j) + 0.5 <= bottomBoundaryPosition_[i + 1]) {
+            if (globalDomainPosJ(j) <= bottomBoundaryPosition_[i + 1]) {
                 structure_(i, j) = Solid;
-            } else {
+            } else if (isSolid(i, j)) {
                 structure_(i, j) = Fluid;
+                // update cell contents?
             }
-            // update cell contents?
         }
     }
 }
@@ -150,6 +155,10 @@ DataField &StaggeredGrid::f() {
 
 DataField &StaggeredGrid::g() {
     return g_;
+}
+
+DataField &StaggeredGrid::q() {
+    return q_;
 }
 
 DataField &StaggeredGrid::rhs() {

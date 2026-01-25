@@ -46,15 +46,15 @@ protected:
 
     Array2d<bool> structure_;
 
-    // TODO: Bessere Möglichkeit? Wir brauchen die Zeitableitung...
+    double verticalNodeOffset_;
 
+public:
     std::vector<double> bottomBoundaryPosition_;
     std::vector<double> topBoundaryPosition_;
 
     std::vector<double> fTop_;
     std::vector<double> fBottom_;
 
-public:
 
     std::vector<double> displacementsTop_;
     std::vector<double> displacementsBottom_;
@@ -167,6 +167,8 @@ public:
     /// DataField for pressure.
     DataField &p();
 
+    DataField &q();
+
     /// DataField for preliminary velocity in x direction.
     DataField &f();
 
@@ -175,6 +177,9 @@ public:
 
     /// DataField for rhs of the poisson problem.
     DataField &rhs();
+
+    /// lower edge of cell in vertical physical coordinates
+    double globalDomainPosJ(int j);
 
     /**
      * Gets mesh width in x direction.

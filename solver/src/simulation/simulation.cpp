@@ -62,11 +62,11 @@ void Simulation::writeOutput(const double currentTime, const int currentSec, con
     }
 }
 
-void setDisplacements(const std::vector<double> &topDisplacements, const std::vector<double> &bottomDisplacements) {
+void Simulation::setDisplacements(const std::vector<double> &topDisplacements, const std::vector<double> &bottomDisplacements) {
     // TODO: Unsere Displacements haben 2 Einträge mehr als die innere Zellenanzahl.. Stimmt das?
-    size_t n = discOps_->displacementsTop_.size();
-    assert(n == topDisplacements.size());
-    assert(n == bottomDisplacements.size());
+    int n = discOps_->displacementsTop_.size();
+    assert(n == (int)topDisplacements.size());
+    assert(n == (int)bottomDisplacements.size());
     discOps_->displacementsTop_ = topDisplacements;
     discOps_->displacementsBottom_ = topDisplacements;
 
@@ -77,11 +77,11 @@ void setDisplacements(const std::vector<double> &topDisplacements, const std::ve
 
     // Zu tatsächlichem Rand hinzufügen (lokal, da wir unsere globale Position kennen)
     for (int i = 0; i < n; i++) {
-        discOps_->topBoundaryPosition_[i] += std::discOps_->displacementsTop_[i];
+        discOps_->topBoundaryPosition_[i] += discOps_->displacementsTop_[i];
         discOps_->bottomBoundaryPosition_[i] += discOps_->displacementsBottom_[i];
 
-        discOps_->topBoundaryPosition_[i] = std::min(domainHeight, std::discOps_->displacementsTop_[i]);
-        discOps_->bottomBoundaryPosition_[i] = std::max(0, discOps_->topBoundaryPosition_[i]);
+        discOps_->topBoundaryPosition_[i] = std::min(domainHeight, discOps_->displacementsTop_[i]);
+        discOps_->bottomBoundaryPosition_[i] = std::max(0.0, discOps_->topBoundaryPosition_[i]);
     }
 }
 
@@ -147,7 +147,7 @@ void Simulation::advanceFluidSolver(double dt) {
     partitioning_->exchange(fg);
 
     setRightHandSide();
-    pressureSolver_->solve();
+    pressureSolver_->solve(discOps_->p());
 
     setVelocities();
     partitioning_->exchange(uv);
@@ -161,7 +161,7 @@ void Simulation::updateSolid() {
     // Struktur anpassen
     discOps_->applyDisplacementsToBoundary();
     // unphysical corrective pressure q berechnen
-    pressureSolver_->solve(q)
+    pressureSolver_->solve(q);
     // geschwindigkeiten korrigieren
     correctVelocities();
 
@@ -190,11 +190,12 @@ void Simulation::printConsoleInfo(double currentTime, const TimeSteppingInfo &ti
 
 void Simulation::setSolidBoundaries() {
 
+    auto &v = discOps_->v();
     // bottom
     for (int i = v.beginI(); i < v.endI(); ++i) {
         for (int j = v.beginJ(); j < v.endJ() - 1; ++j) {
             if (discOps_->isSolid(i, j) && discOps_->isFluid(i, j + 1)) {
-                v(i, j - 1) = discOps_->displacementsBottom_[i + 1];
+                v(i, j) = discOps_->displacementsBottom_[i + 1]; // TODO: Field sizes...
                 break;
             }
         }
@@ -204,10 +205,7 @@ void Simulation::setSolidBoundaries() {
     for (int i = v.beginI(); i < v.endI(); ++i) {
         for (int j = v.endJ() + 2; j >= v.beginJ(); --j) {
             if (discOps_->isSolid(i, j) && discOps_->isFluid(i, j - 1)) {
-                // TODO: Elastic boundary is not allowed to cross partition borders! Simply move outside of check?
-                // TODO: what happens if j == -1 -> Always solid
-                // TODO: what happens if j == v.endJ() + 1
-                v(i, j + 1) = discOps_->displacementsTop_[i + 1];
+                v(i, j) = discOps_->displacementsTop_[i + 1]; // TODO: Field sizes...
                 break;
             }
         }

@@ -24,7 +24,7 @@ void ConjugateGradientSolver::updatePressure(double alpha) {
             p(i, j) += alpha * d(i, j);
         }
     }
-    setBoundaryValues();
+    setBoundaryValues(p);
     partitioning_->exchange(p);
 }
 

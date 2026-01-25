@@ -57,7 +57,9 @@ int main(int argc, char *argv[]) {
         participant.startProfilingSection("Fluid Solver Step");
         // Solve Fluid and Calculate Forces
 
-        simulation.setDisplacements();
+        std::vector<double> d;
+
+        simulation.setDisplacements(d, d);
         simulation.advanceFluidSolver(dt);
 
         participant.stopLastProfilingSection();

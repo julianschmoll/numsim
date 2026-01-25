@@ -53,7 +53,7 @@ void RedBlackSolver::solve(DataField &p) {
                 }
             }
             partitioning_->nonBlockingExchange(p);
-            setBoundaryValues();
+            setBoundaryValues(p);
             partitioning_->waitForAllMPIRequests();
         }
         MPI_Allreduce(&localPressureError_, &globalPressureError_, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
