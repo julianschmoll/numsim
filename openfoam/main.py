@@ -1,9 +1,8 @@
 import argparse
-import logging
-import subprocess
 from pathlib import Path
+import logging
 
-import generate, convert
+import case
 
 
 def read_config(filename):
@@ -14,12 +13,12 @@ def read_config(filename):
             line = line.split('#')[0].strip()
             if not line:
                 continue
-            if '=' in line:
+            if "=" in line:
                 key, value = line.split('=', 1)
                 key, value = key.strip(), value.strip()
-                if value.lower() == 'true':
+                if value.lower() == "true":
                     config[key] = True
-                elif value.lower() == 'false':
+                elif value.lower() == "false":
                     config[key] = False
                 else:
                     try:
@@ -30,110 +29,51 @@ def read_config(filename):
                         config[key] = value
     return config
 
+def main(scenario_cfg, precice_cfg_path, cleanup=True):
+    simulation_folder = Path(__file__).resolve().parent / "out"
 
-def generate_case(cfg_path: Path, case_dir: Path):
-    config = read_config(cfg_path)
-    generate.write_file(
-        case_dir / "system" / "blockMeshDict",
-        generate.generate_block_mesh(config)
-    )
-    generate.write_file(
-        case_dir / "system" / "controlDict",
-        generate.generate_control_dict(config)
-    )
-    generate.write_file(
-        case_dir / "system" / "fvSchemes",
-        generate.generate_fv_schemes(config)
-    )
-    generate.write_file(
-        case_dir / "system" / "fvSolution",
-        generate.generate_fv_solution(config)
-    )
-    generate.write_file(
-        case_dir / "system" / "decomposeParDict",
-        generate.generate_decompose_par_dict(config)
-    )
-    generate.write_file(
-        case_dir / "system" / "preciceDict",
-        generate.generate_precice_dict(config)
-    )
+    cfg = read_config(scenario_cfg)
+    # As openFoam uses kinematic viscosity
+    cfg["nu"] = (cfg['dirichletTopX'] * cfg['physicalSizeX']) / cfg['re']
+    print(cfg)
 
-    # constant
-    generate.write_file(
-        case_dir / "constant" / "transportProperties",
-        generate.generate_transport_properties(config)
-    )
-    generate.write_file(
-        case_dir / "constant" / "turbulenceProperties",
-        generate.generate_turbulence_properties(config)
-    )
-    generate.write_file(
-        case_dir / "constant" / "dynamicMeshDict",
-        generate.generate_dynamic_mesh_dict(config)
-    )
+    if not precice_cfg_path:
+        cfg["coupled"] = False
 
-    # fields
-    generate.write_file(
-        case_dir / "0" / "U",
-        generate.generate_field(config, "U")
-    )
-    generate.write_file(
-        case_dir / "0" / "p",
-        generate.generate_field(config, "p")
-    )
-    generate.write_file(
-        case_dir / "0" / "pointDisplacement",
-        generate.generate_field(config, "pointDisplacement")
-    )
+    case.generate(simulation_folder, cfg)
+    case.run(str(simulation_folder.resolve()))
 
-
-def _run_command(cmd, case_dir: Path):
-    cmd_str = " ".join(str(substr) for substr in cmd)
-    logging.info(f"Running: {cmd_str}")
-    subprocess.run(cmd, check=True, cwd=case_dir)
-
-
-def main(config_file: str, case_dir: str, cleanup: bool = True):
-    cfg_path = Path(config_file).resolve()
-    case_path = Path(case_dir).resolve()
-    case_path.mkdir(parents=True, exist_ok=True)
-
-    logging.info("Generating OpenFOAM case in %s using config %s", case_path, cfg_path)
-    generate_case(cfg_path, case_path)
-
-    _run_command(["blockMesh", "-case", case_path], case_path)
-    _run_command(["checkMesh", "-case", case_path], case_path)
-    _run_command(["pimpleFoam", "-case", case_path], case_path)
-
-    out_dir = convert.export_vtk(case_path)
-    logging.info("VTK files exported to %s", out_dir)
-
+    # convert to vtk
     if cleanup:
-        raise NotImplementedError("Cleanup not implemented for OpenFOAM cases yet.")
+        pass
 
 
+# entry point for solid simulation with openfoam and precice
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser("OpenFOAM fluid participant entrypoint.")
+    parser = argparse.ArgumentParser("Solid participant entrypoint.")
     parser.add_argument(
-        "--config",
+        "--precice_cfg",
         type=str,
         default=None,
-        help="Path to case config file."
+        help="Path to the preCICE config file"
     )
     parser.add_argument(
-        "--case",
+        "--scenario",
         type=str,
-        default=Path(__file__).resolve().parent / "case",
-        help="Directory where case files and run will be placed."
+        default=Path(__file__).resolve().parent.parent
+                 / "cfg" / "fluid" / "lid_driven_cavity.txt",
+        help="Scenario to run with calculix",
     )
+
     parser.add_argument(
         "--cleanup",
         type=bool,
-        default=False,
-        help="Whether to perform cleanup after run."
+        default=True,
+        help="Clean up simulation files after run",
     )
 
     args = parser.parse_args()
-    cfg = args.config or (Path(__file__).resolve().parent / "lid_driven_cavity.txt")
+
     logging.basicConfig(level=logging.INFO)
-    main(cfg, args.case, cleanup=args.cleanup)
+
+    main(args.scenario, args.precice_cfg, cleanup=args.cleanup)

@@ -1,8 +1,0 @@
-dynamicFvMesh   dynamicMotionSolverFvMesh;
-motionSolverLibs ( "libfvMotionSolvers.so" );
-solver          displacementLaplacian;
-
-displacementLaplacianCoeffs
-{{
-    diffusivity     inverseDistance (top bottom left right);
-}}

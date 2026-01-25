@@ -16,7 +16,7 @@ boundaryField
     top
     {
         type            fixedValue;
-        value           uniform (1 0 0); // This is now your moving lid
+        value           uniform (1 0 0);
     }
     bottom
     {

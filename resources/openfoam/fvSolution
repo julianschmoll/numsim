@@ -13,13 +13,13 @@ solvers
     {
         solver          PCG;
         preconditioner  DIC;
-        tolerance       1e-06;
-        relTol          0.05;
+        tolerance       $epsilon;
+        relTol          0.01;
     }
 
     pFinal
     {
-        $p;
+        $$p;
         relTol          0;
     }
 
@@ -27,14 +27,20 @@ solvers
     {
         solver          smoothSolver;
         smoother        symGaussSeidel;
-        tolerance       1e-05;
+        tolerance       $epsilon;
         relTol          0;
     }
+   UFinal
+   {
+       $$U;
+       relTol          0; // Force precision on the final step of the time-loop
+   }
 }
 
-PISO
+PIMPLE
 {
-    nCorrectors     2;
+    nOuterCorrectors 2;
+    nCorrectors      2;
     nNonOrthogonalCorrectors 0;
     pRefCell        0;
     pRefValue       0;

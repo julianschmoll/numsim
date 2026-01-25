@@ -7,23 +7,24 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-scale   0.1;
+scale   1.0;
 
 vertices
 (
-    (0 0 0)
-    (1 0 0)
-    (1 1 0)
-    (0 1 0)
-    (0 0 0.1)
-    (1 0 0.1)
-    (1 1 0.1)
-    (0 1 0.1)
+    (0 0 0)                          // 0
+    ($physicalSizeX 0 0)             // 1
+    ($physicalSizeX $physicalSizeY 0)// 2
+    (0 $physicalSizeY 0)             // 3
+    (0 0 0.1)                        // 4
+    ($physicalSizeX 0 0.1)           // 5
+    ($physicalSizeX $physicalSizeY 0.1) // 6
+    (0 $physicalSizeY 0.1)           // 7
 );
 
 blocks
 (
-    hex (0 1 2 3 4 5 6 7) (20 20 1) simpleGrading (1 1 1)
+    // nCellsX and nCellsY used here for resolution
+    hex (0 1 2 3 4 5 6 7) ($nCellsX $nCellsY 1) simpleGrading (1 1 1)
 );
 
 edges

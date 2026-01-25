@@ -7,7 +7,13 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-application     icoFoam;
+application     pimpleFoam;
+
+adjustTimeStep  yes;
+
+maxCo           2; // Allows a Courant number higher than 1
+
+maxDeltaT       $maximumDt;
 
 startFrom       startTime;
 
@@ -15,9 +21,9 @@ startTime       0;
 
 stopAt          endTime;
 
-endTime         100;
+endTime         $endTime;
 
-deltaT          0.005;
+deltaT          $maximumDt;
 
 writeControl    runTime;
 

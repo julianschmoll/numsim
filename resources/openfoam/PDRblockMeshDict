@@ -7,19 +7,19 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-scale   0.1;
+scale   1.0;
 
 x
 {
-    points  (0 1);
-    nCells  (20);
+    points  (0 $physicalSizeX);
+    nCells  ($nCellsX);
     ratios  (1);
 }
 
 y
 {
-    points  (0 1);
-    nCells  (20);
+    points  (0 $physicalSizeY);
+    nCells  ($nCellsY);
     ratios  (1);
 }
 
@@ -36,29 +36,28 @@ boundary
     left
     {
         type  wall;
-        faces (0); // Min X
+        faces (0);
     }
     right
     {
         type  wall;
-        faces (1); // Max X
+        faces (1);
     }
     bottom
     {
         type  wall;
-        faces (2); // Min Y
+        faces (2);
     }
     top
     {
         type  wall;
-        faces (3); // Max Y
+        faces (3);
     }
     frontAndBack
     {
         type  empty;
-        faces (4 5); // Z-directions (for 2D)
+        faces (4 5);
     }
 );
-
 
 // ************************************************************************* //
