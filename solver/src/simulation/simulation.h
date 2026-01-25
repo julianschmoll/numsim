@@ -70,6 +70,7 @@ public:
 
     void updateSolid();
 
+    void setDisplacements(const std::vector<double> &topDisplacements, const std::vector<double> &bottomDisplacements);
 
 private:
     // Grid width in x and y directions

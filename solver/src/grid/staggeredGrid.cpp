@@ -74,37 +74,28 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
 }
 
 void  StaggeredGrid::applyDisplacementsToBoundary()  {
-    constexpr double displacementTolerance = 1.0;
     // TODO: wir sollten diese iterationsmethode irgendwie ändern. Code duplikation, unschön und fehleranfällig...
+    // top
     for (int i = v_.beginI(); i < v_.endI(); ++i) {
         for (int j = v_.endJ() + 1; j >= v_.beginJ(); --j) {
-            if (isFluid(i, j)) {
-                if (displacementsTop_[i + 1] >= displacementTolerance) {
-                    // Solid darüber entfernen, wenn nicht Simulationsrand
-                    if (j + 1 != v_.endJ() - 1) {
-                        structure_(i, j + 1) = Fluid;
-                    }
-                    // TODO: Einsetzen der Displacement-Ableitung?
-                } else if (displacementsTop_[i + 1] <= -displacementTolerance) {
-                    structure_(i, j) = Solid;
-                    // TODO: Einsetzen der Displacement-Ableitung?
-                }
-                break;
+            if (globalPos(i, j) - 0.5 >= topBoundaryPosition_[i + 1]) { // globalPos(i, j) cell center
+                structure_(i, j) = Solid;
+            } else {
+                structure_(i, j) = Fluid;
             }
+            // update cell contents?
         }
     }
+    // bottom
     for (int i = v_.beginI(); i < v_.endI(); ++i) {
         for (int j = v_.beginJ(); j < v_.endJ() - 1; ++j) {
-            if (isFluid(i, j)) {
-                if (displacementsBottom_[i + 1] >= displacementTolerance) {
-                    structure_(i, j) = Solid;
-                } else if (displacementsBottom_[i + 1] <= -displacementTolerance) {
-                    if (j - 1 != v_.beginJ()) {
-                        structure_(i, j - 1) = Fluid;
-                    }
-                }
-                break;
+            // aufpassen, dass wir nicht den echten simulationsrand verändern!
+            if (globalPos(i, j) + 0.5 <= bottomBoundaryPosition_[i + 1]) {
+                structure_(i, j) = Solid;
+            } else {
+                structure_(i, j) = Fluid;
             }
+            // update cell contents?
         }
     }
 }
