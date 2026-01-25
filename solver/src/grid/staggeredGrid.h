@@ -41,6 +41,9 @@ protected:
     /// Field for storing rhs of the poission equation.
     DataField rhs_;
 
+    /// Field for unphysical corrective pressure for solid cell movement correction
+    DataField q_;
+
     Array2d<bool> structure_;
 
     // TODO: Bessere Möglichkeit? Wir brauchen die Zeitableitung...
@@ -110,6 +113,15 @@ public:
      * @return The value at specified position.
      */
     double p(int i, int j);
+
+    /**
+     * Gets the value of q at a specified point on grid.
+     *
+     * @param i i index of the point.
+     * @param j j index of the point.
+     * @return The value at specified position.
+     */
+    double q(int i, int j);
 
     /**
      * Gets the value of f at a specified point on grid.

@@ -4,8 +4,7 @@
 PressureSolver::PressureSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning, const Settings &settings)
     : partitioning_(std::move(partitioning)), settings_(settings), grid_(std::move(grid)) {}
 
-void PressureSolver::setBoundaryValues() {
-    DataField &p = grid_->p();
+void PressureSolver::setBoundaryValues(DataField &p) {
 
     if (partitioning_->ownContainsBoundary<Direction::Bottom>()) {
         switch (settings_.boundaryBottom) {

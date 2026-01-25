@@ -124,6 +124,25 @@ public:
      * @return
      */
     double computeDpDy(int i, int j) const;
+
+    /**
+     * Computes dq/dx
+     *
+     * @param i Index in x-direction
+     * @param j Index in y-direction
+     * @return Derivative of q in x-direction
+     */
+    double computeDqDx(int i, int j) const;
+
+    /**
+     * Computes dq/dy
+     *
+     * @param i Index in x-direction
+     * @param j Index in y-direction
+     * @return Derivative of q in x-direction
+     */
+    double computeDqDy(int i, int j) const;
+
     
 private:
     double alpha_;

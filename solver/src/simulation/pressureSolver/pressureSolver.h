@@ -34,13 +34,13 @@ public:
     /**
      * Virtual method to override in pressure solver implementations.
      */
-    virtual void solve() = 0;
+    virtual void solve(DataField &p) = 0;
 
 protected:
     /**
      * Sets Neumann boundary values on the pressure field.
      */
-    void setBoundaryValues();
+    void setBoundaryValues(DataField &p);
 
     /// Pointer to partitioning
     std::shared_ptr<Partitioning> partitioning_;

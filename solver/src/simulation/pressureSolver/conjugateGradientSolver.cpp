@@ -84,9 +84,8 @@ double ConjugateGradientSolver::calculateAlpha() {
 
 // alpha = gradient descent strength
 // beta = direction update parameter
-void ConjugateGradientSolver::solve() {
+void ConjugateGradientSolver::solve(DataField &p) {
 
-    DataField &p = grid_->p();
     DataField &rhs = grid_->rhs();
     DataField &d = direction_;
 

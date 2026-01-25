@@ -63,6 +63,7 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
     std::cout << structure_ << std::endl;
 
     p_ = DataField({pWidth, pHeight}, meshWidth, {0.5, 0.5}, P_ID);
+    q_ = DataField({pWidth, pHeight}, meshWidth, {0.5, 0.5}, Q_ID);
     rhs_ = DataField({pWidth, pHeight}, meshWidth, {0.5, 0.5}, RHS_ID);
 
     u_ = DataField({uWidth, uHeight}, meshWidth, {0.0, 0.5}, U_ID);

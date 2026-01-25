@@ -27,7 +27,7 @@ public:
     /**
      * Solves pressure based on Conjugate Gradient Method.
      */
-    void solve() override;
+    void solve(DataField &p) override;
 
 private:
     /**

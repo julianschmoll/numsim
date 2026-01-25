@@ -71,6 +71,8 @@ void Simulation::run() {
     std::vector uv = {&discOps_->u(), &discOps_->v()};
     std::vector fg = {&discOps_->f(), &discOps_->g()};
 
+    DataField &p = discOps_->p();
+
     setBoundaryUV(currentTime);
     setBoundaryFG();
 
@@ -83,7 +85,7 @@ void Simulation::run() {
         partitioning_->exchange(fg);
 
         setRightHandSide();
-        pressureSolver_->solve();
+        pressureSolver_->solve(p);
 
         setVelocities();
         partitioning_->exchange(uv);
@@ -276,10 +278,6 @@ void Simulation::setBoundaryUV(double currentTime) {
                 }
                 break;
             }
-
-            case BoundaryType::CoupledElastic: {
-                assert(false);
-            }
         }
     }
 
@@ -308,10 +306,6 @@ void Simulation::setBoundaryUV(double currentTime) {
                     v(v.endI() - 1, j) = v(v.endI() - 2, j);
                 }
                 break;
-            }
-
-            case BoundaryType::CoupledElastic: {
-                assert(false);
             }
         }
     }
@@ -446,6 +440,26 @@ void Simulation::setVelocities() {
         for (int i = v.beginI() + 1; i < v.endI() - 1; i++) {
             if (discOps_->isSolid(i, j)) continue;
             v(i, j) = g(i, j) - timeStepWidth_ * discOps_->computeDpDy(i, j);
+        }
+    }
+}
+
+void Simulation::correctVelocities() {
+    auto &u = discOps_->u();
+
+    for (int j = u.beginJ() + 1; j < u.endJ() - 1; j++) {
+        for (int i = u.beginI() + 1; i < u.endI() - 1; i++) {
+            if (discOps_->isSolid(i, j)) continue;
+            u(i, j) -= timeStepWidth_ * discOps_->computeDqDx(i, j);
+        }
+    }
+
+    auto &v = discOps_->v();
+
+    for (int j = v.beginJ() + 1; j < v.endJ() - 1; j++) {
+        for (int i = v.beginI() + 1; i < v.endI() - 1; i++) {
+            if (discOps_->isSolid(i, j)) continue;
+            v(i, j) -= timeStepWidth_ * discOps_->computeDqDy(i, j);
         }
     }
 }

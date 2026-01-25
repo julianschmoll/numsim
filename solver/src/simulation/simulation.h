@@ -52,6 +52,11 @@ public:
      */
     void setVelocities();
 
+    /**
+     * Corrects velocities after boundary movement based on unphysical q pressure field.
+     */
+    void correctVelocities();
+
     void calculateForces();
 
 

@@ -31,7 +31,7 @@ public:
     /**
      * Solves the poisson problem for the pressure.
      */
-    void solve() override;
+    void solve(DataField& p) override;
 
 private:
     /// Relaxation factor

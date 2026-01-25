@@ -106,3 +106,13 @@ double DiscreteOperators::computeDpDy(const int i, const int j) const {
     const double dp = p_(i, j + 1) - p_(i, j);
     return dp / dy();
 }
+
+double DiscreteOperators::computeDqDx(const int i, const int j) const {
+    const double dq = q_(i + 1, j) - q_(i, j);
+    return dq / dx();
+}
+
+double DiscreteOperators::computeDqDy(const int i, const int j) const {
+    const double dq = q_(i, j + 1) - q_(i, j);
+    return dq / dy();
+}

@@ -8,10 +8,9 @@
 RedBlackSolver::RedBlackSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning, const Settings &settings)
     : PressureSolver(std::move(grid), std::move(partitioning), settings) {}
 
-void RedBlackSolver::solve() {
+void RedBlackSolver::solve(DataField &p) {
     int it = 0;
 
-    DataField &p = grid_->p();
     DataField &rhs = grid_->rhs();
 
     const double dx2 = grid_->dx() * grid_->dx();
