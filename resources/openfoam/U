@@ -15,20 +15,19 @@ boundaryField
 {
     top
     {
-        type            fixedValue;
-        value           uniform (1 0 0);
+        $uTop
     }
     bottom
     {
-        type            noSlip;
+        $uBottom
     }
     left
     {
-        type            noSlip;
+        $uLeft
     }
     right
     {
-        type            noSlip;
+        $uRight
     }
     frontAndBack
     {

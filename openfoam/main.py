@@ -33,9 +33,6 @@ def main(scenario_cfg, precice_cfg_path, cleanup=True):
     simulation_folder = Path(__file__).resolve().parent / "out"
 
     cfg = read_config(scenario_cfg)
-    # As openFoam uses kinematic viscosity
-    cfg["nu"] = (cfg['dirichletTopX'] * cfg['physicalSizeX']) / cfg['re']
-    print(cfg)
 
     if not precice_cfg_path:
         cfg["coupled"] = False

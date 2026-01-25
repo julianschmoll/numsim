@@ -15,19 +15,19 @@ boundaryField
 {
     top
     {
-        type            zeroGradient;
+        $pTop
     }
     bottom
     {
-        type            zeroGradient;
+        $pBottom
     }
     left
     {
-        type            zeroGradient;
+        $pLeft
     }
     right
     {
-        type            zeroGradient;
+        $pRight
     }
     frontAndBack
     {
