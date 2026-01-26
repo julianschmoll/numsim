@@ -498,7 +498,7 @@ void Simulation::calculateForces() {
 
     // collect forces orthogonal to top boundary
     for (int i = v.beginI(); i < v.endI(); ++i) {
-        for (int j = v.endJ() - 2; j >= v.beginJ() - 1; --j) {
+        for (int j = v.endJ() - 2; j > v.beginJ(); --j) {
             if (discOps_->isFluid(i, j)) {
                 const double vDy = discOps_->computeDvDy(i, j);
                 discOps_->fTop(i) = -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j + 1) * p(i, j)) / 2);
