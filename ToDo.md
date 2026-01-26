@@ -33,7 +33,7 @@ openFOAM installieren
 - [x] Calculix Config Files checken und 2d tube erstellen (dafür bedarf es noch keiner preCICE koppellung) (julian)
 - [x] Entrypoint für Calculix Simulation Schreiben (julian)
 - [ ] OpenFOAM entrypoint schreiben (would be nice to read our fluid config and simulate same scenario with openFOAM) (julian)
-- [ ] Calculix Coupling testen mit OpenFOAM
+- [ ] Calculix Coupling testen mit OpenFOAM (julian)
 
 - [ ] Fluid-Solver und Calculix koppeln mit preCICE
   - Hängt von Kraftvektoren und Boundary conditions ab

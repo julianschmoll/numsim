@@ -26,11 +26,14 @@ class Geometry:
         self._current_element_id = 1
         self._fix_nodes = []
         self._wall_data = []
+        self._interface_nodes = []
+        self._interface_nodes_dict = None
 
         self.generate()
 
     def generate(self):
         orientations = ["bottom", "top"]
+        self._interface_nodes_dict = {"bottom": [], "top": []}
         for orientation in orientations:
             if self.cfg['walls'][orientation]['active']:
                 self._wall_data.append(self.add_wall(orientation))
@@ -52,22 +55,24 @@ class Geometry:
                     y = (self.cfg["geometry"]["height"] - offset) + d_thick
 
                 self._all_nodes.append(
-                    f"{self._current_node_id}, {x:.4f}, {y:.4f}, 0.0"
+                    f"{self._current_node_id}, {x:.8f}, {y:.8f}, 0.0" # Increased precision
                 )
 
-                # Granular Boundary Logic
+                if row == 0:
+                    self._interface_nodes_dict[orientation].append(self._current_node_id)
+                    self._interface_nodes.append(self._current_node_id) # Global list for Nall
+
                 if self.cfg["walls"][orientation].get('fixed_start') and index == 0:
                     self._fix_nodes.append(self._current_node_id)
-
                 if self.cfg["walls"][orientation].get('fixed_end') and index == 2 * nx:
                     self._fix_nodes.append(self._current_node_id)
 
                 self._current_node_id += 1
 
         for i in range(nx):
-            r0 = start_node_of_wall + (2 * i)      # Inner
-            r1 = r0 + nodes_per_row                # Middle
-            r2 = r1 + nodes_per_row                # Outer
+            r0 = start_node_of_wall + (2 * i)
+            r1 = r0 + nodes_per_row
+            r2 = r1 + nodes_per_row
 
             if orientation == 'bottom':
                 n1, n2, n3, n4 = r2, r2+2, r0+2, r0
@@ -87,15 +92,39 @@ class Geometry:
 
         return f"E{orientation}", self._current_element_id - nx, self._current_element_id - 1
 
-    def write_file(self, filepath, mesh_name="Nall", interface_name="Sinterface"):
+    def _write_node_list(self, fileobj, nodes):
+        """Helper to write a list of nodes formatted for CalculiX"""
+        for i in range(0, len(nodes), 16):
+            chunk = nodes[i:i+16]
+            fileobj.write(", ".join(map(str, chunk)))
+            if i + 16 < len(nodes):
+                fileobj.write(",\n")
+            else:
+                fileobj.write("\n")
+
+    def write_file(self, filepath, mesh_name="Nall", interface_name="Solid-Interface"):
         filepath = Path(filepath)
         work_dir = filepath.parent
-        if not work_dir.exists():
-            work_dir.mkdir(parents=True, exist_ok=True)
+        work_dir.mkdir(parents=True, exist_ok=True)
 
-        with open(filepath, "w") as f:
-            f.write("** HEADING\n*NODE, NSET=" + mesh_name + "\n")
-            f.write("\n".join(self._all_nodes) + "\n")
+        inp_path = filepath.with_suffix(".inp")
+        nam_filename = filepath.with_suffix(".nam").name
+        nam_path = work_dir / nam_filename
+
+        with open(nam_path, "w") as nam_f:
+            nam_f.write(f"*NSET, NSET=N{interface_name}\n")
+            self._write_node_list(nam_f, self._interface_nodes)
+
+            nam_f.write(f"*SURFACE, NAME=S{interface_name}\n")
+            for face_entry in self._interface_faces:
+                nam_f.write(f"{face_entry}\n")
+
+        with open(inp_path, "w") as f:
+            f.write("** HEADING\n")
+            f.write(f"*NODE, NSET={mesh_name}\n")
+            for node_str in self._all_nodes:
+                f.write(f"{node_str}\n")
+
             f.write("*ELEMENT, TYPE=CPE8, ELSET=Eall\n")
             f.write("\n".join(self._all_elements) + "\n")
 
@@ -103,34 +132,38 @@ class Geometry:
                 f.write(f"*ELSET, ELSET={name}, GENERATE\n{s}, {e}, 1\n")
 
             if self._fix_nodes:
-                f.write("*NSET, NSET=Nfix\n" + ", ".join(map(str, self._fix_nodes)) + "\n")
+                f.write("*NSET, NSET=Nfix\n")
+                self._write_node_list(f, self._fix_nodes)
 
-            total_nodes = self._current_node_id - 1
-            if total_nodes > 0:
-                f.write(f"*NSET, NSET=N{interface_name}N\n1, {total_nodes}, 1\n")
+            f.write(f"*INCLUDE, INPUT={nam_filename}\n")
 
             f.write("*MATERIAL, NAME=ELASTIC\n*ELASTIC\n")
             f.write(f"{self.cfg['material']['youngs_modulus']}, {self.cfg['material']['poissons_ratio']}\n")
             f.write(f"*DENSITY\n{self.cfg['material']['density']}\n")
             f.write("*SOLID SECTION, ELSET=Eall, MATERIAL=ELASTIC\n1.0\n")
-            f.write(f"*SURFACE, NAME={interface_name}\n" + "\n".join(self._interface_faces) + "\n")
-            f.write("*STEP, NLGEOM, INC=1000")
-            f.write("\n*DYNAMIC\n0.005, 10.0\n*BOUNDARY\n")
 
+            f.write("*STEP, INC=1000000\n")
+            f.write("*DYNAMIC, DIRECT, NLGEOM\n")
+
+            dt = self.cfg['geometry'].get('dt', 0.01)
+            duration = self.cfg['geometry'].get('t_end', 10.0)
+            f.write(f"{dt}, {duration}\n")
+
+            f.write("*BOUNDARY\n")
             if self._fix_nodes:
-                f.write("Nfix, 1, 3\n")
-
+                f.write("Nfix, 1, 2\n")
             f.write(f"{mesh_name}, 3, 3\n")
-            f.write("*NODE FILE\nU\n*EL FILE\nS\n*END STEP\n")
 
-        # minimal nam file for the adapter
-        inp_stem = filepath.with_suffix("").name
-        nam_target = work_dir / f"{inp_stem}.nam"
-        nam_lines = []
-        if total_nodes > 0:
-            nam_lines.append(f"N{interface_name}N")
-        nam_lines.append(interface_name)
-        with open(nam_target, "w") as nam_f:
-            nam_f.write("\n".join(nam_lines) + "\n")
+            f.write(f"*CLOAD\n")
+            f.write(f"N{interface_name}, 1, 0.0\n")
+            f.write(f"N{interface_name}, 2, 0.0\n")
 
-        return filepath.parent / filepath.stem
+            write_freq = int(1.0 / dt)
+            if write_freq < 1:
+                write_freq = 1
+
+            f.write(f"*NODE FILE, FREQUENCY={write_freq}\nU\n")
+            f.write(f"*EL FILE, FREQUENCY={write_freq}\nS\n")
+            f.write("*END STEP\n")
+
+            return filepath.parent / filepath.stem
