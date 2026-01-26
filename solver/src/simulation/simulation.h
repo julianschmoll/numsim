@@ -61,6 +61,12 @@ public:
 
     void setSolidBoundaries();
 
+    /**
+     * Sets the simulation timestep width (e.g. to the time step calculated by the precice adapter)
+     * @param dt Timestep width
+     */
+    void setTimeStepWidth(double dt);
+
     // preCICE Interface:
 
     /**

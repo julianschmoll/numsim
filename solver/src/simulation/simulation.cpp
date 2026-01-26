@@ -386,6 +386,10 @@ TimeSteppingInfo Simulation::computeTimeStepWidth(double currentTime) {
     return info;
 }
 
+void Simulation::setTimeStepWidth(double dt) {
+    timeStepWidth_ = dt;
+}
+
 void Simulation::setPreliminaryVelocities() {
     const double invRe = 1.0 / settings_.re;
 

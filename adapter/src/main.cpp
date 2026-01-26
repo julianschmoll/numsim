@@ -45,11 +45,10 @@ int main(int argc, char *argv[]) {
             simulation.saveState();
         }
 
-        // ToDo: Handle solver time step being smaller than precice time step
-        double dt = participant.getMaxTimeStepSize();
-
-        // solverDt = simulation.computeTimeStepWidth()
-        // dt = min(preciceDt, solverDt); https://precice.org/couple-your-code-time-step-sizes.html
+        double preciceDt = participant.getMaxTimeStepSize();
+        double solverDt = simulation.computeTimeStepWidth();
+        double dt = min(preciceDt, solverDt);
+        simulation.setTimeStepWidth(dt);
 
         // Read Boundary Data and apply conditions
         // participant.readData(...)
