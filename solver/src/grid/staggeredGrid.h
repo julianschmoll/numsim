@@ -22,6 +22,8 @@ class StaggeredGrid {
     /// number of cells in x, y direction not including boundary
     const std::array<int, 2> nCells_;
 
+    const Partitioning &partitioning_;
+
 protected:
     /// Field for Velocity in y-direction.
     DataField u_;
@@ -46,6 +48,7 @@ protected:
 
     Array2d<bool> structure_;
 
+    /// vertical position of this grid partition in physical space
     double verticalNodeOffset_;
 
 public:
@@ -199,4 +202,8 @@ public:
     bool isSolid(int i, int j) const;
 
     void applyDisplacementsToBoundary();
+
+    void initializeStructureField();
+
+    void test();
 };

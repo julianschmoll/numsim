@@ -5,6 +5,7 @@
 #include <vector>
 #include <cassert>
 #include <iostream>
+#include <macros.h>
 
 /**
  * @class Array2d
@@ -48,9 +49,8 @@ public:
      * @return Value
      */
     std::vector<T>::reference operator()(int i, int j) {
-        const int index = (j + 1) * size_[0] + i + 1;
-        assert(index < static_cast<int>(data_.size()));
-        return data_[index];
+        DEBUG(checkIndices(i, j));
+        return data_[ (j + 1) * size_[0] + i + 1];
     }
 
     /**
@@ -63,9 +63,8 @@ public:
      * @return The value.
      */
     T operator()(int i, int j) const {
-        const int index = (j + 1) * size_[0] + i + 1;
-        assert(index < static_cast<int>(data_.size()));
-        return data_[index];
+        DEBUG(checkIndices(i, j));
+        return data_[ (j + 1) * size_[0] + i + 1];
     }
 
     /**
@@ -89,6 +88,9 @@ protected:
 
     /// Dimensions: width, height
     std::array<int, 2> size_;
+
+private:
+    void checkIndices(int i, int j) const;
 };
 
 template<typename T>
@@ -107,6 +109,14 @@ std::array<int, 2> Array2d<T>::size() const {
 template<typename T>
 T *Array2d<T>::data() {
     return data_.data();
+}
+
+template<typename T>
+void Array2d<T>::checkIndices(int i, int j) const {
+    assert(-1 <= i);
+    assert(-1 <= j);
+    assert(i < size_[0] - 1);
+    assert(j < size_[1] - 1);
 }
 
 template<typename T>

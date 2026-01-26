@@ -1,4 +1,5 @@
 #include "simulation.h"
+#include "grid/staggeredGrid.h"
 #include "macros.h"
 #include "outputWriter/outputWriterParaviewParallel.h"
 #include "outputWriter/outputWriterTextParallel.h"
@@ -535,4 +536,10 @@ void Simulation::reloadLastState() {
     discOps_->u() = uCheckpoint_;
     discOps_->v() = vCheckpoint_;
     discOps_->p() = pCheckpoint_;
+}
+
+void Simulation::test() {
+    std::cout << "Simulation::test: Start" << std::endl;
+    discOps_->test();
+    std::cout << "Simulation::test: End" << std::endl;
 }

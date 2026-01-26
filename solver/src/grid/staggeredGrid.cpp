@@ -8,7 +8,7 @@
 #include <iostream>
 
 StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, const Partitioning &partitioning)
-    : meshWidth_(meshWidth), nCells_(nCells) {
+    : meshWidth_(meshWidth), nCells_(nCells), partitioning_(partitioning) {
     int vWidth = nCells[0] + 2;
     int vHeight = nCells[1] + 1;
 
@@ -43,25 +43,7 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
     fTop_.resize(pWidth, 0);
     fBottom_.resize(pWidth, 0);
 
-    // TODO: only initialize domain boundary with solid?!
-    for (int j = -1; j <= nCells[1]; j++) {
-        structure_(-1, j) = Solid;
-        structure_(nCells[0], j) = Solid;
-    }
-    for (int i = -1; i <= nCells[0]; i++) {
-        structure_(i, -1) = Solid;
-        structure_(i, nCells[1]) = Solid;
-    }
-
-    // TODO: Testcode:
-    for (int j = -1; j <= nCells[1]; j++) { 
-        for (int i = -1; i <= nCells[0]; i++) {
-            if (j <= 0.2 * i) {
-                structure_(i, j) = Solid;
-            }
-        }
-    }
-    std::cout << structure_ << std::endl;
+    initializeStructureField();
 
     p_ = DataField({pWidth, pHeight}, meshWidth, {0.5, 0.5}, P_ID);
     q_ = DataField({pWidth, pHeight}, meshWidth, {0.5, 0.5}, Q_ID);
@@ -75,13 +57,18 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
 }
 
 double StaggeredGrid::globalDomainPosJ(int j) {
-    return (verticalNodeOffset_ + j) * dy(); // TODO: drüber nachdenken.
+    return (partitioning_.nodeOffset()[1] + j) * dy(); // TODO: drüber nachdenken.
 }
 
 void StaggeredGrid::applyDisplacementsToBoundary()  {
     // top
-    for (int i = v_.beginI(); i < v_.endI(); ++i) {
-        for (int j = v_.endJ() + 1; j > v_.beginJ(); --j) { // starte in Rand aber iteriere nicht bis Rand?
+    const int beginI = -1;
+    const int beginJ = -1;
+    const int endI = structure_.size()[0] - 2;
+    const int endJ = structure_.size()[1] - 2;
+
+    for (int i = beginI; i <= endI; ++i) {
+        for (int j = endJ - 1; j > beginJ; --j) { // starte in Rand aber iteriere nicht bis Rand?
             if (globalDomainPosJ(j) + 1 >= topBoundaryPosition_[i + 1]) { // + hier richtig?
                 structure_(i, j) = Solid;
             } else if (isSolid(i, j)) {
@@ -94,8 +81,8 @@ void StaggeredGrid::applyDisplacementsToBoundary()  {
         }
     }
     // bottom
-    for (int i = v_.beginI(); i < v_.endI(); ++i) {
-        for (int j = v_.beginJ(); j < v_.endJ() - 2; ++j) { // starte in Rand aber iteriere nicht bis Rand?
+    for (int i = beginI; i <= endI; ++i) {
+        for (int j = beginJ; j <= endJ - 1; ++j) { // starte in Rand aber iteriere nicht bis Rand?
             // aufpassen, dass wir nicht den echten simulationsrand verändern!
             if (globalDomainPosJ(j) <= bottomBoundaryPosition_[i + 1]) {
                 structure_(i, j) = Solid;
@@ -107,6 +94,43 @@ void StaggeredGrid::applyDisplacementsToBoundary()  {
             }
         }
     }
+}
+
+void StaggeredGrid::initializeStructureField() {
+    // TODO: only initialize domain boundary with solid?!
+    const int endI = structure_.size()[0] - 2;
+    const int endJ = structure_.size()[1] - 2;
+
+    if (partitioning_.ownContainsBoundary<Direction::Top>()) {
+        for (int i = -1; i <= endJ; i++) {
+            structure_(i, endJ) = Solid;
+        }
+    }
+    if (partitioning_.ownContainsBoundary<Direction::Bottom>()) {
+        for (int i = -1; i <= endJ; i++) {
+            structure_(i, -1) = Solid;
+        }
+    }
+    if (partitioning_.ownContainsBoundary<Direction::Left>()) {
+        for (int j = -1; j <= endI; j++) {
+            structure_(-1, j) = Solid;
+        } 
+    }
+    if (partitioning_.ownContainsBoundary<Direction::Right>()) {
+        for (int j = -1; j <= endI; j++) {
+            structure_(endI, j) = Solid;
+        }
+    }
+}
+
+void StaggeredGrid::test() {
+    // TODO: Testcode:
+    for (size_t i = 0; i < bottomBoundaryPosition_.size(); i++) {
+        bottomBoundaryPosition_[i] = 0.1 * i;
+    }
+    applyDisplacementsToBoundary();
+
+    std::cout << structure_ << "\n";
 }
 
 const std::array<double, 2> &StaggeredGrid::meshWidth() const {

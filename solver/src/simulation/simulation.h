@@ -79,6 +79,8 @@ public:
 
     void setDisplacements(const std::vector<double> &topDisplacements, const std::vector<double> &bottomDisplacements);
 
+    void test();
+    
 private:
     // Grid width in x and y directions
     std::array<double, 2> meshWidth_{};
