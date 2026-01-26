@@ -59,7 +59,11 @@ public:
 
     void calculateForces();
 
-    void setSolidBoundaries();
+    /**
+     * no slip at top and bottom structure boundary
+     * call after other boundary methods
+     */
+    void setStructureBoundaries();
 
     /**
      * Sets the simulation timestep width (e.g. to the time step calculated by the precice adapter)

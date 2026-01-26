@@ -42,6 +42,12 @@ protected:
      */
     void setBoundaryValues(DataField &p);
 
+    /**
+     * no slip at top and bottom structure boundary
+     * call after other boundary methods
+     */
+    void setStructureBoundaries(DataField &p);
+
     /// Pointer to partitioning
     std::shared_ptr<Partitioning> partitioning_;
 

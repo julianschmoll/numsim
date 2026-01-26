@@ -189,7 +189,7 @@ void Simulation::printConsoleInfo(double currentTime, const TimeSteppingInfo &ti
     }
 }
 
-void Simulation::setSolidBoundaries() {
+void Simulation::setStructureBoundaries() {
     auto &v = discOps_->v();
     // bottom
     for (int i = v.beginI() + 1; i < v.endI() - 1; ++i) {
