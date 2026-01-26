@@ -33,9 +33,11 @@ def main(scenario_cfg, precice_cfg_path, cleanup=True):
     simulation_folder = Path(__file__).resolve().parent / "out"
 
     cfg = read_config(scenario_cfg)
+    cfg["coupled"] = False
 
-    if not precice_cfg_path:
-        cfg["coupled"] = False
+    if precice_cfg_path:
+        cfg["coupled"] = True
+        cfg["precice_cfg"] = str(Path(precice_cfg_path).resolve())
 
     case.generate(simulation_folder, cfg)
     case.run(

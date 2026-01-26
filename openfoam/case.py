@@ -7,10 +7,18 @@ from string import Template
 import math
 
 
-def get_template(name):
-    template_path = (
-            Path(__file__).parent.parent / "resources" / "openfoam" / name
+def get_template(name, coupled=False):
+    template_folder = (
+            Path(__file__).parent.parent / "resources" / "openfoam"
     )
+    template_path = template_folder / name
+
+    if coupled:
+        precice_template = template_folder / f"{name}Precice"
+        template_path = precice_template \
+            if precice_template.exists() \
+            else template_path
+
     with open(template_path, "r") as template_file:
         return Template(template_file.read())
 
@@ -27,7 +35,13 @@ def add_openfoam_keys(cfg):
         vy = cfg.get(f"dirichlet{wall}Y", 0.0)
         u_max = max(u_max, (vx**2 + vy**2)**0.5)
 
-        if "Outflow" in b_type:
+        point_cond = "type fixedValue; value uniform (0 0 0);"
+
+        if "Coupled" in b_type and cfg.get("coupled"):
+            u_cond = "type movingWallVelocity; value uniform (0 0 0);"
+            p_cond = "type zeroGradient;"
+            point_cond = "type fixedValue; value $internalField;"
+        elif "Outflow" in b_type:
             u_cond = "type zeroGradient;"
             p_cond = "type fixedValue; value uniform 0;"
             has_outflow_boundary = True
@@ -46,6 +60,7 @@ def add_openfoam_keys(cfg):
 
         cfg[f"u{wall}"] = u_cond
         cfg[f"p{wall}"] = p_cond
+        cfg[f"point{wall}"] = point_cond
 
     # ToDo: This is uggo
     u_ref = u_max if u_max > 0 else 1.0
@@ -56,6 +71,14 @@ def add_openfoam_keys(cfg):
         cfg["pRefEntry"] = "// pRef driven by Outflow boundary"
     else:
         cfg["pRefEntry"] = "pRefCell 0; pRefValue 0;"
+
+
+def add_precice_keys(cfg):
+    walls = ["Bottom", "Top", "Left", "Right"]
+    cfg["coupled_patches"] = " ".join(
+        wall.lower() for wall in walls
+        if "Coupled" in cfg.get(f"boundary{wall}", "")
+    )
 
 
 def write_file(path_str, content):
@@ -76,11 +99,18 @@ def generate(simulation_folder, cfg):
 
     add_openfoam_keys(cfg)
 
+    if cfg.get("coupled"):
+        case_structure["0"].append("pointDisplacement")
+        case_structure["constant"].append("dynamicMeshDict")
+        case_structure["system"].append("preciceDict")
+        add_precice_keys(cfg)
+
+
     for folder, files in case_structure.items():
         for filename in files:
             write_file(
                 simulation_folder / folder / filename,
-                get_template(filename).substitute(cfg)
+                get_template(filename, cfg.get("coupled")).substitute(cfg)
             )
 
 
