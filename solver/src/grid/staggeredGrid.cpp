@@ -79,27 +79,31 @@ double StaggeredGrid::globalDomainPosJ(int j) {
 }
 
 void StaggeredGrid::applyDisplacementsToBoundary()  {
-    // TODO: wir sollten diese iterationsmethode irgendwie ändern. Code duplikation, unschön und fehleranfällig...
     // top
     for (int i = v_.beginI(); i < v_.endI(); ++i) {
-        for (int j = v_.endJ() + 1; j >= v_.beginJ(); --j) {
+        for (int j = v_.endJ() + 1; j > v_.beginJ(); --j) { // starte in Rand aber iteriere nicht bis Rand?
             if (globalDomainPosJ(j) + 1 >= topBoundaryPosition_[i + 1]) { // + hier richtig?
                 structure_(i, j) = Solid;
-            } else if (isSolid(i, j)) { // nur dann müssen wir tatsächlich arbeit investieren
+            } else if (isSolid(i, j)) {
                 structure_(i, j) = Fluid;
-                // update cell contents?
+                // set velocities to structure displacement: physically closer to reality than extrapolation
+                v_(i, j) = displacementsTop_[i + 1];
+                u_(i, j) = 0;
+                p_(i, j) = p_(i, j + 1); // TODO: notwendig?
             }
         }
     }
     // bottom
     for (int i = v_.beginI(); i < v_.endI(); ++i) {
-        for (int j = v_.beginJ(); j < v_.endJ() - 1; ++j) {
+        for (int j = v_.beginJ(); j < v_.endJ() - 2; ++j) { // starte in Rand aber iteriere nicht bis Rand?
             // aufpassen, dass wir nicht den echten simulationsrand verändern!
             if (globalDomainPosJ(j) <= bottomBoundaryPosition_[i + 1]) {
                 structure_(i, j) = Solid;
             } else if (isSolid(i, j)) {
                 structure_(i, j) = Fluid;
-                // update cell contents?
+                v_(i, j) = displacementsBottom_[i + 1];
+                u_(i, j) = 0;
+                p_(i, j) = p_(i, j + 1); // TODO: notwendig?
             }
         }
     }
