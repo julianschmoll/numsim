@@ -2,9 +2,11 @@
 #include "grid/array2d.h"
 #include "grid/dataField.h"
 #include "macros.h"
+#include "settings.h"
 #include "simulation/partitioning.h"
 #include <array>
 #include <cassert>
+#include <cmath>
 #include <iostream>
 
 StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, const Partitioning &partitioning)
@@ -32,12 +34,12 @@ StaggeredGrid::StaggeredGrid(const std::array<int, 2> &nCells, const std::array<
     // TODO: think about parallelism
     structure_ = Array2d<bool>({pWidth, pHeight});
     if (partitioning.ownContainsBoundary<Direction::Top>()) {
-        displacementsTop_.resize(pWidth, 0);
-        topBoundaryPosition_.resize(pWidth, 0); // TODO: initialize
+        displacementsTop_.resize(nCells[0], 0);
+        topBoundaryPosition_.resize(nCells[0], 0); // TODO: initialize, settings.physicalSize[1]
     }
     if (partitioning.ownContainsBoundary<Direction::Bottom>()) {
-        displacementsBottom_.resize(pWidth, 0);
-        bottomBoundaryPosition_.resize(pWidth, 0); // TODO: initialize
+        displacementsBottom_.resize(nCells[0], 0);
+        bottomBoundaryPosition_.resize(nCells[0], 0);
     }
 
     fTop_.resize(pWidth, 0);
@@ -60,37 +62,44 @@ double StaggeredGrid::globalDomainPosJ(int j) {
     return (partitioning_.nodeOffset()[1] + j) * dy(); // TODO: drüber nachdenken.
 }
 
-void StaggeredGrid::applyDisplacementsToBoundary()  {
+void StaggeredGrid::updateStructureCells()  {
     // top
     const int beginI = -1;
     const int beginJ = -1;
     const int endI = structure_.size()[0] - 2;
     const int endJ = structure_.size()[1] - 2;
 
-    for (int i = beginI; i <= endI; ++i) {
-        for (int j = endJ - 1; j > beginJ; --j) { // starte in Rand aber iteriere nicht bis Rand?
-            if (globalDomainPosJ(j) + 1 >= topBoundaryPosition_[i + 1]) { // + hier richtig?
+    for (int j = beginJ; j <= endJ; ++j) { // inneres Feld
+
+        for (int i = beginI + 1; i <= endI - 1; ++i) {
+            assert(topBoundaryPosition_[i] > bottomBoundaryPosition_[i]);
+            
+            // double previousLowerCellEdge = globalDomainPosJ(j - 1);
+            // double nextUpperCellEdge = globalDomainPosJ(j + 2);
+            double lowerCellEdge = globalDomainPosJ(j);
+            double upperCellEdge = globalDomainPosJ(j + 1);
+
+            if (lowerCellEdge < bottomBoundaryPosition_[i] || upperCellEdge > topBoundaryPosition_[i]) {
                 structure_(i, j) = Solid;
-            } else if (isSolid(i, j)) {
+            } else {
+                const bool isLowerDomainBoundary = (j == beginJ && partitioning_.ownContainsBoundary<Direction::Bottom>());
+                const bool isUpperDomainBoundary = (j == endJ && partitioning_.ownContainsBoundary<Direction::Top>());
+                // shouldn't be necessary, but there might be slight numerical deviances when we set the bottom & top boundaries
+                if (isLowerDomainBoundary || isUpperDomainBoundary) {
+                    continue;
+                }
+                if (isSolid(i, j) && (j == beginJ || isSolid(i, j - 1) /* previousLowerCellEdge <= bottomBoundaryPosition_[i] */)) { // Bottom: Solid -> Fluid
+                    v_(i, j) = displacementsBottom_[i];
+                    u_(i, j) = 0;
+                    p_(i, j) = p_(i, j + 1); // TODO: notwendig?
+                } else if (isSolid(i, j) && (j == endJ || isSolid(i, j + 1) /* nextUpperCellEdge >= topBoundaryPosition_[i] */)) { // Top: Solid -> Fluid
+                    if (j < endJ) { // j == endJ is handled at the bottom of the partition above if it exists
+                        v_(i, j) = displacementsBottom_[i];
+                    }
+                    u_(i, j) = 0;
+                    p_(i, j) = p_(i, j + 1); // TODO: notwendig?
+                }
                 structure_(i, j) = Fluid;
-                // set velocities to structure displacement: physically closer to reality than extrapolation
-                v_(i, j) = displacementsTop_[i + 1];
-                u_(i, j) = 0;
-                p_(i, j) = p_(i, j + 1); // TODO: notwendig?
-            }
-        }
-    }
-    // bottom
-    for (int i = beginI; i <= endI; ++i) {
-        for (int j = beginJ; j <= endJ - 1; ++j) { // starte in Rand aber iteriere nicht bis Rand?
-            // aufpassen, dass wir nicht den echten simulationsrand verändern!
-            if (globalDomainPosJ(j) <= bottomBoundaryPosition_[i + 1]) {
-                structure_(i, j) = Solid;
-            } else if (isSolid(i, j)) {
-                structure_(i, j) = Fluid;
-                v_(i, j) = displacementsBottom_[i + 1];
-                u_(i, j) = 0;
-                p_(i, j) = p_(i, j + 1); // TODO: notwendig?
             }
         }
     }
@@ -100,6 +109,12 @@ void StaggeredGrid::initializeStructureField() {
     // TODO: only initialize domain boundary with solid?!
     const int endI = structure_.size()[0] - 2;
     const int endJ = structure_.size()[1] - 2;
+
+    for (int j = -1; j <= endJ; ++j) { // inneres Feld
+        for (int i = -1; i <= endI - 1; ++i) {
+            structure_(i, j) = Fluid;
+        }
+    }
 
     if (partitioning_.ownContainsBoundary<Direction::Top>()) {
         for (int i = -1; i <= endJ; i++) {
@@ -123,14 +138,34 @@ void StaggeredGrid::initializeStructureField() {
     }
 }
 
-void StaggeredGrid::test() {
-    // TODO: Testcode:
-    for (size_t i = 0; i < bottomBoundaryPosition_.size(); i++) {
-        bottomBoundaryPosition_[i] = 0.1 * i;
-    }
-    applyDisplacementsToBoundary();
+void StaggeredGrid::test(const Settings &settings) {
+    // TODO: Testcode: lid_driven_cavity.txt
 
-    std::cout << structure_ << "\n";
+    constexpr double eps = 1e-10; // TODO: dieses epsilon in denn Strukturcode verschieben?
+
+    initializeStructureField();
+    for (size_t i = 0; i < bottomBoundaryPosition_.size(); i++) {
+        bottomBoundaryPosition_[i] = 0.1 * i - eps;
+        topBoundaryPosition_[i] = settings.physicalSize[1];
+    }
+    updateStructureCells();
+    std::cout << structure_ << "\n\n";
+
+    initializeStructureField();
+    for (size_t i = 0; i < bottomBoundaryPosition_.size(); i++) {
+        bottomBoundaryPosition_[i] = 0;
+        topBoundaryPosition_[i] = settings.physicalSize[1] - 0.1 * i + eps;
+    }
+    updateStructureCells();
+    std::cout << structure_ << "\n\n";
+
+    initializeStructureField();
+    for (size_t i = 0; i < bottomBoundaryPosition_.size(); i++) {
+        bottomBoundaryPosition_[i] = 0.2 + 0.2 * std::sin(i * 0.3);
+        topBoundaryPosition_[i] = settings.physicalSize[1] - 0.2 + 0.2 * std::sin(i * 0.3);
+    }
+    updateStructureCells();
+    std::cout << structure_ << "\n\n";
 }
 
 const std::array<double, 2> &StaggeredGrid::meshWidth() const {

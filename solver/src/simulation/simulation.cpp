@@ -160,7 +160,7 @@ void Simulation::advanceFluidSolver(double dt) {
 void Simulation::updateSolid() {
     DataField &q = discOps_->q();
     // Struktur anpassen
-    discOps_->applyDisplacementsToBoundary();
+    discOps_->updateStructureCells();
     // unphysical corrective pressure q berechnen
     pressureSolver_->solve(q);
     // geschwindigkeiten korrigieren
@@ -192,20 +192,20 @@ void Simulation::printConsoleInfo(double currentTime, const TimeSteppingInfo &ti
 void Simulation::setSolidBoundaries() {
     auto &v = discOps_->v();
     // bottom
-    for (int i = v.beginI(); i < v.endI(); ++i) {
-        for (int j = v.beginJ(); j < v.endJ() - 1; ++j) {  // Iterating over complete height, including border cells
+    for (int i = v.beginI() + 1; i < v.endI() - 1; ++i) {
+        for (int j = v.beginJ(); j < v.endJ() - 1; ++j) {
             if (discOps_->isSolid(i, j) && discOps_->isFluid(i, j + 1)) {
-                v(i, j) = discOps_->displacementsBottom_[i + 1]; // TODO: Field sizes...
+                v(i, j) = discOps_->displacementsBottom_[i]; // TODO: Field sizes...
                 break;
             }
         }
     }
 
     // top
-    for (int i = v.beginI(); i < v.endI(); ++i) {
+    for (int i = v.beginI() + 1; i < v.endI() - 1; ++i) {
         for (int j = v.endJ() - 1; j > v.beginJ(); --j) {  // Iterating over complete height, including border cells
             if (discOps_->isSolid(i, j) && discOps_->isFluid(i, j - 1)) {
-                v(i, j) = discOps_->displacementsTop_[i + 1]; // TODO: Field sizes...
+                v(i, j) = discOps_->displacementsTop_[i]; // TODO: Field sizes...
                 break;
             }
         }
@@ -539,6 +539,6 @@ void Simulation::reloadLastState() {
 
 void Simulation::test() {
     std::cout << "Simulation::test: Start" << std::endl;
-    discOps_->test();
+    discOps_->test(settings_);
     std::cout << "Simulation::test: End" << std::endl;
 }

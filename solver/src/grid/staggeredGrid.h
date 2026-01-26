@@ -3,6 +3,7 @@
 #include "../simulation/partitioning.h"
 #include "grid/array2d.h"
 #include "grid/dataField.h"
+#include "settings.h"
 #include <array>
 #include <vector>
 
@@ -201,9 +202,9 @@ public:
     bool isFluid(int i, int j) const;
     bool isSolid(int i, int j) const;
 
-    void applyDisplacementsToBoundary();
+    void updateStructureCells();
 
     void initializeStructureField();
 
-    void test();
+    void test(const Settings &settings);
 };
