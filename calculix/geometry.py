@@ -55,7 +55,7 @@ class Geometry:
                     y = (self.cfg["geometry"]["height"] - offset) + d_thick
 
                 self._all_nodes.append(
-                    f"{self._current_node_id}, {x:.8f}, {y:.8f}, 0.0" # Increased precision
+                    f"{self._current_node_id}, {x:.4f}, {y:.4f}, 0.0"
                 )
 
                 if row == 0:
