@@ -19,11 +19,11 @@ material:
 walls:
   top:
     active: true
-    offset: 0
-    fixed_start: true
-    fixed_end: true
+    offset: 0.2
+    fixed_start: false
+    fixed_end: false
   bottom:
     active: true
-    offset: 0
+    offset: 0.2
     fixed_start: true
     fixed_end: true

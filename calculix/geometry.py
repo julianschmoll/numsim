@@ -148,22 +148,17 @@ class Geometry:
             dt = self.cfg['geometry'].get('dt', 0.01)
             duration = self.cfg['geometry'].get('t_end', 10.0)
             f.write(f"{dt}, {duration}\n")
-
+            f.write("*RESTART, WRITE, FREQUENCY=1\n")
             f.write("*BOUNDARY\n")
             if self._fix_nodes:
                 f.write("Nfix, 1, 2\n")
             f.write(f"{mesh_name}, 3, 3\n")
-
-            f.write(f"*CLOAD\n")
+            f.write("*CLOAD\n")
             f.write(f"N{interface_name}, 1, 0.0\n")
             f.write(f"N{interface_name}, 2, 0.0\n")
 
-            write_freq = int(1.0 / dt)
-            if write_freq < 1:
-                write_freq = 1
-
-            f.write(f"*NODE FILE, FREQUENCY={write_freq}\nU\n")
-            f.write(f"*EL FILE, FREQUENCY={write_freq}\nS\n")
+            f.write("*NODE FILE\nU\n")
+            f.write("*EL FILE\nS, E\n")
             f.write("*END STEP\n")
 
             return filepath.parent / filepath.stem
