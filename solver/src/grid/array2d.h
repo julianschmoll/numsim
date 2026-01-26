@@ -39,6 +39,21 @@ public:
      */
     [[nodiscard]] std::array<int, 2> size() const;
 
+    /// Array size in x direction. Equivalent to size()[0].
+    int sizeI() const;
+    /// Array size in y direction. Equivalent to size()[0].
+    int sizeJ() const;
+
+    /// Maximum valid index in x direction. Indexing begins at -1.
+    int maxI() const;
+    /// Minimum valid index in y direction. Indexing begins at -1.
+    int maxJ() const;
+
+    /// Minimum valid index in x direction. Indexing begins at -1.
+    constexpr int minI() const;
+    /// Minimum valid index in y direction. Indexing begins at -1.
+    constexpr int minJ() const;
+
     /**
      * Returns the value of 2D Array at specified coordinates.
      *
@@ -93,6 +108,7 @@ private:
     void checkIndices(int i, int j) const;
 };
 
+
 template<typename T>
 Array2d<T>::Array2d(const std::array<int, 2> size) : size_(size) {
     data_.resize(size_[0] * size_[1], T{});
@@ -141,4 +157,20 @@ inline std::ostream &operator<<(std::ostream& out, const Array2d<bool> &arr) {
     return out;
 }
 
+template<typename T>
+int Array2d<T>::sizeI() const { return size_[0]; };
 
+template<typename T>
+int Array2d<T>::sizeJ() const { return size_[1]; };
+
+template<typename T>
+int Array2d<T>::maxI() const { return size_[0] - 1; };
+
+template<typename T>
+int Array2d<T>::maxJ() const { return size_[1] - 1; };
+
+template<typename T>
+constexpr int Array2d<T>::minI() const { return -1; };
+
+template<typename T>
+constexpr int Array2d<T>::minJ() const { return -1; };
