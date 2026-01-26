@@ -190,11 +190,10 @@ void Simulation::printConsoleInfo(double currentTime, const TimeSteppingInfo &ti
 }
 
 void Simulation::setSolidBoundaries() {
-
     auto &v = discOps_->v();
     // bottom
     for (int i = v.beginI(); i < v.endI(); ++i) {
-        for (int j = v.beginJ(); j < v.endJ() - 1; ++j) {
+        for (int j = v.beginJ(); j < v.endJ() - 1; ++j) {  // Iterating over complete height, including border cells
             if (discOps_->isSolid(i, j) && discOps_->isFluid(i, j + 1)) {
                 v(i, j) = discOps_->displacementsBottom_[i + 1]; // TODO: Field sizes...
                 break;
@@ -204,7 +203,7 @@ void Simulation::setSolidBoundaries() {
 
     // top
     for (int i = v.beginI(); i < v.endI(); ++i) {
-        for (int j = v.endJ() + 2; j >= v.beginJ(); --j) {
+        for (int j = v.endJ() - 1; j > v.beginJ(); --j) {  // Iterating over complete height, including border cells
             if (discOps_->isSolid(i, j) && discOps_->isFluid(i, j - 1)) {
                 v(i, j) = discOps_->displacementsTop_[i + 1]; // TODO: Field sizes...
                 break;
