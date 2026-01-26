@@ -1,7 +1,11 @@
 type            uniformFixedValue;
-uniformValue    expression;
+uniformValue    sine;
 uniformValueCoeffs
 {
-    expression      "vector($vx,$vy,0) * (1.0 + $amplitude * sin(6.2831853 * $frequency * (time() - $timeShift)))";
+    type            sine;
+    frequency       $frequency;
+    amplitude       $amplitude;
+    scale           ($scale $scale 0);
+    level           $level;
+    outOfBounds     REPEAT;
 }
-value           uniform (0 0 0);

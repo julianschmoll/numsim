@@ -17,16 +17,6 @@ def read_config(filename):
             key, value = line.split('=', 1)
             key, value = key.strip(), value.strip()
 
-            # Check if the value is a tuple-style entry: (x, y)
-            if value.startswith('(') and value.endswith(')'):
-                # Strip parentheses and clean up inner formatting
-                clean_val = value.strip('()').replace(',', ' ').strip()
-                # If the key doesn't exist yet, or isn't a list, initialize it
-                if key not in config:
-                    config[key] = []
-                # Store as an OpenFOAM-ready string "(val1 val2)"
-                config[key].append(f"({clean_val})")
-                continue
             if value.lower() == "true":
                 config[key] = True
             elif value.lower() == "false":

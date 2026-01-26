@@ -4,6 +4,8 @@ import subprocess
 import logging
 from string import Template
 
+import math
+
 
 def get_template(name):
     template_path = (
@@ -30,30 +32,14 @@ def add_openfoam_keys(cfg):
             p_cond = "type fixedValue; value uniform 0;"
             has_outflow_boundary = True
         elif vx or vy:
-            if "flowAt" in cfg:
-                formatted_entries = []
-                for entry in cfg["flowAt"]:
-                    # Clean the string from your list
-                    # entry is likely "(time multiplier)" or "time multiplier"
-                    parts = entry.strip('()').split()
-                    t = parts[0]
-                    multiplier = float(parts[1])
-
-                    # Calculate actual vector components
-                    cur_vx = multiplier * vx
-                    cur_vy = multiplier * vy
-
-                    # Format as OpenFOAM vector: (time (vx vy vz))
-                    formatted_entries.append(f"            ({t} ({cur_vx} {cur_vy} 0))")
-
-                table_str = "\n".join(formatted_entries)
-
-                cfg.update({"table_entries": table_str})
-                u_cond = get_template("tableBoundary").substitute(cfg)
+            if "frequency" in cfg:
+                cfg["scale"] = 2 * math.pi * cfg["frequency"] * cfg["timeShift"]
+                cfg["level"] = f"({vx} {vy} {0})"
+                u_cond = get_template("dynamicBoundary").substitute(cfg)
                 p_cond = "type fixedFluxPressure; value uniform 0;"
             else:
                 u_cond = f"type fixedValue; value uniform ({vx} {vy} 0);"
-                p_cond = "type inletOutlet; inletValue uniform (0 0 0); value uniform (0 0 0);"
+                p_cond = "type zeroGradient;"
         else:
             u_cond = "type noSlip;"
             p_cond = "type zeroGradient;"

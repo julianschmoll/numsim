@@ -29,8 +29,6 @@ dirichletRightY  = 0
 amplitude = 0.5
 frequency = 2
 timeShift = 0
-flowAt = (1, 1)
-flowAt = (2, 0)
 
 # Discretization parameters
 nCellsX = 80          # number of cells in x and y direction
