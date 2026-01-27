@@ -33,6 +33,9 @@ void RedBlackSolver::solve(DataField &p) {
     auto [i0, j0] = partitioning_->nodeOffset();
     const int globalOffset = (i0 + j0) % 2;
 
+    setBoundaryValues(p);
+    setStructureBoundaries(p);
+
     while (globalPressureError_ > epsilonSquared && it < settings_.maximumNumberOfIterations) {
         localPressureError_ = 0.0;
         // rb = 0 is red, rb=1 is black pass

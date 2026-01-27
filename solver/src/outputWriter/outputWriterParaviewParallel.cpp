@@ -61,15 +61,15 @@ void OutputWriterParaviewParallel::gatherData() {
             const double x = i * dx;
             const double y = j * dy;
 
-            bool isSolid = grid_->isSolid(i - 1, j - 1);
+            bool isSolid = grid_->isSolid(i, j);
 
             // get global indices
             const int iGlobal = nodeOffset[0] + i;
             const int jGlobal = nodeOffset[1] + j;
 
-            u_(iGlobal, jGlobal) = isSolid ? 0 : grid_->u().interpolateAt(x, y);
-            v_(iGlobal, jGlobal) = isSolid ? 0 : grid_->v().interpolateAt(x, y);
-            p_(iGlobal, jGlobal) = isSolid ? 0 : grid_->p().interpolateAt(x, y);
+            u_(iGlobal, jGlobal) = grid_->u().interpolateAt(x, y);
+            v_(iGlobal, jGlobal) = grid_->v().interpolateAt(x, y);
+            p_(iGlobal, jGlobal) = grid_->p().interpolateAt(x, y);
         }
     }
 

@@ -79,14 +79,14 @@ void PressureSolver::setBoundaryValues(DataField &p) {
     }
 }
 
-void PressureSolver::setStructureBoundaries(DataField &p) {
+void PressureSolver::setStructureBoundaries(DataField &p) { // Randwerte im inneren falls struktur rand berürt werden die anderen verwendet?
     for (int j = p.beginJ() + 1; j < p.endJ() - 1; ++j) { // TODO: p.endJ() - 1 oder p.endJ() - 2
         for (int i = p.beginI() + 1; i < p.endI() - 1; ++i) {
             if (grid_->isSolid(i, j)) {
-                const bool leftIsFluid = grid_->isSolid(i - 1, j);
-                const bool rightIsFluid = grid_->isSolid(i + 1, j);
-                const bool bottomIsFluid = grid_->isSolid(i, j - 1);
-                const bool topIsFluid = grid_->isSolid(i, j + 1);
+                const bool leftIsFluid = grid_->isFluid(i - 1, j);
+                const bool rightIsFluid = grid_->isFluid(i + 1, j);
+                const bool bottomIsFluid = grid_->isFluid(i, j - 1);
+                const bool topIsFluid = grid_->isFluid(i, j + 1);
                 const int fluidCells = (int(bottomIsFluid) + int(topIsFluid) + (leftIsFluid) + int(rightIsFluid));
                 if (fluidCells == 0) {
                     p(i, j) = 0;

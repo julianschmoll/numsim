@@ -58,7 +58,9 @@ Simulation::Simulation(const Settings &settings, const std::string &folderName) 
 }
 
 void Simulation::writeOutput(const double currentTime, const int currentSec, const int lastSec) const {
-    outputWriterParaview_->writeFile(currentTime);
+    if (currentSec > lastSec && !settings_.generateTrainingData) [[unlikely]] {
+        outputWriterParaview_->writeFile(currentTime);
+    }
 }
 
 void Simulation::setDisplacements(const std::vector<double> &topDisplacements, const std::vector<double> &bottomDisplacements) {
@@ -121,9 +123,10 @@ void Simulation::run() {
         const int currentSec = static_cast<int>(currentTime);
 
         printConsoleInfo(currentTime, timeSteppingInfo);
-        DEBUG(outputWriterText_->writeFile(currentTime));
+        // DEBUG(outputWriterText_->writeFile(currentTime));
+        outputWriterParaview_->writeFile(currentTime);
 
-        writeOutput(currentTime, currentSec, lastSec);
+        //writeOutput(currentTime, currentSec, lastSec);
     }
 
     if (settings_.generateTrainingData)
@@ -195,31 +198,35 @@ void Simulation::setStructureBoundaries() {
     auto &g = discOps_->g();
     auto &f = discOps_->f();
 
+    auto &s = discOps_->structure_;
+
     // TODO: correct to use the indices of v?
     // top
-    for (int i = v.beginI() + 1; i < v.endI() - 1; ++i) {
-        for (int j = v.endJ() - 1; j > v.beginJ(); --j) {
+    for (int i = s.minI() + 1; i <= s.maxI() - 1; ++i) {
+        const double dLeft = (discOps_->topDisplacement(i - 1) + discOps_->topDisplacement(i)) / timeStepWidth_;
+        const double dRight = (discOps_->topDisplacement(i) + discOps_->topDisplacement(i + 1)) / timeStepWidth_;
+        for (int j = s.maxJ(); j >= s.minJ() + 1; --j) {
             if (discOps_->isFluid(i, j)) { // fluid cell
                 break;
             }
             if (discOps_->isFluid(i, j - 1)) { // cell below fluid
-                v(i, j) = discOps_->topDisplacement(i) / timeStepWidth_;
+                v(i, j - 1) = discOps_->topDisplacement(i) / timeStepWidth_;
             } else {
                 if (discOps_->isFluid(i - 1, j)) { // cell left fluid
-                    const double d = (discOps_->topDisplacement(i - 1) + discOps_->topDisplacement(i)) / timeStepWidth_;
-                    v(i, j) = d - v(i - 1, j);
+                    v(i, j - 1) = dLeft - v(i - 1, j - 1);
                 } else if (discOps_->isFluid(i + 1, j)) { // cell right fluid
-                    const double d = (discOps_->topDisplacement(i) + discOps_->topDisplacement(i + 1)) / timeStepWidth_;
-                    v(i, j) = d - v(i + 1, j);
+                    v(i, j - 1) = dRight - v(i + 1, j - 1);
                 }
             }
-            g(i, j) = v(i, j);
+            g(i, j - 1) = v(i, j - 1);
         }
     }
 
     // bottom
-    for (int i = v.beginI() + 1; i < v.endI() - 1; ++i) {
-        for (int j = v.beginJ(); j < v.endJ() - 1; ++j) {
+    for (int i = s.minI() + 1; i <= s.maxI() - 1; ++i) {
+        for (int j = s.minJ(); j < s.maxJ() - 1; ++j) {
+            const double dLeft = (discOps_->topDisplacement(i - 1) + discOps_->topDisplacement(i)) / timeStepWidth_;
+            const double dRight = (discOps_->topDisplacement(i) + discOps_->topDisplacement(i + 1)) / timeStepWidth_;
             if (discOps_->isFluid(i, j)) { // fluid cell
                 break;
             }
@@ -227,17 +234,16 @@ void Simulation::setStructureBoundaries() {
                 v(i, j) = discOps_->bottomDisplacement(i) / timeStepWidth_;
             } else {
                 if (discOps_->isFluid(i - 1, j)) { // cell left fluid
-                    const double d = (discOps_->bottomDisplacement(i - 1) + discOps_->bottomDisplacement(i)) / timeStepWidth_;
-                    v(i, j) = d - v(i - 1, j);
+                    v(i, j) = dLeft - v(i - 1, j);
                 } else if (discOps_->isFluid(i + 1, j)) { // cell right fluid
-                    const double d = (discOps_->bottomDisplacement(i) + discOps_->bottomDisplacement(i + 1)) / timeStepWidth_;
-                    v(i, j) = d - v(i + 1, j);
+                    v(i, j) = dRight - v(i + 1, j);
                 }
             }
             g(i, j) = v(i, j);
         }
     }
-
+    
+    /*
     // u top
     for (int i = u.beginI() + 1; i < u.endI() - 1; ++i) {
         for (int j = u.endJ() - 1; j > u.beginJ(); --j) {
@@ -252,6 +258,7 @@ void Simulation::setStructureBoundaries() {
             f(i, j) = u(i, j);
         }
     }
+    */
 
     // u bottom
     for (int i = u.beginI() + 1; i < u.endI() - 1; ++i) {
