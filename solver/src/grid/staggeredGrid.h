@@ -47,9 +47,10 @@ protected:
     /// Field for unphysical corrective pressure for solid cell movement correction
     DataField q_;
 
-    Array2d<bool> structure_;
 
 public:
+    Array2d<bool> structure_;
+
     std::vector<double> bottomBoundaryPosition_;
     std::vector<double> topBoundaryPosition_;
 

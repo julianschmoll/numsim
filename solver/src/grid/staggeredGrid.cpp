@@ -59,6 +59,12 @@ StaggeredGrid::StaggeredGrid(const Settings &settings, const Partitioning &parti
     DEBUG(std::cout << v_.sizeI() << std::endl;)
     DEBUG(std::cout << "DisplTop " << displacementsTop_.size() << std::endl;)
     DEBUG(std::cout << "DisplBot " << displacementsBottom_.size() << std::endl;)
+
+    for (size_t i = 0; i < bottomBoundaryPosition_.size(); i++) {
+        bottomBoundaryPosition_[i] = 0.01 * i;
+        topBoundaryPosition_[i] = settings.physicalSize[1];
+    }
+    updateStructureCells();
 }
 
 double StaggeredGrid::globalDomainPosJ(int j) {
@@ -66,9 +72,12 @@ double StaggeredGrid::globalDomainPosJ(int j) {
 }
 
 void StaggeredGrid::updateStructureCells()  {
-    const int beginI = structure_.minI();
+    const int leftDomainBoundaryOffset = int(partitioning_.ownContainsBoundary<Direction::Left>());
+    const int rightDomainBoundaryOffset = int(partitioning_.ownContainsBoundary<Direction::Right>());
+
+    const int beginI = structure_.minI() + leftDomainBoundaryOffset;
     const int beginJ = structure_.minJ();
-    const int endI = structure_.maxI();
+    const int endI = structure_.maxI() - rightDomainBoundaryOffset;
     const int endJ = structure_.maxJ();
 
     // We use a small offset to make sure a cell is actually fully solid.
@@ -88,8 +97,6 @@ void StaggeredGrid::updateStructureCells()  {
                 structure_(i, j) = Solid;
             } else {
                 if (isSolid(i, j) && (j == beginJ || isSolid(i, j - 1))) { // Bottom: Solid -> Fluid
-                    DEBUG(std::cout << "i/j values: " << i << ", " << j << std::endl;)
-                    DEBUG(std::cout << "v_ size: " << v_.sizeI() << std::endl;)
                     v_(i, j) = bottomDisplacement(i);
                     if (i < endI) u_(i, j) = 0;
                     p_(i, j) = p_(i, j + 1);
@@ -138,11 +145,6 @@ void StaggeredGrid::initializeStructureField() {
             structure_(endI, j) = Solid;
         }
     }
-    for (size_t i = 0; i < bottomBoundaryPosition_.size(); i++) {
-        bottomBoundaryPosition_[i] = 0.03 * i;
-        topBoundaryPosition_[i] = 2.0;
-    }
-    updateStructureCells();
 }
 
 void StaggeredGrid::test(const Settings &settings) {
