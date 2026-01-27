@@ -46,8 +46,8 @@ int main(int argc, char *argv[]) {
         }
 
         double preciceDt = participant.getMaxTimeStepSize();
-        double solverDt = simulation.computeTimeStepWidth();
-        double dt = min(preciceDt, solverDt);
+        auto timeSteppingInfo = simulation.computeTimeStepWidth(0 /* currentTime */);
+        double dt = std::min(preciceDt, timeSteppingInfo.timeStepWidth);
         simulation.setTimeStepWidth(dt);
 
         // Read Boundary Data and apply conditions

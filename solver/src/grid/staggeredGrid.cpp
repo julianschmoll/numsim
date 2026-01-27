@@ -134,6 +134,11 @@ void StaggeredGrid::initializeStructureField() {
         }
     }
     */
+    for (size_t i = 0; i < bottomBoundaryPosition_.size(); i++) {
+        bottomBoundaryPosition_[i] = 0.03 * i;
+        topBoundaryPosition_[i] = 2.0;
+    }
+    updateStructureCells();
 }
 
 void StaggeredGrid::test(const Settings &settings) {

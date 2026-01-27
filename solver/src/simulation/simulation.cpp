@@ -8,6 +8,7 @@
 #include "simulation/pressureSolver/redBlackSolver.h"
 #include <cassert>
 #include <chrono>
+#include <iomanip>
 #include <iostream>
 #include <ostream>
 #include <cmath>
@@ -98,6 +99,7 @@ void Simulation::run() {
 
     setBoundaryUV(currentTime);
     setBoundaryFG();
+    setStructureBoundaries();
 
     while (currentTime < settings_.endTime) {
         TimeSteppingInfo timeSteppingInfo = computeTimeStepWidth(currentTime);
@@ -113,9 +115,9 @@ void Simulation::run() {
         setVelocities();
         partitioning_->exchange(uv);
         setBoundaryUV(currentTime);
+        setStructureBoundaries();
 
         calculateForces();
-
         const int lastSec = static_cast<int>(currentTime);
         currentTime += timeStepWidth_;
         const int currentSec = static_cast<int>(currentTime);

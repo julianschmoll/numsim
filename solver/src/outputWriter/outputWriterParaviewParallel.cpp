@@ -61,13 +61,15 @@ void OutputWriterParaviewParallel::gatherData() {
             const double x = i * dx;
             const double y = j * dy;
 
+            bool isSolid = grid_->isSolid(i - 1, j - 1);
+
             // get global indices
             const int iGlobal = nodeOffset[0] + i;
             const int jGlobal = nodeOffset[1] + j;
 
-            u_(iGlobal, jGlobal) = grid_->u().interpolateAt(x, y);
-            v_(iGlobal, jGlobal) = grid_->v().interpolateAt(x, y);
-            p_(iGlobal, jGlobal) = grid_->p().interpolateAt(x, y);
+            u_(iGlobal, jGlobal) = isSolid ? 0 : grid_->u().interpolateAt(x, y);
+            v_(iGlobal, jGlobal) = isSolid ? 0 : grid_->v().interpolateAt(x, y);
+            p_(iGlobal, jGlobal) = isSolid ? 0 : grid_->p().interpolateAt(x, y);
         }
     }
 
@@ -153,10 +155,8 @@ void OutputWriterParaviewParallel::writeFile(double currentTime) {
     // loop over the mesh where p is defined and assign the values in the vtk data structure
     index = 0; // index for the vtk data structure
     for (int j = 0; j < nCellsGlobal_[1] + 1; j++) {
-        const double y = j * dy;
 
         for (int i = 0; i < nCellsGlobal_[0] + 1; i++, index++) {
-            const double x = i * dx;
 
             std::array<double, 3> velocityVector;
             velocityVector[0] = uGlobal_(i, j);

@@ -9,7 +9,6 @@
 
 void runSimulation(const Settings &settings, const std::string &folderName) {
     Simulation simulation{settings, folderName};
-    simulation.test();
     simulation.run();
 }
 

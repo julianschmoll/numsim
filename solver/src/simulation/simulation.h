@@ -80,6 +80,11 @@ public:
     void advanceFluidSolver(double dt);
 
     void updateSolid();
+    
+    /**
+     * Computes the time step width dt from maximum velocities.
+     */
+    TimeSteppingInfo computeTimeStepWidth(double currentTime);
 
     /**
      * Displacements must be set for every vertical partition.
@@ -126,10 +131,6 @@ private:
      */
     void setBoundaryFG();
 
-    /**
-     * Computes the time step width dt from maximum velocities.
-     */
-    TimeSteppingInfo computeTimeStepWidth(double currentTime);
 
     /**
      * Sets preliminary velocities.
