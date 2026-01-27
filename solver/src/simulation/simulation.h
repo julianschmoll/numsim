@@ -81,6 +81,9 @@ public:
 
     void updateSolid();
 
+    /**
+     * Displacements must be set for every vertical partition.
+     */
     void setDisplacements(const std::vector<double> &topDisplacements, const std::vector<double> &bottomDisplacements);
 
     void test();

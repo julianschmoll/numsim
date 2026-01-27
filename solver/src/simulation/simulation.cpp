@@ -26,12 +26,11 @@ Simulation::Simulation(const Settings &settings, const std::string &folderName) 
     if (settings_.useDonorCell) {
         if (partitioning_->onPrimaryRank())
             std::cout << " -- Using Donor Cell." << std::endl;
-        discOps_ = std::make_unique<DiscreteOperators>(partitioning_->nCellsLocal(), meshWidth_, *partitioning_,
-                                                       settings_.alpha);
+        discOps_ = std::make_unique<DiscreteOperators>(settings_, *partitioning_, settings_.alpha);
     } else {
         if (partitioning_->onPrimaryRank())
             std::cout << " -- Using Central Differences." << std::endl;
-        discOps_ = std::make_unique<DiscreteOperators>(partitioning_->nCellsLocal(), meshWidth_, *partitioning_, 0.0);
+        discOps_ = std::make_unique<DiscreteOperators>(settings_, *partitioning_, 0.0);
     }
 
     if (settings_.pressureSolver == IterSolverType::SOR) {
@@ -505,7 +504,7 @@ void Simulation::calculateForces() {
         for (int j = v.endJ() - 2; j > v.beginJ(); --j) {
             if (discOps_->isFluid(i, j)) {
                 const double vDy = discOps_->computeDvDy(i, j);
-                discOps_->fTop(i) = -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j + 1) * p(i, j)) / 2);
+                discOps_->fTop_[i] = -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j + 1) * p(i, j)) / 2);
                 break;
             }
         }
@@ -516,7 +515,7 @@ void Simulation::calculateForces() {
         for (int j = v.beginJ() + 1; j < v.endJ() - 1; ++j) {
             if (discOps_->isFluid(i, j)) {
                 const double vDy = discOps_->computeDvDy(i, j);
-                discOps_->fBottom(i) = -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j - 1) * p(i, j)) / 2);
+                discOps_->fBottom_[i] = -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j - 1) * p(i, j)) / 2);
                 break;
             }
         }

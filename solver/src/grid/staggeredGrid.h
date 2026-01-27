@@ -16,12 +16,12 @@ class StaggeredGrid {
     enum CellType {
         Fluid = false, Solid = true
     };
+    
+    /// number of cells in x, y direction not including boundary
+    const std::array<int, 2> nCells_;
 
     /// Mesh width of the grid
     const std::array<double, 2> meshWidth_;
-
-    /// number of cells in x, y direction not including boundary
-    const std::array<int, 2> nCells_;
 
     const Partitioning &partitioning_;
 
@@ -49,9 +49,6 @@ protected:
 
     Array2d<bool> structure_;
 
-    /// vertical position of this grid partition in physical space
-    double verticalNodeOffset_;
-
 public:
     std::vector<double> bottomBoundaryPosition_;
     std::vector<double> topBoundaryPosition_;
@@ -75,7 +72,7 @@ public:
      * @param meshWidth Mesh width in x and y directions.
      * @param partitioning Object containing information on how the domain is partitioned.
      */
-    StaggeredGrid(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, const Partitioning &partitioning);
+    StaggeredGrid(const Settings &settings, const Partitioning &partitioning);
 
     /**
      * Gets Mesh width.

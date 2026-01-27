@@ -41,7 +41,7 @@ public:
 
     /// Array size in x direction. Equivalent to size()[0].
     int sizeI() const;
-    /// Array size in y direction. Equivalent to size()[0].
+    /// Array size in y direction. Equivalent to size()[1].
     int sizeJ() const;
 
     /// Maximum valid index in x direction. Indexing begins at -1.
@@ -92,6 +92,11 @@ public:
      */
     [[nodiscard]] double absMax() const;
 
+    /**
+     * Set all array entries to `constant`.
+     */
+    void fill(const T& constant);
+
     T *data();
 
     template<typename S>
@@ -128,6 +133,16 @@ T *Array2d<T>::data() {
 }
 
 template<typename T>
+void Array2d<T>::fill(const T &constant) {
+    for (int j = 0; j < sizeJ(); ++j) {
+        for (int i = 0; i < sizeI(); ++i) {
+            data_[j * sizeI() + i] = constant;
+        }
+    }
+}
+
+
+template<typename T>
 void Array2d<T>::checkIndices(int i, int j) const {
     assert(-1 <= i);
     assert(-1 <= j);
@@ -137,9 +152,9 @@ void Array2d<T>::checkIndices(int i, int j) const {
 
 template<typename T>
 std::ostream &operator<<(std::ostream& out, const Array2d<T> &arr) {
-    for (int j = arr.size_[1] - 1; j >= 0; --j) {
-        for (int i = 0; i < arr.size_[0]; ++i) {
-            out << std::setw(6) << std::setprecision(4) << arr.data_[j * arr.size_[0] + i] << " ";
+    for (int j = arr.sizeJ() - 1; j >= 0; --j) {
+        for (int i = 0; i < arr.sizeI(); ++i) {
+            out << std::setw(6) << std::setprecision(4) << arr.data_[j * arr.sizeI() + i] << " ";
         }
         if (j > 0) out << "\n";
     }
@@ -148,9 +163,9 @@ std::ostream &operator<<(std::ostream& out, const Array2d<T> &arr) {
 
 template<>
 inline std::ostream &operator<<(std::ostream& out, const Array2d<bool> &arr) {
-    for (int j = arr.size_[1] - 1; j >= 0; --j) {
-        for (int i = 0; i < arr.size_[0]; ++i) {
-            out << (arr.data_[j * arr.size_[0] + i] ? "# " : ". ");
+    for (int j = arr.sizeJ() - 1; j >= 0; --j) {
+        for (int i = 0; i < arr.sizeI(); ++i) {
+            out << (arr.data_[j * arr.sizeI() + i] ? "# " : ". ");
         }
         if (j > 0) out << "\n";
     }
@@ -164,10 +179,10 @@ template<typename T>
 int Array2d<T>::sizeJ() const { return size_[1]; };
 
 template<typename T>
-int Array2d<T>::maxI() const { return size_[0] - 1; };
+int Array2d<T>::maxI() const { return size_[0] - 2; };
 
 template<typename T>
-int Array2d<T>::maxJ() const { return size_[1] - 1; };
+int Array2d<T>::maxJ() const { return size_[1] - 2; };
 
 template<typename T>
 constexpr int Array2d<T>::minI() const { return -1; };

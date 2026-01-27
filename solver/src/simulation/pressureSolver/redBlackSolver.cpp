@@ -3,7 +3,6 @@
 #include "macros.h"
 #include "simulation/partitioning.h"
 #include <limits>
-#include <vector>
 
 RedBlackSolver::RedBlackSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning, const Settings &settings)
     : PressureSolver(std::move(grid), std::move(partitioning), settings) {}

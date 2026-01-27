@@ -1,9 +1,8 @@
 #include "simulation/discreteOperators.h"
 #include <cstdlib>
 
-DiscreteOperators::DiscreteOperators(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, const Partitioning &partitioning,
-                                     double alpha)
-    : StaggeredGrid(nCells, meshWidth, partitioning), alpha_(alpha) {}
+DiscreteOperators::DiscreteOperators(const Settings &settings, const Partitioning &partitioning, double alpha)
+    : StaggeredGrid(settings, partitioning), alpha_(alpha) {}
 
 double DiscreteOperators::computeDu2Dx(const int i, const int j) const {
     const double uHalfRight = (u_(i + 1, j) + u_(i, j)) / 2;
