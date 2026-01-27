@@ -190,11 +190,14 @@ void Simulation::printConsoleInfo(double currentTime, const TimeSteppingInfo &ti
 
 void Simulation::setStructureBoundaries() {
     auto &v = discOps_->v();
+
+    // TODO: correct to use the indices of v?
+
     // bottom
     for (int i = v.beginI() + 1; i < v.endI() - 1; ++i) {
         for (int j = v.beginJ(); j < v.endJ() - 1; ++j) {
             if (discOps_->isSolid(i, j) && discOps_->isFluid(i, j + 1)) {
-                v(i, j) = discOps_->displacementsBottom_[i]; // TODO: Field sizes...
+                v(i, j) = discOps_->bottomDisplacement(i);
                 break;
             }
         }
@@ -202,9 +205,9 @@ void Simulation::setStructureBoundaries() {
 
     // top
     for (int i = v.beginI() + 1; i < v.endI() - 1; ++i) {
-        for (int j = v.endJ() - 1; j > v.beginJ(); --j) {  // Iterating over complete height, including border cells
+        for (int j = v.endJ() - 1; j > v.beginJ(); --j) {
             if (discOps_->isSolid(i, j) && discOps_->isFluid(i, j - 1)) {
-                v(i, j) = discOps_->displacementsTop_[i]; // TODO: Field sizes...
+                v(i, j) = discOps_->topDisplacement(i);
                 break;
             }
         }
@@ -500,22 +503,22 @@ void Simulation::calculateForces() {
     const double dx = discOps_->dx();
 
     // collect forces orthogonal to top boundary
-    for (int i = v.beginI(); i < v.endI(); ++i) {
+    for (int i = v.beginI() + 1; i < v.endI() - 1; ++i) {
         for (int j = v.endJ() - 2; j > v.beginJ(); --j) {
             if (discOps_->isFluid(i, j)) {
                 const double vDy = discOps_->computeDvDy(i, j);
-                discOps_->fTop_[i] = -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j + 1) * p(i, j)) / 2);
+                discOps_->topF(i) = -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j + 1) * p(i, j)) / 2);
                 break;
             }
         }
     }
 
     // collect forces orthogonal to bottom boundary
-    for (int i = v.beginI(); i < v.endI(); ++i) {
+    for (int i = v.beginI() + 1; i < v.endI() - 1; ++i) {
         for (int j = v.beginJ() + 1; j < v.endJ() - 1; ++j) {
             if (discOps_->isFluid(i, j)) {
                 const double vDy = discOps_->computeDvDy(i, j);
-                discOps_->fBottom_[i] = -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j - 1) * p(i, j)) / 2);
+                discOps_->bottomF(i) = -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j - 1) * p(i, j)) / 2);
                 break;
             }
         }

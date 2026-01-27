@@ -139,8 +139,6 @@ void StaggeredGrid::initializeStructureField() {
 void StaggeredGrid::test(const Settings &settings) {
     // TODO: Testcode: lid_driven_cavity.txt
 
-    constexpr double eps = 1e-10; // TODO: dieses epsilon in denn Strukturcode verschieben?
-
     const int iOffset = partitioning_.nodeOffset()[0];
 
     initializeStructureField();
@@ -244,4 +242,28 @@ bool StaggeredGrid::isFluid(int i, int j) const {
 
 bool StaggeredGrid::isSolid(int i, int j) const {
     return structure_(i, j);
+}
+
+double &StaggeredGrid::bottomF(int i) {
+    assert(0 <= i);
+    assert(i < int(fBottom_.size()));
+    return fBottom_[i];
+}
+
+double &StaggeredGrid::topF(int i) {
+    assert(0 <= i);
+    assert(i < int(fTop_.size()));
+    return fTop_[i];
+}
+
+double &StaggeredGrid::bottomDisplacement(int i) {
+    assert(0 <= i);
+    assert(i < int(displacementsBottom_.size()));
+    return displacementsBottom_[i];
+}
+
+double &StaggeredGrid::topDisplacement(int i) {
+    assert(0 <= i);
+    assert(i < int(displacementsTop_.size()));
+    return displacementsTop_[i];
 }

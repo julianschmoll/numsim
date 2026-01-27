@@ -151,14 +151,6 @@ public:
      */
     double rhs(int i, int j);
 
-    // for accessing with the same indexing (-1, 0,..., size() - 2)
-    double &fTop(int i);
-    // for accessing with the same indexing (-1, 0,..., size() - 2)
-    double &fBottom(int i);
-
-    std::vector<double> &fTop();
-    std::vector<double> &fBottom();
-
     /// DataField for velocity in x direction.
     DataField &u();
 
@@ -181,6 +173,12 @@ public:
 
     /// lower edge of cell in vertical physical coordinates
     double globalDomainPosJ(int j);
+
+    double &bottomF(int i);
+    double &topF(int i);
+
+    double &bottomDisplacement(int i);
+    double &topDisplacement(int i);
 
     /**
      * Gets mesh width in x direction.
