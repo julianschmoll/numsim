@@ -80,28 +80,20 @@ void PressureSolver::setBoundaryValues(DataField &p) {
 }
 
 void PressureSolver::setStructureBoundaries(DataField &p) {
-    // bottom
-    for (int i = p.beginI() + 1; i < p.endI() - 1; ++i) {
-        for (int j = p.beginJ(); j < p.endJ() - 1; ++j) { // TODO: p.endJ() - 1 oder p.endJ() - 2
-            if (grid_->isSolid(i, j) && grid_->isFluid(i, j + 1)) {
+    for (int j = p.beginJ() + 1; j < p.endJ() - 1; ++j) { // TODO: p.endJ() - 1 oder p.endJ() - 2
+        for (int i = p.beginI() + 1; i < p.endI() - 1; ++i) {
+            if (grid_->isSolid(i, j)) {
                 const bool leftIsFluid = grid_->isSolid(i - 1, j);
                 const bool rightIsFluid = grid_->isSolid(i + 1, j);
-                p(i, j) = p(i, j + 1) + int(leftIsFluid) * p(i - 1, j) + int(rightIsFluid) * p(i + 1, j);
-                p(i, j) /= (1 + int(leftIsFluid) + int(rightIsFluid));
-                break;
-            }
-        }
-    }
-
-    // top
-    for (int i = p.beginI() + 1; i < p.endI() - 1; ++i) {
-        for (int j = p.endJ() - 1; j > p.beginJ(); --j) { // TODO: p.beginJ() oder p.beginJ() + 1
-            if (grid_->isSolid(i, j) && grid_->isFluid(i, j - 1)) {
-                const bool leftIsFluid = grid_->isSolid(i - 1, j);
-                const bool rightIsFluid = grid_->isSolid(i + 1, j);
-                p(i, j) = p(i, j - 1) + int(leftIsFluid) * p(i - 1, j) + int(rightIsFluid) * p(i + 1, j);
-                p(i, j) /= (1 + int(leftIsFluid) + int(rightIsFluid));
-                break;
+                const bool bottomIsFluid = grid_->isSolid(i, j - 1);
+                const bool topIsFluid = grid_->isSolid(i, j + 1);
+                const int fluidCells = (int(bottomIsFluid) + int(topIsFluid) + (leftIsFluid) + int(rightIsFluid));
+                if (fluidCells == 0) {
+                    p(i, j) = 0;
+                } else {
+                    p(i, j) = int(bottomIsFluid) * p(i, j - 1) + int(topIsFluid) * p(i, j + 1) + int(leftIsFluid) * p(i - 1, j) + int(rightIsFluid) * p(i + 1, j);
+                    p(i, j) /= fluidCells;
+                }
             }
         }
     }

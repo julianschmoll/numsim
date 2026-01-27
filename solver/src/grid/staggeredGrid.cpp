@@ -35,11 +35,11 @@ StaggeredGrid::StaggeredGrid(const Settings &settings, const Partitioning &parti
 
     structure_ = Array2d<bool>({pWidth, pHeight});
 
-    displacementsTop_ = std::vector<double>(nCells_[0], 0);
-    topBoundaryPosition_ = std::vector<double>(nCells_[0], settings.physicalSize[1]); // TODO: initialize, settings.physicalSize[1]
+    displacementsTop_ = std::vector<double>(nCells_[0] + 2, 0);
+    topBoundaryPosition_ = std::vector<double>(nCells_[0] + 2, settings.physicalSize[1]);
 
-    displacementsBottom_ = std::vector<double>(nCells_[0], 0);
-    bottomBoundaryPosition_ = std::vector<double>(nCells_[0], 0);
+    displacementsBottom_ = std::vector<double>(nCells_[0] + 2, 0);
+    bottomBoundaryPosition_ = std::vector<double>(nCells_[0] + 2, 0);
 
     fTop_ = std::vector<double>(pWidth, 0);
     fBottom_ = std::vector<double>(pWidth, 0);
@@ -55,6 +55,10 @@ StaggeredGrid::StaggeredGrid(const Settings &settings, const Partitioning &parti
 
     v_ = DataField({vWidth, vHeight}, meshWidth_, {0.5, 0.0}, V_ID);
     g_ = DataField({vWidth, vHeight}, meshWidth_, {0.5, 0.0}, G_ID);
+
+    DEBUG(std::cout << v_.sizeI() << std::endl;)
+    DEBUG(std::cout << "DisplTop " << displacementsTop_.size() << std::endl;)
+    DEBUG(std::cout << "DisplBot " << displacementsBottom_.size() << std::endl;)
 }
 
 double StaggeredGrid::globalDomainPosJ(int j) {
@@ -74,25 +78,27 @@ void StaggeredGrid::updateStructureCells()  {
     // We iterate over all vertical coordinates since there is no communication of the structure array.
     for (int j = beginJ; j <= endJ; ++j) {
 
-        for (int i = beginI + 1; i <= endI - 1; ++i) {
-            assert(topBoundaryPosition_[i] > bottomBoundaryPosition_[i]);
+        for (int i = beginI; i <= endI; ++i) {
+            assert(topBoundaryPosition(i) > bottomBoundaryPosition(i));
             
             double lowerCellEdge = globalDomainPosJ(j);
             double upperCellEdge = globalDomainPosJ(j + 1);
 
-            if (lowerCellEdge < bottomBoundaryPosition_[i] - eps || upperCellEdge > topBoundaryPosition_[i] + eps) {
+            if (lowerCellEdge < bottomBoundaryPosition(i) - eps || upperCellEdge > topBoundaryPosition(i) + eps) {
                 structure_(i, j) = Solid;
             } else {
                 if (isSolid(i, j) && (j == beginJ || isSolid(i, j - 1))) { // Bottom: Solid -> Fluid
-                    v_(i, j) = displacementsBottom_[i];
-                    u_(i, j) = 0;
+                    DEBUG(std::cout << "i/j values: " << i << ", " << j << std::endl;)
+                    DEBUG(std::cout << "v_ size: " << v_.sizeI() << std::endl;)
+                    v_(i, j) = bottomDisplacement(i);
+                    if (i < endI) u_(i, j) = 0;
                     p_(i, j) = p_(i, j + 1);
                 } else if (isSolid(i, j) && (j == endJ || isSolid(i, j + 1))) { // Top: Solid -> Fluid
                     if (j < endJ) { 
                         // j == endJ is handled at the bottom of the partition above if it exists.
-                        v_(i, j) = displacementsTop_[i];
+                        v_(i, j) = topDisplacement(i);
                     }
-                    u_(i, j) = 0;
+                    if (i < endI) u_(i, j) = 0;
                     p_(i, j) = p_(i, j - 1);
                 }
                 structure_(i, j) = Fluid;
@@ -122,7 +128,6 @@ void StaggeredGrid::initializeStructureField() {
             structure_(i, -1) = Solid;
         }
     }
-    /*
     if (partitioning_.ownContainsBoundary<Direction::Left>()) {
         for (int j = -1; j <= endJ; j++) {
             structure_(-1, j) = Solid;
@@ -133,7 +138,6 @@ void StaggeredGrid::initializeStructureField() {
             structure_(endI, j) = Solid;
         }
     }
-    */
     for (size_t i = 0; i < bottomBoundaryPosition_.size(); i++) {
         bottomBoundaryPosition_[i] = 0.03 * i;
         topBoundaryPosition_[i] = 2.0;
@@ -261,14 +265,26 @@ double &StaggeredGrid::topF(int i) {
     return fTop_[i];
 }
 
+double &StaggeredGrid::bottomBoundaryPosition(int i) {
+    assert(-1 <= i);
+    assert(i < int(bottomBoundaryPosition_.size()) - 1);
+    return bottomBoundaryPosition_[i + 1];
+}
+
+double &StaggeredGrid::topBoundaryPosition(int i) {
+    assert(-1 <= i);
+    assert(i < int(topBoundaryPosition_.size()) - 1);
+    return topBoundaryPosition_[i + 1];
+}
+
 double &StaggeredGrid::bottomDisplacement(int i) {
-    assert(0 <= i);
-    assert(i < int(displacementsBottom_.size()));
-    return displacementsBottom_[i];
+    assert(-1 <= i);
+    assert(i < int(displacementsBottom_.size()) - 1);
+    return displacementsBottom_[i + 1];
 }
 
 double &StaggeredGrid::topDisplacement(int i) {
-    assert(0 <= i);
-    assert(i < int(displacementsTop_.size()));
-    return displacementsTop_[i];
+    assert(-1 <= i);
+    assert(i < int(displacementsTop_.size()) - 1);
+    return displacementsTop_[i + 1];
 }

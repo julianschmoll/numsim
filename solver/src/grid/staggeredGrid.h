@@ -201,5 +201,9 @@ public:
 
     void initializeStructureField();
 
+    double &bottomBoundaryPosition(int i);
+
+    double &topBoundaryPosition(int i);
+
     void test(const Settings &settings);
 };
