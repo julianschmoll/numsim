@@ -219,7 +219,7 @@ void Simulation::setStructureBoundaries() {
 
     // bottom
     for (int i = v.beginI() + 1; i < v.endI() - 1; ++i) {
-        for (int j = v.beginJ(); j < v.endI() - 1; ++j) {
+        for (int j = v.beginJ(); j < v.endJ() - 1; ++j) {
             if (discOps_->isFluid(i, j)) { // fluid cell
                 break;
             }
@@ -255,7 +255,7 @@ void Simulation::setStructureBoundaries() {
 
     // u bottom
     for (int i = u.beginI() + 1; i < u.endI() - 1; ++i) {
-        for (int j = u.beginJ(); j < u.endI() - 1; ++j) {
+        for (int j = u.beginJ(); j < u.endJ() - 1; ++j) {
             if (discOps_->isFluid(i, j)) { // fluid cell
                 break;
             }

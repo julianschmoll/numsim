@@ -16,8 +16,11 @@ dirichletTopX    = 0
 dirichletTopY    = 0
 dirichletLeftX   = 0
 dirichletLeftY   = 0
-dirichletRightX  = 0
+dirichletRightX  = -1
 dirichletRightY  = 0
+
+boundaryRight = InflowNoSlip
+boundaryLeft = Outflow
 
 # Discretization parameters
 nCellsX = 80          # number of cells in x and y direction
