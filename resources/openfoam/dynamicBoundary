@@ -1,0 +1,11 @@
+type            uniformFixedValue;
+uniformValue    sine;
+uniformValueCoeffs
+{
+    type            sine;
+    frequency       $frequency;
+    amplitude       $amplitude;
+    scale           ($scale $scale 0);
+    level           $level;
+    outOfBounds     REPEAT;
+}

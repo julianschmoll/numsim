@@ -7,15 +7,28 @@ import simulation
 import writer
 
 
-def main(scenario_cfg, precice_cfg_path):
-    simulation_folder = Path(__file__).resolve().parent / "simulation"
+def main(scenario_cfg, precice_cfg_path, cleanup=True):
+    simulation_folder = Path(__file__).resolve().parent / "out"
     geometry = Geometry(scenario_cfg)
-    # ToDo: This is currently running plain calulix, no coupling yet
+
+    mesh_name = "Solid-Mesh"
+    interface_name = "Solid-Interface"
+
+    inp_path = geometry.write_file(
+        simulation_folder / "geo.inp",
+        mesh_name=mesh_name,
+        interface_name=interface_name,
+        )
+
     sim_out = simulation.run(
-        geometry.write_file(simulation_folder / "geo.inp"), precice_cfg_path
+        inp_path,
+        precice_cfg_path,
+        mesh_name=mesh_name,
+        interface_name=interface_name,
     )
-    writer.convert_to_vtk(sim_out, "out/output.vtk")
-    simulation.cleanup(simulation_folder, remove_spooles=True)
+    writer.convert_to_vtk(sim_out, "out/solid.vtk")
+    if cleanup:
+        simulation.cleanup(simulation_folder)
 
 
 # entry point for solid simulation with calculix and precice
@@ -33,12 +46,19 @@ if __name__ == "__main__":
         default=None,
         help="Scenario to run with calculix",
     )
-    args = parser.parse_args()
 
+    parser.add_argument(
+        "--cleanup",
+        type=bool,
+        default=True,
+        help="Clean up simulation files after run",
+    )
+
+    args = parser.parse_args()
     precice_cfg = args.precice_cfg
     if not precice_cfg:
         precice_cfg = (Path(__file__).resolve().parent.parent
-                       / "cfg" / "precice" / "dummy_config.xml")
+                       / "cfg" / "precice" / "2d_elastic_tube.xml")
 
     scenario = args.scenario
     if not scenario:
@@ -47,4 +67,4 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.INFO)
 
-    main(scenario, precice_cfg)
+    main(scenario, precice_cfg, cleanup=args.cleanup)

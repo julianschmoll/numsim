@@ -36,7 +36,7 @@ def precice_env_setup(environment):
 
 def run(inp_file, precice_cfg, participant="Solid", ccx_cmd="ccx_preCICE",
         mesh_name="Solid-Mesh", interface_name="Solid-Interface",
-        read_data="Force", write_data="Displacement"):
+        read_data="Force", write_data="DisplacementDelta"):
     inp_path = Path(inp_file).resolve()
     work_dir = inp_path.parent
     inp_stem_name = inp_path.with_suffix("").name
