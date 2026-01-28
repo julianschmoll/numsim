@@ -122,8 +122,8 @@ void Simulation::run() {
         const int currentSec = static_cast<int>(currentTime);
 
         printConsoleInfo(currentTime, timeSteppingInfo);
-        DEBUG(outputWriterText_->writeFile(currentTime));
-        outputWriterParaview_->writeFile(currentTime);
+        //DEBUG(outputWriterText_->writeFile(currentTime));
+        //outputWriterParaview_->writeFile(currentTime);
 
         writeOutput(currentTime, currentSec, lastSec);
     }
