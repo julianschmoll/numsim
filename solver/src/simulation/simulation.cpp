@@ -97,6 +97,8 @@ void Simulation::run() {
     DataField &p = discOps_->p();
 
     setBoundaryUV(currentTime);
+
+    discOps_->updateStructureCells(timeStepWidth_);
     setStructureBoundaries();
     setBoundaryFG();
 
@@ -114,6 +116,7 @@ void Simulation::run() {
         setVelocities();
         partitioning_->exchange(uv);
         setBoundaryUV(currentTime);
+        discOps_->updateStructureCells(timeStepWidth_);
         setStructureBoundaries();
 
         calculateForces();
@@ -122,8 +125,8 @@ void Simulation::run() {
         const int currentSec = static_cast<int>(currentTime);
 
         printConsoleInfo(currentTime, timeSteppingInfo);
-        DEBUG(outputWriterText_->writeFile(currentTime));
-        outputWriterParaview_->writeFile(currentTime);
+        //DEBUG(outputWriterText_->writeFile(currentTime));
+        //outputWriterParaview_->writeFile(currentTime);
 
         writeOutput(currentTime, currentSec, lastSec);
     }
@@ -617,7 +620,7 @@ void Simulation::calculateForces() {
             if (discOps_->isFluid(i, j)) {
                 const double vDy = discOps_->computeDvDy(i, j);
                 // ToDo: Check formula, pressure is squared?
-                discOps_->topF(i) = -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j + 1) * p(i, j)) / 2);
+                discOps_->topF(i) = -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j + 1) + p(i, j)) / 2);
                 break;
             }
         }
@@ -628,7 +631,7 @@ void Simulation::calculateForces() {
         for (int j = v.beginJ() + 1; j < v.endJ() - 1; ++j) {
             if (discOps_->isFluid(i, j)) {
                 const double vDy = discOps_->computeDvDy(i, j);
-                discOps_->bottomF(i) = -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j - 1) * p(i, j)) / 2);
+                discOps_->bottomF(i) = -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j - 1) + p(i, j)) / 2);
                 break;
             }
         }
