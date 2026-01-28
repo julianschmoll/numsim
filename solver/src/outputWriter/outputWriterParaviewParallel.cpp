@@ -20,10 +20,13 @@ OutputWriterParaviewParallel::OutputWriterParaviewParallel(std::shared_ptr<Stagg
       // create field variables for resulting values, only for local data as send buffer
       u_(nPointsGlobal_, grid_->meshWidth(), {0.0, 0.5}), v_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.0}),
       p_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.5}),
+      f_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.5}),
 
       // create field variables for resulting values, after MPI communication
       uGlobal_(nPointsGlobal_, grid_->meshWidth(), {0.0, 0.5}), vGlobal_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.0}),
-      pGlobal_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.5}) {
+      pGlobal_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.5}),
+      fGlobal_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.5})
+{
     // Create a vtkWriter_
     vtkWriter_ = vtkSmartPointer<vtkXMLImageDataWriter>::New();
 }
@@ -67,6 +70,11 @@ void OutputWriterParaviewParallel::gatherData() {
             const int iGlobal = nodeOffset[0] + i;
             const int jGlobal = nodeOffset[1] + j;
 
+            if (j == 0) {
+                f_(iGlobal, jGlobal) = grid_->bottomF().interpolateAt(x, 0);
+            } else if (j == jEnd - 1) {
+                f_(iGlobal, jGlobal) = grid_->topF().interpolateAt(x, 0);
+            }
             u_(iGlobal, jGlobal) = isSolid ? 0 : grid_->u().interpolateAt(x, y);
             v_(iGlobal, jGlobal) = isSolid ? 0 : grid_->v().interpolateAt(x, y);
             p_(iGlobal, jGlobal) = isSolid ? 0 : grid_->p().interpolateAt(x, y);
@@ -77,6 +85,7 @@ void OutputWriterParaviewParallel::gatherData() {
     MPI_Reduce(u_.data(), uGlobal_.data(), nPointsGlobalTotal, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     MPI_Reduce(v_.data(), vGlobal_.data(), nPointsGlobalTotal, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     MPI_Reduce(p_.data(), pGlobal_.data(), nPointsGlobalTotal, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(f_.data(), fGlobal_.data(), nPointsGlobalTotal, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 }
 
 void OutputWriterParaviewParallel::writeFile(double currentTime) {
@@ -111,6 +120,21 @@ void OutputWriterParaviewParallel::writeFile(double currentTime) {
     // set number of points in each dimension, 1 cell in z direction
     dataSet->SetDimensions(nCellsGlobal_[0] + 1, nCellsGlobal_[1] + 1, 1); // we want to have points at each corner of each cell
 
+    // forces:
+    // ---------------------------
+    const vtkSmartPointer<vtkDoubleArray> arrayForces = vtkDoubleArray::New();
+    arrayForces->SetNumberOfComponents(1);
+    arrayForces->SetNumberOfTuples(dataSet->GetNumberOfPoints());
+    arrayForces->SetName("forces");
+    int index = 0; // index for the vtk data structure, will be incremented in the inner loop
+    for (int j = 0; j < nCellsGlobal_[1] + 1; j++) {
+        for (int i = 0; i < nCellsGlobal_[0] + 1; i++, index++) {
+            arrayForces->SetValue(index, fGlobal_(i, j));
+        }
+    }
+    assert(index == dataSet->GetNumberOfPoints());
+    dataSet->GetPointData()->AddArray(arrayForces);
+
     // add pressure field variable
     // ---------------------------
     const vtkSmartPointer<vtkDoubleArray> arrayPressure = vtkDoubleArray::New();
@@ -126,7 +150,7 @@ void OutputWriterParaviewParallel::writeFile(double currentTime) {
     // loop over the nodes of the mesh and assign the interpolated p values in the vtk data structure
     // we only consider the cells that are the actual computational domain, not the helper values in the "halo"
 
-    int index = 0; // index for the vtk data structure, will be incremented in the inner loop
+    index = 0; // index for the vtk data structure, will be incremented in the inner loop
     for (int j = 0; j < nCellsGlobal_[1] + 1; j++) {
         for (int i = 0; i < nCellsGlobal_[0] + 1; i++, index++) {
             arrayPressure->SetValue(index, pGlobal_(i, j));

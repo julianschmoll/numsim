@@ -143,6 +143,43 @@ void OutputWriterTextParallel::writeFile(double currentTime) {
         file << std::endl;
     }
     file << std::endl;
+
+    // write forces
+    // ---------
+    // top forces
+    // write header lines
+    file << "topF (" << grid_->topF().size()[0] << "x" << grid_->topF().size()[1] << "): " << std::endl << std::string(fieldWidth, ' ') << "|";
+    for (int i = grid_->topF().beginI(); i < grid_->topF().endI(); i++) {
+        file << std::setw(fieldWidth) << i;
+    }
+    file << std::endl << std::string(fieldWidth * (grid_->topF().size()[0] + 2) + 1, '-') << std::endl;
+
+    // write force values together in one field
+    for (int j = grid_->topF().endJ(); j > grid_->topF().beginJ(); j--) {
+        file << std::setw(fieldWidth) << j << "|";
+        for (int i = grid_->topF().beginI(); i < grid_->topF().endI(); i++) {
+            file << std::setw(fieldWidth) << std::setprecision(fieldWidth - 6) << grid_->topF(i);
+        }
+        file << std::endl;
+    }
+    file << std::endl;
+
+    // bottom forces
+    // write header lines
+    file << "bottomF (" << grid_->bottomF().size()[0] << "x" << grid_->bottomF().size()[1] << "): " << std::endl << std::string(fieldWidth, ' ') << "|";
+    for (int i = grid_->bottomF().beginI(); i < grid_->bottomF().endI(); i++) {
+        file << std::setw(fieldWidth) << i;
+    }
+    file << std::endl << std::string(fieldWidth * (grid_->bottomF().size()[0] + 2) + 1, '-') << std::endl;
+
+    for (int j = grid_->bottomF().endJ(); j > grid_->bottomF().beginJ(); j--) {
+        file << std::setw(fieldWidth) << j << "|";
+        for (int i = grid_->bottomF().beginI(); i < grid_->bottomF().endI(); i++) {
+            file << std::setw(fieldWidth) << std::setprecision(fieldWidth - 6) << grid_->bottomF(i);
+        }
+        file << std::endl;
+    }
+    file << std::endl;
 }
 
 void OutputWriterTextParallel::writePressureFile() const {

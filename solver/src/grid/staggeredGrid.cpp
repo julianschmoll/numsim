@@ -41,8 +41,8 @@ StaggeredGrid::StaggeredGrid(const Settings &settings, const Partitioning &parti
     displacementsBottom_ = std::vector<double>(nCells_[0] + 2, 0);
     bottomBoundaryPosition_ = std::vector<double>(nCells_[0] + 2, 0);
 
-    fTop_ = std::vector<double>(pWidth, 0);
-    fBottom_ = std::vector<double>(pWidth, 0);
+    fTop_ = DataField({pWidth, 1}, meshWidth_, {0.5, 0.0}, 0);
+    fBottom_ = DataField({pWidth, 1}, meshWidth_, {0.5, 0.0}, 0);
 
     initializeStructureField();
 
@@ -262,6 +262,18 @@ double StaggeredGrid::rhs(const int i, const int j) {
     return rhs_(i, j);
 }
 
+double StaggeredGrid::q(const int i, const int j) {
+    return q_(i, j);
+}
+
+DataField &StaggeredGrid::bottomF() {
+    return fBottom_;
+}
+
+DataField &StaggeredGrid::topF() {
+    return fTop_;
+}
+
 DataField &StaggeredGrid::u() {
     return u_;
 }
@@ -307,15 +319,11 @@ bool StaggeredGrid::isSolid(int i, int j) const {
 }
 
 double &StaggeredGrid::bottomF(int i) {
-    assert(0 <= i);
-    assert(i < int(fBottom_.size()));
-    return fBottom_[i];
+    return fBottom_(i, -1);
 }
 
 double &StaggeredGrid::topF(int i) {
-    assert(0 <= i);
-    assert(i < int(fTop_.size()));
-    return fTop_[i];
+    return fTop_(i, -1);
 }
 
 double &StaggeredGrid::bottomBoundaryPosition(int i) {
