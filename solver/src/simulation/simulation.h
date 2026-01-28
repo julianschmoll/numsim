@@ -92,6 +92,13 @@ public:
     void setDisplacements(const std::vector<double> &topDisplacements, const std::vector<double> &bottomDisplacements);
 
     void test();
+
+    std::shared_ptr<Partitioning> getPartitioning() const noexcept;
+
+    std::shared_ptr<DiscreteOperators> getDiscreteOperators() const noexcept {
+        return discOps_;
+    }
+
     
 private:
     // Grid width in x and y directions

@@ -1,3 +1,4 @@
+// cpp
 #include "macros.h"
 #include "settings.h"
 #include "simulation/simulation.h"
@@ -10,6 +11,20 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
+
+
+void printVector1D(const std::string &label,
+                   const std::vector<double> &v,
+                   int maxElements = 10) {
+    std::cout << "[adapter-debug] " << label << " size=" << v.size() << " {";
+    int n = std::min<int>(static_cast<int>(v.size()), maxElements);
+    for (int i = 0; i < n; ++i) {
+        std::cout << v[i];
+        if (i + 1 < n) std::cout << ", ";
+    }
+    if (v.size() > static_cast<size_t>(maxElements)) std::cout << ", ...";
+    std::cout << "}\n";
+}
 
 int main(int argc, char *argv[]) {
     MPI_Init(&argc, &argv);
@@ -31,126 +46,81 @@ int main(int argc, char *argv[]) {
     settings.loadFromFile(settingsPath);
     DEBUG(settings.printSettings());
 
-    // Create a local Partitioning to compute offsets / local cell counts
-    Partitioning partitioning(settings.nCells);
-
-    // Create the simulation (it will create its own Partitioning internally)
-    Simulation simulation(settings, "out");
-
-    std::string meshNameNodes = "Fluid-Mesh-Nodes";
-    std::string meshNameFaces = "Fluid-Mesh-Faces";
-    std::string readDataName = "DisplacementDelta";
-    std::string writeDataName = "Force";
+    precice::string_view fluidMeshNodes = "Fluid-Mesh-Nodes";
+    precice::string_view fluidMeshFaces = "Fluid-Mesh-Faces";
+    precice::string_view displacementDelta = "Displacement";
+    precice::string_view force = "Force";
 
     precice::Participant participant("Fluid", preciceConfigPath, ownRankNo, nRanks);
 
-    const int nCellsXGlobal = settings.nCells[0];
-    const int nCellsYGlobal = settings.nCells[1];
-    const double domainWidth = settings.physicalSize[0];
-    const double domainHeight = settings.physicalSize[1];
-    const double hx = domainWidth / static_cast<double>(nCellsXGlobal);
+    Simulation simulation{settings, "out"};
+    auto partitioning = simulation.getPartitioning();
+    auto diskOps = simulation.getDiscreteOperators();
+    auto physicalSize = settings.physicalSize;
+    int meshDim = participant.getMeshDimensions(fluidMeshNodes);
 
-    // local number of boundary points in x-direction for this rank
-    const int nLocal = partitioning.nCellsLocal()[0];
-    const int offsetX = partitioning.nodeOffset()[0];
+    DEBUG(std::cout << "Mesh dimension: " << meshDim << "\n");
 
-    // We have two boundary lines: bottom and top. For each local partition we
-    // expose the local subset of vertices on bottom and top.
-    const int numLocalVerticesPerLine = nLocal;
-    const int totalLocalVertices = 2 * numLocalVerticesPerLine; // bottom + top
+    // +1 because of vertices, not faces
+    auto verticesWidth = partitioning->nCellsLocal()[0] + 1;
+    auto facesWidth = partitioning->nCellsLocal()[0] +1;
+    std::cout << "[adapter-debug] " << "Vertices width: " << verticesWidth << "\n";
+    std::cout << "[adapter-debug] " << "Faces width: " << facesWidth << "\n";
+    auto vertexSize = 2 * verticesWidth; // number of vertices at wet surface
+    auto facesSize = 2 * facesWidth;
 
-    // Build vertices: [bottom(0..nLocal-1) | top(0..nLocal-1)] with (x,y) coordinates.
-    std::vector<double> vertices;
-    vertices.reserve(static_cast<size_t>(totalLocalVertices) * 2);
+    DEBUG(std::cout << "Vertex size: " << vertexSize << "\n");
+    DEBUG(std::cout << "Mesh size: " << facesSize << "\n");
 
-    std::vector<int> vertexIdsNodes;
-    vertexIdsNodes.reserve(static_cast<size_t>(totalLocalVertices));
+    std::vector<double> nodeCoords(vertexSize*meshDim);
+    std::vector<precice::VertexID> nodeIDs(vertexSize);
 
-    // bottom vertices (y = 0)
-    for (int i = 0; i < numLocalVerticesPerLine; ++i) {
-        int globalI = offsetX + i;
-        double x = (globalI + 0.5) * hx; // cell-centered
-        double y = 0.0;
-        vertices.push_back(x);
-        vertices.push_back(y);
-        // global unique id for bottom line (use 0..nCellsXGlobal-1)
-        vertexIdsNodes.push_back(globalI);
-    }
+    std::vector<double> faceCoords(facesSize*meshDim);
+    std::vector<precice::VertexID> faceIDs(facesSize);
 
-    // top vertices (y = domainHeight)
-    for (int i = 0; i < numLocalVerticesPerLine; ++i) {
-        int globalI = offsetX + i;
-        double x = (globalI + 0.5) * hx;
-        double y = domainHeight;
-        vertices.push_back(x);
-        vertices.push_back(y);
-        // global unique id for top line (we offset by nCellsXGlobal so top ids are distinct)
-        vertexIdsNodes.push_back(globalI + nCellsXGlobal);
-    }
+    participant.setMeshVertices(fluidMeshNodes, nodeCoords, nodeIDs);
+    participant.setMeshVertices(fluidMeshFaces, faceCoords, faceIDs);
 
-    // For this adapter we use the same vertex set for reading displacements and writing forces.
-    // setMeshVertices expects the local subset of the global mesh and global vertex IDs.
-    participant.setMeshVertices(meshNameNodes, vertices, vertexIdsNodes);
-    participant.setMeshVertices(meshNameFaces, vertices, vertexIdsNodes);
+    int displacementsDim = participant.getDataDimensions(fluidMeshNodes, displacementDelta);
+    std::vector<double> displacements(vertexSize*displacementsDim, 0.0);
+
+    int forcesDim = participant.getDataDimensions(fluidMeshFaces, force);
+    std::vector<double> forces(facesSize*forcesDim, 0.0);
+
+    DEBUG(std::cout << forces.size() << " force entries\n");
 
     participant.initialize();
 
-    // Each vertex has 2 components (x,y). We have totalLocalVertices vertices.
-    std::vector<double> receiveBuffer(static_cast<size_t>(totalLocalVertices) * 2, 0.0);
-    std::vector<double> sendBuffer(static_cast<size_t>(totalLocalVertices) * 2, 0.0);
-
-    std::vector<double> topDisplacements(numLocalVerticesPerLine);
-    std::vector<double> bottomDisplacements(numLocalVerticesPerLine);
-    std::vector<double> topForces(numLocalVerticesPerLine, 0.0);
-    std::vector<double> bottomForces(numLocalVerticesPerLine, 0.0);
-
     double currentTime = 0.0;
+
+    std::cout << "[adapter-debug] " << "Starting coupling loop\n";
 
     while (participant.isCouplingOngoing()) {
         if (participant.requiresWritingCheckpoint()) {
             simulation.saveState();
         }
 
+        std::cout << "[adapter-debug] " << "Coupling loop\n";
+
         double preciceDt = participant.getMaxTimeStepSize();
         TimeSteppingInfo tsInfo = simulation.computeTimeStepWidth(currentTime);
         double dt = std::min(preciceDt, tsInfo.timeStepWidth);
         simulation.setTimeStepWidth(dt);
 
-        // read vector data: ordering is [vx, vy] per vertex -> repeated for all local vertices
-        participant.readData(meshNameNodes, readDataName, vertexIdsNodes, dt, receiveBuffer);
+        participant.readData(fluidMeshNodes, displacementDelta, nodeIDs, dt, displacements);
 
-        // Unpack: receiveBuffer stores [bottom0.x, bottom0.y, bottom1.x, bottom1.y, ..., top0.x, top0.y, ...]
-        // We only care about vertical (y) displacement here.
-        for (int i = 0; i < numLocalVerticesPerLine; ++i) {
-            bottomDisplacements[i] = receiveBuffer[2 * i + 1];                           // bottom i -> y
-            topDisplacements[i] = receiveBuffer[2 * (numLocalVerticesPerLine + i) + 1];  // top i -> y
-        }
+        printVector1D("Displacements (read)", displacements, 44);
 
-        // provide the solver with the displacements (top, bottom)
-        simulation.setDisplacements(topDisplacements, bottomDisplacements);
+        // setDisplacements(topDisplacements, bottomDisplacements);
 
         participant.startProfilingSection("Fluid Solver Step");
-
         simulation.advanceFluidSolver(dt);
-
-        // TODO: Simulation must expose a getter to read computed forces (topForces / bottomForces).
-        // For now the vectors remain zero unless Simulation::getForces(...) is implemented.
-        // Example intended API:
-        // simulation.getForces(topForces, bottomForces);
-
+        // getForces();
         participant.stopLastProfilingSection();
 
-        // Pack vector data for preCICE: each vertex expects [fx, fy]. We send only vertical force in fy.
-        for (int i = 0; i < numLocalVerticesPerLine; ++i) {
-            // bottom vertex i
-            sendBuffer[2 * i + 0] = 0.0;
-            sendBuffer[2 * i + 1] = bottomForces[i];
-            // top vertex i (located at index numLocalVerticesPerLine + i)
-            sendBuffer[2 * (numLocalVerticesPerLine + i) + 0] = 0.0;
-            sendBuffer[2 * (numLocalVerticesPerLine + i) + 1] = topForces[i];
-        }
+        printVector1D("Forces (before write)", forces, 44);
 
-        participant.writeData(meshNameFaces, writeDataName, vertexIdsNodes, sendBuffer);
+        participant.writeData(fluidMeshFaces, force, faceIDs, forces);
 
         participant.advance(dt);
 
@@ -159,9 +129,9 @@ int main(int argc, char *argv[]) {
         } else {
             simulation.updateSolid();
             currentTime += dt;
-            int currentSec = static_cast<int>(currentTime);
-            int lastSec = static_cast<int>(currentTime - dt);
-            simulation.writeOutput(currentTime, currentSec, lastSec);
+            // int currentSec = static_cast<int>(currentTime);
+            // int lastSec = static_cast<int>(currentTime - dt);
+            // simulation.writeOutput(currentTime, currentSec, lastSec);
         }
     }
 
@@ -172,5 +142,10 @@ int main(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-// Note: leave getForces/setDisplacements helper functions removed from this file;
-// prefer implementing accessors in Simulation to obtain forces and set displacements cleanly.
+void getForces() {
+
+}
+
+void setDisplacements() {
+
+}

@@ -607,3 +607,7 @@ void Simulation::test() {
     discOps_->test(settings_);
     std::cout << "Simulation::test: End" << std::endl;
 }
+
+std::shared_ptr<Partitioning> Simulation::getPartitioning() const noexcept {
+    return partitioning_;
+}
