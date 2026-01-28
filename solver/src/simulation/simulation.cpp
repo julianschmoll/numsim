@@ -161,7 +161,7 @@ void Simulation::advanceFluidSolver(double dt) {
 void Simulation::updateSolid() {
     DataField &q = discOps_->q();
     // Struktur anpassen
-    discOps_->updateStructureCells();
+    discOps_->updateStructureCells(timeStepWidth_);
     // unphysical corrective pressure q berechnen
     pressureSolver_->solve(q);
     // geschwindigkeiten korrigieren
