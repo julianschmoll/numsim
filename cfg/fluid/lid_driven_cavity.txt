@@ -19,6 +19,7 @@ dirichletLeftY   = 0
 dirichletRightX  = 0
 dirichletRightY  = 0
 
+boundaryBottom = Elastic
 
 # Discretization parameters
 nCellsX = 20          # number of cells in x and y direction
