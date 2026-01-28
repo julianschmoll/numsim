@@ -71,7 +71,7 @@ double StaggeredGrid::globalDomainPosJ(int j) {
     return (partitioning_.nodeOffset()[1] + j) * dy(); // TODO: drüber nachdenken.
 }
 
-void StaggeredGrid::updateStructureCells()  {
+void StaggeredGrid::updateStructureCells(double dt)  {
     const int leftDomainBoundaryOffset = int(partitioning_.ownContainsBoundary<Direction::Left>());
     const int rightDomainBoundaryOffset = int(partitioning_.ownContainsBoundary<Direction::Right>());
 
@@ -83,6 +83,31 @@ void StaggeredGrid::updateStructureCells()  {
     // We use a small offset to make sure a cell is actually fully solid.
     // This way we also avoid labeling the domain boundary as fluid.
     constexpr double eps = 1e-10;
+
+    // Bottom -> Top Iteration
+    for (int j = beginJ; j <= endJ - 1; ++j) {
+        for (int i = beginI; i <= endI; ++i) {
+            double lowerCellEdge = globalDomainPosJ(j);
+            if (lowerCellEdge < bottomBoundaryPosition(i) - eps) {
+                structure_(i, j) = Solid;
+            } else if (isSolid(i, j)) {
+                v_(i, j) = bottomDisplacement(i) / dt;
+                if (i < endI) u_(i, j) = 0; // Über Korrektheit nachdenken
+                p_(i, j) = p_(i, j + 1);
+                structure_(i, j) = Fluid;
+            } else {
+                break;
+            }
+        }
+    }
+    // Top -> Bottom Iteration
+    for (int j = beginJ; j <= endJ - 1; ++j) {
+        for (int i = beginI; i <= endI; ++i) {
+
+        }
+    }
+
+    return;
 
     // We iterate over all vertical coordinates since there is no communication of the structure array.
     for (int j = beginJ; j <= endJ; ++j) {

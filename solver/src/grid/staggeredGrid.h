@@ -198,7 +198,7 @@ public:
     bool isFluid(int i, int j) const;
     bool isSolid(int i, int j) const;
 
-    void updateStructureCells();
+    void updateStructureCells(double dt);
 
     void initializeStructureField();
 
