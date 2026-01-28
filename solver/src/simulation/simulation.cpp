@@ -205,19 +205,19 @@ void Simulation::setStructureBoundaries() {
                 const bool topFluid = discOps_->isFluid(i, j + 1);
 
                 if (topFluid && leftFluid && rightFluid) {
-                    u(i, j) = 0;
-                    u(i - 1, j) = 0;
+                    f(i, j) = u(i, j) = 0;
+                    f(i - 1, j) = u(i - 1, j) = 0;
                 } else if (topFluid && leftFluid) {
-                    u(i, j) = - u(i , j + 1);
-                    u(i - 1, j) = 0;
+                    f(i, j) = u(i, j) = - u(i , j + 1);
+                    f(i - 1, j) = u(i - 1, j) = 0;
                 } else if (topFluid && rightFluid) {
-                    u(i, j) = 0;
+                    f(i, j) = u(i, j) = 0;
                 } else if (topFluid) {
-                    u(i, j) = - u(i, j + 1);
+                    f(i, j) = u(i, j) = - u(i, j + 1);
                 } else if (leftFluid) {
-                    u(i - 1, j) = 0;
+                    f(i - 1, j) = u(i - 1, j) = 0;
                 } else if (rightFluid) {
-                    u(i, j) = 0;
+                    f(i, j) = u(i, j) = 0;
                 }
             }
         }
@@ -236,17 +236,17 @@ void Simulation::setStructureBoundaries() {
                 const bool topFluid = discOps_->isFluid(i, j + 1);
 
                 if (topFluid && leftFluid && rightFluid) {
-                    v(i, j) = dCenter;
+                    g(i, j) = v(i, j) = dCenter;
                 } else if (topFluid && leftFluid) {
-                    v(i, j) = dCenter;
+                    g(i, j) = v(i, j) = dCenter;
                 } else if (topFluid && rightFluid) {
-                    v(i, j) = dCenter;
+                    g(i, j) = v(i, j) = dCenter;
                 } else if (topFluid) {
-                    v(i, j) = dCenter;
+                    g(i, j) = v(i, j) = dCenter;
                 } else if (leftFluid) {
-                    v(i, j) = dCenter + dRight - v(i - 1, j);
+                    g(i, j) = v(i, j) = dCenter + dRight - v(i - 1, j);
                 } else if (rightFluid) {
-                    v(i, j) = dLeft + dCenter - v(i + i, j);
+                    g(i, j) = v(i, j) = dLeft + dCenter - v(i + i, j);
                 }
             }
         }
@@ -264,19 +264,19 @@ void Simulation::setStructureBoundaries() {
                 const bool bottomFluid = discOps_->isFluid(i, j - 1);
 
                 if (bottomFluid && leftFluid && rightFluid) {
-                    u(i, j) = 0;
-                    u(i - 1, j) = 0;
+                    f(i, j) = u(i, j) = 0;
+                    f(i - 1, j) = u(i - 1, j) = 0;
                 } else if (bottomFluid && leftFluid) {
-                    u(i, j) = - u(i , j - 1);
-                    u(i - 1, j) = 0;
+                    f(i, j) = u(i, j) = - u(i , j - 1);
+                    f(i - 1, j) = u(i - 1, j) = 0;
                 } else if (bottomFluid && rightFluid) {
-                    u(i, j) = 0;
+                    f(i, j) = u(i, j) = 0;
                 } else if (bottomFluid) {
-                    u(i, j) = - u(i, j - 1);
+                    f(i, j) = u(i, j) = - u(i, j - 1);
                 } else if (leftFluid) {
-                    u(i - 1, j) = 0;
+                    f(i - 1, j) = u(i - 1, j) = 0;
                 } else if (rightFluid) {
-                    u(i, j) = 0;
+                    f(i, j) = u(i, j) = 0;
                 }
             }
         }
@@ -295,17 +295,17 @@ void Simulation::setStructureBoundaries() {
                 const bool bottomFluid = discOps_->isFluid(i, j - 1);
 
                 if (bottomFluid && leftFluid && rightFluid) {
-                    v(i, j - 1) = dCenter;
+                    g(i, j - 1) = v(i, j - 1) = dCenter;
                 } else if (bottomFluid && leftFluid) {
-                    v(i, j - 1) = dCenter;
+                    g(i, j - 1) = v(i, j - 1) = dCenter;
                 } else if (bottomFluid && rightFluid) {
-                    v(i, j - 1) = dCenter;
+                    g(i, j - 1) = v(i, j - 1) = dCenter;
                 } else if (bottomFluid) {
-                    v(i, j - 1) = dCenter;
+                    g(i, j - 1) = v(i, j - 1) = dCenter;
                 } else if (leftFluid) {
-                    v(i, j - 1) = dCenter + dRight - v(i - 1, j - 1);
+                    g(i, j - 1) = v(i, j - 1) = dCenter + dRight - v(i - 1, j - 1);
                 } else if (rightFluid) {
-                    v(i, j - 1) = dLeft + dCenter - v(i + i, j - 1);
+                    g(i, j - 1) = v(i, j - 1) = dLeft + dCenter - v(i + i, j - 1);
                 }
             }
         }
