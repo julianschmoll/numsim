@@ -3,7 +3,7 @@
 - [ ] Inflow und Outflow Boundary Conditions implementieren (Bene)
     - [x] Inflow BC
     - [x] Outflow BC
-    - [ ] Testen ob das tut mit openFOAM (julian)
+    - [x] Testen ob das tut mit openFOAM (julian)
 
 - [x] Function als Geschwindigkeitsinput implementieren (für debugging purposes)
 
@@ -32,7 +32,7 @@
 
 - [x] Calculix Config Files checken und 2d tube erstellen (dafür bedarf es noch keiner preCICE koppellung) (julian)
 - [x] Entrypoint für Calculix Simulation Schreiben (julian)
-- [ ] OpenFOAM entrypoint schreiben (would be nice to read our fluid config and simulate same scenario with openFOAM) (julian)
+- [x] OpenFOAM entrypoint schreiben (would be nice to read our fluid config and simulate same scenario with openFOAM) (julian)
     - Wurde uns auch im Tutorium ans Herz gelegt um dann in der Präsentation unseren solver gegen openFOAM plotten zu können ähnlich zu den preCICE tutorials 
 - [ ] Calculix Coupling testen mit OpenFOAM (julian)
 
