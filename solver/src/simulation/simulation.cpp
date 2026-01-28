@@ -56,9 +56,9 @@ Simulation::Simulation(const Settings &settings, const std::string &folderName) 
     outputWriterText_ = std::make_unique<OutputWriterTextParallel>(discOps_, *partitioning_, folderName);
 }
 
-void Simulation::writeOutput(const double currentTime, const int currentSec, const int lastSec) const {
+void Simulation::writeOutput(const int currentSec, const int lastSec) const {
     if (currentSec > lastSec && !settings_.generateTrainingData) [[unlikely]] {
-        outputWriterParaview_->writeFile(currentTime);
+        outputWriterParaview_->writeFile(currentTime_);
     }
 }
 
@@ -89,21 +89,24 @@ void Simulation::run() {
 
     const auto start = std::chrono::high_resolution_clock::now();
 
-    double currentTime = 0.0;
+    currentTime_ = 0.0;
 
     std::vector uv = {&discOps_->u(), &discOps_->v()};
     std::vector fg = {&discOps_->f(), &discOps_->g()};
 
     DataField &p = discOps_->p();
 
-    setBoundaryUV(currentTime);
-
+    setBoundaryUV();
+    for (size_t i = 0; i < discOps_->bottomBoundaryPosition_.size(); i++) {
+        discOps_->bottomBoundaryPosition_[i] = 0.01 * i;
+        discOps_->topBoundaryPosition_[i] = settings_.physicalSize[1];
+    }
     discOps_->updateStructureCells(timeStepWidth_);
     setStructureBoundaries();
     setBoundaryFG();
 
-    while (currentTime < settings_.endTime) {
-        TimeSteppingInfo timeSteppingInfo = computeTimeStepWidth(currentTime);
+    while (currentTime_ < settings_.endTime) {
+        TimeSteppingInfo timeSteppingInfo = computeTimeStepWidth();
         timeStepWidth_ = timeSteppingInfo.timeStepWidth;
 
         setBoundaryFG(); // TODO: Korrekt? Die Reihenfolge von setBoundaryFG() und setPreliminaryVelocities() sollte hier keine Rolle spielen.
@@ -115,24 +118,24 @@ void Simulation::run() {
 
         setVelocities();
         partitioning_->exchange(uv);
-        setBoundaryUV(currentTime);
+        setBoundaryUV();
         discOps_->updateStructureCells(timeStepWidth_);
         setStructureBoundaries();
 
         calculateForces();
-        const int lastSec = static_cast<int>(currentTime);
-        currentTime += timeStepWidth_;
-        const int currentSec = static_cast<int>(currentTime);
+        const int lastSec = static_cast<int>(currentTime_);
+        currentTime_ += timeStepWidth_;
+        const int currentSec = static_cast<int>(currentTime_);
 
-        printConsoleInfo(currentTime, timeSteppingInfo);
-        //DEBUG(outputWriterText_->writeFile(currentTime));
-        //outputWriterParaview_->writeFile(currentTime);
+        printConsoleInfo(timeSteppingInfo);
+        //DEBUG(outputWriterText_->writeFile(currentTime_));
+        //outputWriterParaview_->writeFile(currentTime_);
 
-        writeOutput(currentTime, currentSec, lastSec);
+        writeOutput(currentSec, lastSec);
     }
 
     if (settings_.generateTrainingData)
-        outputWriterParaview_->writeFile(currentTime);
+        outputWriterParaview_->writeFile(currentTime_);
 
     partitioning_->barrier();
 
@@ -156,29 +159,34 @@ void Simulation::advanceFluidSolver(double dt) {
 
     setVelocities();
     partitioning_->exchange(uv);
-    setBoundaryUV(/* TODO: currentTime */ dt);
+    setBoundaryUV();
 
     calculateForces();
+
+    currentTime_ += dt; // TODO: when do we need to update the current time?
 }
 
 void Simulation::updateSolid() {
     DataField &q = discOps_->q();
     // Struktur anpassen
     discOps_->updateStructureCells(timeStepWidth_);
+    setBoundaryUV();
+    setBoundaryFG();
+    setStructureBoundaries();
     // unphysical corrective pressure q berechnen
     pressureSolver_->solve(q);
     // geschwindigkeiten korrigieren
     correctVelocities();
 }
 
-void Simulation::printConsoleInfo(double currentTime, const TimeSteppingInfo &timeSteppingInfo) const {
+void Simulation::printConsoleInfo(const TimeSteppingInfo &timeSteppingInfo) const {
     static double lastProgress10th = 0;
     if (partitioning_->onPrimaryRank()) {
-        double progress = currentTime / settings_.endTime * 100;
+        double progress = currentTime_ / settings_.endTime * 100;
         if (progress >= lastProgress10th) {
             std::cout << "Progress: ";
             std::cout << std::fixed << std::setw(5) << std::setprecision(1) << progress << "%: ";
-            std::cout << std::fixed << std::setw(5) << std::setprecision(2) << currentTime << "s / ";
+            std::cout << std::fixed << std::setw(5) << std::setprecision(2) << currentTime_ << "s / ";
             std::cout << std::fixed << std::setprecision(2) << settings_.endTime << "s\n";
             DEBUG(std::cout << " -- max(u,v) = " << std::fixed << std::setprecision(2) << timeSteppingInfo.maxVelocity << ", ")
             DEBUG(std::cout << "dt = " << std::fixed << std::setprecision(4) << timeSteppingInfo.timeStepWidth << "\n")
@@ -315,11 +323,11 @@ void Simulation::setStructureBoundaries() {
     }
 }
 
-void Simulation::setBoundaryUV(double currentTime) {
+void Simulation::setBoundaryUV() {
     auto &u = discOps_->u();
     auto &v = discOps_->v();
 
-    double speedVariance = settings_.dirichletAmplitude * sin(settings_.dirichletFrequency * (settings_.dirichletTimeShift + currentTime) * M_PI);
+    double speedVariance = settings_.dirichletAmplitude * sin(settings_.dirichletFrequency * (settings_.dirichletTimeShift + currentTime_) * M_PI);
 
     if (partitioning_->ownContainsBoundary<Direction::Bottom>()) {
         switch (settings_.boundaryBottom) {
@@ -457,7 +465,7 @@ void Simulation::setBoundaryFG() {
     g = v;
 }
 
-TimeSteppingInfo Simulation::computeTimeStepWidth(double currentTime) {
+TimeSteppingInfo Simulation::computeTimeStepWidth() {
     const double uMaxLocal = discOps_->u().absMax();
     const double vMaxLocal = discOps_->v().absMax();
 
@@ -481,8 +489,8 @@ TimeSteppingInfo Simulation::computeTimeStepWidth(double currentTime) {
 
     dt = std::min(dt, settings_.maximumDt);
 
-    if (currentTime + dt > settings_.endTime) {
-        dt = settings_.endTime - currentTime;
+    if (currentTime_ + dt > settings_.endTime) {
+        dt = settings_.endTime - currentTime_;
     }
 
     TimeSteppingInfo info{.convectiveConstraint = std::min(convectiveU, convectiveV),
