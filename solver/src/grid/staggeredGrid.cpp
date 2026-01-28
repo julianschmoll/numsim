@@ -84,30 +84,53 @@ void StaggeredGrid::updateStructureCells(double dt)  {
     // This way we also avoid labeling the domain boundary as fluid.
     constexpr double eps = 1e-10;
 
-    // Bottom -> Top Iteration
-    for (int j = beginJ; j <= endJ - 1; ++j) {
-        for (int i = beginI; i <= endI; ++i) {
-            double lowerCellEdge = globalDomainPosJ(j);
-            if (lowerCellEdge < bottomBoundaryPosition(i) - eps) {
+    // Top -> Bottom Iteration (fixing bottom edge shifted structure cells)
+    for (int i = beginI; i <= endI; ++i) {
+        for (int j = endJ - 1; j >= beginI; --j) {
+            if (isFluid(i, j)) foundFluid = true;
+            if (!foundFluid)  // Noch nicht außerhalb der top boundary
+                continue;
+            double upperCellEdge = globalDomainPosJ(j + 1);
+            if (upperCellEdge < bottomBoundaryPosition(i) + eps) {  // cell unterhalb der bottom boundary line
                 structure_(i, j) = Solid;
-            } else if (isSolid(i, j)) {
-                v_(i, j) = bottomDisplacement(i) / dt;
-                if (i < endI) u_(i, j) = 0; // Über Korrektheit nachdenken
-                p_(i, j) = p_(i, j + 1);
+            } else if (isSolid(i, j)) { // cell oberhalb der bottom boundary line and solid
+                // fluid rein setzen, werte korrigieren
                 structure_(i, j) = Fluid;
-            } else {
-                break;
+                v_(i, j) = bottomDisplacement(i) / dt;
+                if (i < endI) u_(i, j) = 0;
+                p_(i, j) = p_(i, j + 1);
             }
         }
+        foundFluid = false;
     }
-    // Top -> Bottom Iteration
-    for (int j = beginJ; j <= endJ - 1; ++j) {
-        for (int i = beginI; i <= endI; ++i) {
 
+    // Bottom -> Top Iteration (fixing top edge shifted structure cells)
+    for (int i = beginI; i <= endI; ++i) {
+        for (int j = beginJ + 1; j <= endJ - 1; ++j) {
+            if (isFluid(i, j)) foundFluid = true;
+            if (!foundFluid)  // Noch nicht außerhalb der bottom boundary
+                continue;
+            double lowerCellEdge = globalDomainPosJ(j);
+            if (lowerCellEdge > topBoundaryPosition(i) - eps) {
+                structure_(i, j) = Solid;
+            } else if (isSolid(i, j)) {
+                structure_(i, j) = Fluid;
+                v_(i, j - 1) = topDisplacement(i) / dt;
+                if (i < endI) u_(i, j) = 0;
+                p_(i, j) = p_(i, j - 1);
+            }
         }
     }
 
     return;
+
+
+
+    // Von oben iterieren bis fluid gefunden, bis dahin nichts tun, nur weiter
+    // Wenn Fluid cell:
+    //      wenn unterhalb der Boundary:
+    //          wenn solid: continue
+    //          wenn fluid: set solid, copy and fix values
 
     // We iterate over all vertical coordinates since there is no communication of the structure array.
     for (int j = beginJ; j <= endJ; ++j) {
