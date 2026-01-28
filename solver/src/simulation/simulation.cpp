@@ -195,73 +195,6 @@ void Simulation::setStructureBoundaries() {
 
     auto &s = discOps_->structure_;
 
-    // v top border
-    /* for (int i = s.minI() + 1; i <= s.maxI() - 1; ++i) {
-        const double dLeft = (discOps_->topDisplacement(i - 1) + discOps_->topDisplacement(i)) / timeStepWidth_;
-        const double dRight = (discOps_->topDisplacement(i) + discOps_->topDisplacement(i + 1)) / timeStepWidth_;
-        for (int j = s.maxJ(); j >= s.minJ() + 1; --j) {
-            if (discOps_->isFluid(i, j)) { // fluid cell
-                break;
-            }
-            if (discOps_->isFluid(i, j - 1)) { // cell below fluid
-                v(i, j - 1) = discOps_->topDisplacement(i) / timeStepWidth_;
-            }
-            if (discOps_->isFluid(i - 1, j)) { // cell left fluid
-                // v(i, j - 1) = dLeft - v(i - 1, j - 1);
-                v(i, j) = - v(i - 1, j);
-            } else if (discOps_->isFluid(i + 1, j)) { // cell right fluid
-                // v(i, j - 1) = dRight - v(i + 1, j - 1);
-                v(i, j) = - v(i + 1, j);
-            }
-            g(i, j - 1) = v(i, j - 1);
-        }
-    } */
-
-    /*
-    // v bottom border
-    for (int i = s.minI() + 1; i <= s.maxI() - 1; ++i) {
-        for (int j = s.minJ(); j < s.maxJ() - 1; ++j) {
-            const double dLeft = (discOps_->topDisplacement(i - 1) + discOps_->topDisplacement(i)) / timeStepWidth_;
-            const double dRight = (discOps_->topDisplacement(i) + discOps_->topDisplacement(i + 1)) / timeStepWidth_;
-            if (discOps_->isFluid(i, j)) { // fluid cell
-                break;
-            }
-            if (discOps_->isFluid(i, j + 1)) { // cell above fluid
-                v(i, j) = discOps_->bottomDisplacement(i) / timeStepWidth_;
-            }
-            if (discOps_->isFluid(i - 1, j)) { // cell left fluid
-                // v(i, j) = dLeft - v(i - 1, j);
-                v(i, j - 1) = - v(i - 1, j);
-            } else if (discOps_->isFluid(i + 1, j)) { // cell right fluid
-                //v(i, j) = dRight - v(i + 1, j);
-                v(i, j - 1) = - v(i + 1, j);
-            }
-            g(i, j) = v(i, j);
-        }
-    }*/
-    /*
-    // u top border
-    for (int i = u.beginI() + 1; i < u.endI() - 1; ++i) {
-        for (int j = u.endJ() - 1; j > u.beginJ(); --j) {
-            if (discOps_->isFluid(i, j)) { // fluid cell
-                break;
-            }
-            if (discOps_->isFluid(i, j - 1)) { // cell below fluid
-                u(i, j) = - u(i, j - 1);
-                u(i - 1, j) = - u(i - 1, j - 1);
-            }
-            if (discOps_->isFluid(i - 1, j)) { // cell left fluid
-                u(i - 1, j) = 0;
-                u(i, j) = - u(i, j - 1);
-            } else if (discOps_->isFluid(i + 1, j)) { // cell right fluid
-                u(i, j) = 0;
-                u(i - 1, j) = - u(i - 1, j - 1);
-            }
-            f(i, j - 1) = u(i, j - 1);
-        }
-    }
-    */
-
     // u bottom border
     for (int i = u.minI() + 1; i <= u.maxI() - 1; ++i) {
         for (int j = u.minJ(); j <= u.maxJ() - 1; ++j) {
@@ -311,6 +244,59 @@ void Simulation::setStructureBoundaries() {
                 v(i, j) = - v(i - 1, j);
             } else if (rightFluid) {
                 v(i, j) = - v(i + i, j);
+            }
+        }
+    }
+
+    // u top border
+    for (int i = u.minI() + 1; i <= u.maxI() - 1; ++i) {
+        for (int j = u.maxJ(); j <= u.minJ(); --j) { // ToDo: Correct iteration?
+            if (discOps_->isFluid(i, j)) { // fluid cell
+                break;
+            }
+            bool leftFluid = discOps_->isFluid(i - 1, j);
+            bool rightFluid = discOps_->isFluid(i + 1, j);
+            bool bottomFluid = discOps_->isFluid(i, j - 1);
+
+            if (bottomFluid && leftFluid && rightFluid) {
+                u(i, j) = 0;
+                u(i - 1, j) = 0;
+            } else if (bottomFluid && leftFluid) {
+                u(i, j) = - u(i , j - 1);
+                u(i - 1, j) = 0;
+            } else if (bottomFluid && rightFluid) {
+                u(i, j) = 0;
+            } else if (bottomFluid) {
+                u(i, j) = - u(i, j - 1);
+            } else if (leftFluid) {
+                u(i - 1, j) = 0;
+            } else if (rightFluid) {
+                u(i, j) = 0;
+            }
+        }
+    }
+    // v top border
+    for (int i = v.minI() + 1; i <= v.maxI() - 1; ++i) {
+        for (int j = v.maxJ() + 1; j >= v.minJ() + 1; ++j) { // ToDo: Correct iteration?
+            if (discOps_->isFluid(i, j)) { // fluid cell
+                break;
+            }
+            bool leftFluid = discOps_->isFluid(i - 1, j);
+            bool rightFluid = discOps_->isFluid(i + 1, j);
+            bool bottomFluid = discOps_->isFluid(i, j - 1);
+
+            if (bottomFluid && leftFluid && rightFluid) {
+                v(i, j - 1) = 0;
+            } else if (bottomFluid && leftFluid) {
+                v(i, j - 1) = 0;
+            } else if (bottomFluid && rightFluid) {
+                v(i, j - 1) = 0;
+            } else if (bottomFluid) {
+                v(i, j - 1) = 0;
+            } else if (leftFluid) {
+                v(i, j - 1) = - v(i - 1, j - 1);
+            } else if (rightFluid) {
+                v(i, j - 1) = - v(i + i, j - 1);
             }
         }
     }
