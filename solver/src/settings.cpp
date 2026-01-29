@@ -76,10 +76,14 @@ void Settings::loadFromFile(const std::string &filename) {
     if (settings.count("boundaryBottom")) {
         if (settings["boundaryBottom"] == "Outflow")
             boundaryBottom = BoundaryType::Outflow;
+        else if (settings["boundaryBottom"] == "Elastic")
+            boundaryBottom = BoundaryType::Elastic;
     }
     if (settings.count("boundaryTop")) {
         if (settings["boundaryTop"] == "Outflow")
             boundaryTop = BoundaryType::Outflow;
+        else if (settings["boundaryTop"] == "Elastic")
+            boundaryTop = BoundaryType::Elastic;
     }
     if (settings.count("boundaryLeft")) {
         if (settings["boundaryLeft"] == "Outflow")

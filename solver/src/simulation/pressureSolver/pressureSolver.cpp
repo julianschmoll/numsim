@@ -1,5 +1,6 @@
 
 #include "simulation/pressureSolver/pressureSolver.h"
+#include <cassert>
 
 PressureSolver::PressureSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning, const Settings &settings)
     : partitioning_(std::move(partitioning)), settings_(settings), grid_(std::move(grid)) {}
@@ -21,6 +22,7 @@ void PressureSolver::setBoundaryValues(DataField &p) {
                 }
                 break;
             }
+            case BoundaryType::Elastic: break; // TODO: setStructureBoundaries() macht das eigentlich
         }
     }
 
@@ -39,6 +41,7 @@ void PressureSolver::setBoundaryValues(DataField &p) {
                 }
                 break;
             }
+            case BoundaryType::Elastic: break; // TODO: setStructureBoundaries() macht das eigentlich
         }
     }
 
@@ -57,6 +60,8 @@ void PressureSolver::setBoundaryValues(DataField &p) {
                 }
                 break;
             }
+            
+            case BoundaryType::Elastic: assert(false);
         }
     }
 
@@ -75,6 +80,8 @@ void PressureSolver::setBoundaryValues(DataField &p) {
                 }
                 break;
             }
+
+            case BoundaryType::Elastic: assert(false);
         }
     }
 }

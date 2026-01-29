@@ -54,8 +54,8 @@ public:
     std::vector<double> bottomBoundaryPosition_;
     std::vector<double> topBoundaryPosition_;
 
-    std::vector<double> fTop_;
-    std::vector<double> fBottom_;
+    DataField fTop_;
+    DataField fBottom_;
 
 
     std::vector<double> displacementsTop_;
@@ -172,6 +172,10 @@ public:
     /// DataField for rhs of the poisson problem.
     DataField &rhs();
 
+    DataField &bottomF();
+
+    DataField &topF();
+
     /// lower edge of cell in vertical physical coordinates
     double globalDomainPosJ(int j);
 
@@ -198,7 +202,7 @@ public:
     bool isFluid(int i, int j) const;
     bool isSolid(int i, int j) const;
 
-    void updateStructureCells();
+    void updateStructureCells(double dt);
 
     void initializeStructureField();
 

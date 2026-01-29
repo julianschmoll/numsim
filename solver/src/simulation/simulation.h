@@ -47,7 +47,7 @@ public:
      */
     explicit Simulation(const Settings &settings, const std::string &folderName);
 
-    void writeOutput(double currentTime, int currentSec, int lastSec) const;
+    void writeOutput(int currentSec, int lastSec) const;
 
     /**
      * Updates final velocities based on solved pressure.
@@ -86,7 +86,7 @@ public:
     /**
      * Computes the time step width dt from maximum velocities.
      */
-    TimeSteppingInfo computeTimeStepWidth(double currentTime);
+    TimeSteppingInfo computeTimeStepWidth();
 
     /**
      * Displacements must be set for every vertical partition.
@@ -124,6 +124,8 @@ private:
     // Time step size used in the simulation loop
     double timeStepWidth_ = 0.1;
 
+    double currentTime_ = 0;
+
     // Old state of u to reload in precice
     DataField uCheckpoint_;
 
@@ -136,7 +138,7 @@ private:
     /**
      * Sets boundary values of u and v.
      */
-    void setBoundaryUV(double currentTime);
+    void setBoundaryUV();
 
     /**
      * Sets boundary values of F and G.
@@ -160,7 +162,7 @@ private:
      * @param currentTime Current time of the simulation.
      * @param timeSteppingInfo Struct storing time stepping information.
      */
-    void printConsoleInfo(double currentTime, const TimeSteppingInfo &timeSteppingInfo) const;
+    void printConsoleInfo(const TimeSteppingInfo &timeSteppingInfo) const;
 
     // Partitioning for the grid on multiple ranks.
     std::shared_ptr<Partitioning> partitioning_;
