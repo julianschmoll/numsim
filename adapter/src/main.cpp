@@ -12,7 +12,7 @@
 #include <vector>
 
 
-void printVector1D(const std::string &label, const std::vector<double> &v, int maxElements = 10) {
+void printVector(const std::string &label, const std::vector<double> &v, int maxElements = 10) {
     std::cout << "[adapter-debug] " << label << " size=" << v.size() << " {";
     int n = std::min<int>(static_cast<int>(v.size()), maxElements);
     for (int i = 0; i < n; ++i) {
@@ -23,16 +23,6 @@ void printVector1D(const std::string &label, const std::vector<double> &v, int m
     if (v.size() > static_cast<size_t>(maxElements))
         std::cout << ", ...";
     std::cout << "}\n";
-}
-
-void setDisplacements(Simulation *simulation, std::vector<double> &displacements) {
-    std::cout << "[adapter-debug] Setting Displacements\n";
-    // TODO: Set Displacements in simulation from vector
-}
-
-void getForces(Simulation *simulation, std::vector<double> &forces) {
-    std::cout << "[adapter-debug] Getting Forces\n";
-    // TODO: Get Forces from simulation and write in vector
 }
 
 int main(int argc, char *argv[]) {
@@ -72,8 +62,8 @@ int main(int argc, char *argv[]) {
         DEBUG(std::cout << "Mesh dimension: " << meshDim << "\n");
 
         // +1 because of vertices, not faces
-        auto verticesWidth = partitioning->nCellsLocal()[0] + 1;
-        auto facesWidth = partitioning->nCellsLocal()[0] + 1;
+        auto verticesWidth = partitioning->nCellsLocal()[0] + 2;
+        auto facesWidth = partitioning->nCellsLocal()[0] + 2;
         std::cout << "[adapter-debug] " << "Vertices width: " << verticesWidth << "\n";
         std::cout << "[adapter-debug] " << "Faces width: " << facesWidth << "\n";
         auto vertexSize = 2 * verticesWidth; // number of vertices at wet surface
@@ -141,8 +131,8 @@ int main(int argc, char *argv[]) {
 
         std::cout << "[adapter-debug] " << "Starting coupling loop\n";
 
-        printVector1D("nodeCoords", nodeCoords, 50);
-        printVector1D("faceCoords", faceCoords, 50);
+        printVector("nodeCoords", nodeCoords, 50);
+        printVector("faceCoords", faceCoords, 50);
 
         std::cout << "preCICE expects " << participant.getMeshVertexSize(fluidMeshNodes) << " node vertices, adapter created " << vertexSize << "\n";
 
@@ -156,22 +146,23 @@ int main(int argc, char *argv[]) {
             std::cout << "[adapter-debug] " << "Coupling loop\n";
 
             double preciceDt = participant.getMaxTimeStepSize();
-            TimeSteppingInfo tsInfo = simulation.computeTimeStepWidth(currentTime);
+            auto tsInfo = simulation.computeTimeStepWidth(currentTime);
             double dt = std::min(preciceDt, tsInfo.timeStepWidth);
             simulation.setTimeStepWidth(dt);
 
             participant.readData(fluidMeshNodes, displacementDelta, nodeIDs, dt, displacements);
 
-            printVector1D("Displacements (read)", displacements, 44);
+            printVector("Displacements (read)", displacements, 44);
 
-            setDisplacements(&simulation, displacements);
+            simulation.setDisplacements(displacements);
 
             participant.startProfilingSection("Fluid Solver Step");
             simulation.advanceFluidSolver(dt);
-            getForces(&simulation, forces);
+            printVector("Forces (before getting)", forces, 44);
+            simulation.getForces(forces);
             participant.stopLastProfilingSection();
 
-            printVector1D("Forces (before write)", forces, 44);
+            printVector("Forces (before write)", forces, 44);
 
             participant.writeData(fluidMeshFaces, force, faceIDs, forces);
 
@@ -185,6 +176,7 @@ int main(int argc, char *argv[]) {
                 int currentSec = static_cast<int>(currentTime);
                 int lastSec = static_cast<int>(currentTime - dt);
                 simulation.writeOutput(currentTime, currentSec, lastSec);
+                forces.assign(forces.size(), 0.0);
             }
         }
 

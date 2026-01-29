@@ -14,28 +14,28 @@
     <profiling mode="fundamental" synchronize="false" />
 
     <data:vector name="Force" />
-    <data:vector name="Displacement" />
+    <data:vector name="DisplacementDelta" />
 
-    <mesh name="Fluid-Mesh-Nodes" dimensions="3">
-        <use-data name="Displacement" />
+    <mesh name="Fluid-Mesh-Nodes" dimensions="2">
+        <use-data name="DisplacementDelta" />
     </mesh>
 
-    <mesh name="Fluid-Mesh-Faces" dimensions="3">
+    <mesh name="Fluid-Mesh-Faces" dimensions="2">
         <use-data name="Force" />
     </mesh>
 
-    <mesh name="Solid-Mesh" dimensions="3">
-        <use-data name="Displacement" />
+    <mesh name="Solid-Mesh" dimensions="2">
+        <use-data name="DisplacementDelta" />
         <use-data name="Force" />
     </mesh>
 
     <participant name="Fluid">
-        <receive-mesh name="Solid-Mesh" from="Solid" safety-factor="1.5" />
+        <receive-mesh name="Solid-Mesh" from="Solid" safety-factor="1.5" api-access="true"/>
         <provide-mesh name="Fluid-Mesh-Nodes" />
         <provide-mesh name="Fluid-Mesh-Faces" />
         <export:vtu directory="/home/juschli/git/numsim" />
         <write-data name="Force" mesh="Fluid-Mesh-Faces" />
-        <read-data name="Displacement" mesh="Fluid-Mesh-Nodes" />
+        <read-data name="DisplacementDelta" mesh="Fluid-Mesh-Nodes" />
         <mapping:nearest-neighbor
                 direction="write"
                 from="Fluid-Mesh-Faces"
@@ -50,21 +50,21 @@
 
     <participant name="Solid">
         <provide-mesh name="Solid-Mesh" />
-        <write-data name="Displacement" mesh="Solid-Mesh" />
+        <write-data name="DisplacementDelta" mesh="Solid-Mesh" />
         <read-data name="Force" mesh="Solid-Mesh" />
-        <watch-point mesh="Solid-Mesh" name="Tube-Midpoint" coordinate="0.0;0.005;0" />
+        <watch-point mesh="Solid-Mesh" name="Tube-Midpoint" coordinate="0.0;0.005" />
     </participant>
 
     <m2n:sockets acceptor="Fluid" connector="Solid" exchange-directory="/home/juschli/git/numsim" />
 
     <coupling-scheme:serial-implicit>
         <participants first="Fluid" second="Solid" />
-        <time-window-size value="0.001" />
-        <max-time value="10" />
+        <time-window-size value="0.0001" />
+        <max-time value="0.01" />
         <exchange data="Force" mesh="Solid-Mesh" from="Fluid" to="Solid" />
-        <exchange data="Displacement" mesh="Solid-Mesh" from="Solid" to="Fluid" />
+        <exchange data="DisplacementDelta" mesh="Solid-Mesh" from="Solid" to="Fluid" />
         <max-iterations value="30" />
-        <absolute-convergence-measure limit="1e-3" data="Displacement" mesh="Solid-Mesh" />
+        <absolute-convergence-measure limit="1e-3" data="DisplacementDelta" mesh="Solid-Mesh" />
         <absolute-convergence-measure limit="1e-3" data="Force" mesh="Solid-Mesh" />
         <acceleration:IQN-IMVJ>
             <data name="Displacement" mesh="Solid-Mesh" />

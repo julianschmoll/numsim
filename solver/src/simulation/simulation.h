@@ -6,6 +6,8 @@
 #include "simulation/pressureSolver/pressureSolver.h"
 #include "grid/dataField.h"
 
+#include <vector>
+
 /**
  * @struct TimeSteppingInfo
  * @brief Holds all necessary data for calculating a stable time step.
@@ -99,6 +101,9 @@ public:
         return discOps_;
     }
 
+    void getForces(std::vector<double> &forces);
+
+    void setDisplacements(std::vector<double> &displacements);
     
 private:
     // Grid width in x and y directions

@@ -8,10 +8,11 @@
 #include "simulation/pressureSolver/redBlackSolver.h"
 #include <cassert>
 #include <chrono>
+#include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <ostream>
-#include <cmath>
 
 Simulation::Simulation(const Settings &settings, const std::string &folderName) {
     settings_ = settings;
@@ -37,8 +38,7 @@ Simulation::Simulation(const Settings &settings, const std::string &folderName) 
     if (settings_.pressureSolver == IterSolverType::SOR) {
         if (partitioning_->onPrimaryRank())
             std::cout << " -- Using (Red-Black) SOR solver." << std::endl;
-        pressureSolver_ =
-                std::make_unique<RedBlackSolver>(discOps_, partitioning_, settings_);
+        pressureSolver_ = std::make_unique<RedBlackSolver>(discOps_, partitioning_, settings_);
     } else if (settings_.pressureSolver == IterSolverType::GaussSeidel) {
         if (partitioning_->onPrimaryRank())
             std::cout << " -- Using (Red-Black) Gauss-Seidel solver." << std::endl;
@@ -588,6 +588,16 @@ void Simulation::calculateForces() {
     }
 }
 
+void Simulation::test() {
+    std::cout << "Simulation::test: Start" << std::endl;
+    discOps_->test(settings_);
+    std::cout << "Simulation::test: End" << std::endl;
+}
+
+// -----------------------------------------------//
+// --------- preCICE Adapter Medthods ------------//
+// -----------------------------------------------//
+
 void Simulation::saveState() {
     DEBUG(std::cout << "Simulation::saveState" << std::endl);
     uCheckpoint_ = discOps_->u();
@@ -610,4 +620,45 @@ void Simulation::test() {
 
 std::shared_ptr<Partitioning> Simulation::getPartitioning() const noexcept {
     return partitioning_;
+}
+
+void Simulation::getForces(std::vector<double> &forces) {
+    // ToDo: This should maybe live within the adapter and not here but doing this now for simplicity
+    auto &v = discOps_->v();
+    int fieldWidth = static_cast<int>(v.endI()) - static_cast<int>(v.beginI());
+    std::cout << "Getting Forces from Simulation" << std::endl;
+    std::cout << "FieldWidth = " << 4 * fieldWidth << std::endl;
+    std::cout << "Forces Size: " << forces.size() << std::endl;
+
+    const int meshDim = 2;
+    const size_t expectedSize = static_cast<size_t>(2 * fieldWidth * meshDim);
+    assert(expectedSize == forces.size());
+
+    const size_t topOffset = 1;
+    const size_t bottomOffset = static_cast<size_t>(fieldWidth) * meshDim + 1;
+
+    for (int i = 0, idxTop = topOffset, idxBottom = bottomOffset; i < fieldWidth; ++i, idxTop += meshDim, idxBottom += meshDim) {
+        forces[idxTop] = discOps_->topF(i);
+        forces[idxBottom] = discOps_->bottomF(i);
+    }
+}
+
+void Simulation::setDisplacements(std::vector<double> &displacements) {
+    std::cout << "[adapter-debug] Simulation::setDisplacements(flat) size=" << displacements.size() << std::endl;
+    const int meshDim = 2;
+    const int fieldWidth = static_cast<int>(discOps_->displacementsTop_.size());
+
+    std::vector top(fieldWidth, 0.0);
+    std::vector bottom(fieldWidth, 0.0);
+
+    const int topOffset = 1;
+    // +1 because it's a flat array with x,y,x,y,...
+    const int bottomOffset = fieldWidth * meshDim + 1;
+
+    for (int i = 0, idxTop = topOffset, idxBottom = bottomOffset; i < fieldWidth; ++i, idxTop += meshDim, idxBottom += meshDim) {
+        top[i] = displacements[idxTop];
+        bottom[i] = displacements[idxBottom];
+    }
+
+    setDisplacements(top, bottom);
 }
