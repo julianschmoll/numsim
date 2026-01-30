@@ -3,9 +3,9 @@ geometry:
   generator: "tube_generator"
   length: 8.0           # Physical Size X in Fluid
   height: 2.0           # Physical Size Y in Fluid
-  wall_thickness: .5     # Thickness of the wall (height)
+  wall_thickness: .2     # Thickness of the wall (height)
   # This will make mesh vertices align with fluid cells (nCellsX+1)
-  n_elements_length: 11   # Elements along the wall length (should match nCells)
+  n_elements_length: 81   # Elements along the wall length (should match nCells)
 
 # Material properties (copied from 3D preCICE example)
 material:
@@ -20,11 +20,11 @@ material:
 walls:
   top:
     active: true
-    offset: .2
+    offset: 0.2
     fixed_start: true
     fixed_end: true
   bottom:
     active: true
-    offset: .2
+    offset: 0.2
     fixed_start: true
     fixed_end: true

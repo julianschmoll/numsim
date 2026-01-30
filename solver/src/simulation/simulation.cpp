@@ -58,9 +58,7 @@ Simulation::Simulation(const Settings &settings, const std::string &folderName) 
 }
 
 void Simulation::writeOutput(const int currentSec, const int lastSec) const {
-    if (currentSec > lastSec && !settings_.generateTrainingData) [[unlikely]] {
-        outputWriterParaview_->writeFile(currentTime_);
-    }
+    outputWriterParaview_->writeFile(currentTime_);
 }
 
 void Simulation::setDisplacements(const std::vector<double> &topDisplacements, const std::vector<double> &bottomDisplacements) {

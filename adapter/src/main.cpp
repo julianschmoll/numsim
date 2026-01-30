@@ -9,13 +9,8 @@
 #include <cmath>
 #include <iomanip>
 #include <iostream>
-#include <mpi.h>
-#include <vector>
-
-#include <algorithm>
-#include <iomanip>
-#include <iostream>
 #include <limits>
+#include <mpi.h>
 #include <vector>
 
 void printMesh(const std::string &label, const std::vector<precice::VertexID> &ids, const std::vector<double> &coords, int printWidth = 24,
@@ -134,6 +129,8 @@ int main(int argc, char *argv[]) {
         auto physicalSize = settings.physicalSize;
         int meshDim = participant.getMeshDimensions(fluidMeshNodes);
 
+        assert(meshDim == 2 && "Adapter only supports 2D meshes");
+
         DEBUG(std::cout << "Mesh dimension: " << meshDim << "\n");
 
         // +1 because of vertices, not faces
@@ -216,9 +213,12 @@ int main(int argc, char *argv[]) {
         printVector("nodeCoords", nodeCoords, 50);
         printVector("faceCoords", faceCoords, 50);
 
-        std::cout << "preCICE expects " << participant.getMeshVertexSize(fluidMeshNodes) << " node vertices, adapter created " << vertexSize << "\n";
-
-        std::cout << "preCICE expects " << participant.getMeshVertexSize(fluidMeshFaces) << " face vertices, adapter created " << facesSize << "\n";
+        DEBUG(std::cout << "preCICE expects " << participant.getMeshVertexSize(fluidMeshNodes) << " node vertices, adapter created " << vertexSize
+                        << "\n");
+        assert(participant.getMeshVertexSize(fluidMeshNodes) == vertexSize);
+        DEBUG(std::cout << "preCICE expects " << participant.getMeshVertexSize(fluidMeshFaces) << " face vertices, adapter created " << facesSize
+                        << "\n");
+        assert(participant.getMeshVertexSize(fluidMeshFaces) == facesSize);
 
         // Set initial displacements
         std::cout << "[adapter-debug] " << "Setting initial top wall displacements to " << settings.topWallDispl_ << " (top) and "

@@ -29,14 +29,9 @@ dirichletLeftY   = 0
 dirichletRightX  = 0
 dirichletRightY  = 0
 
-# Dirichlet boundary flow speed variation (scales with mean flow speed)
-amplitude = 0.5
-frequency = 2
-timeShift = 0
-
 # Discretization parameters
-nCellsX = 10          # number of cells in x and y direction
-nCellsY = 5
+nCellsX = 80          # number of cells in x and y direction
+nCellsY = 20
 useDonorCell = true   # if donor cell discretization should be used, possible values: true false
 alpha = 0.5           # factor for donor-cell scheme, 0 is equivalent to central differences
 tau = 0.5             # safety factor for time step width
