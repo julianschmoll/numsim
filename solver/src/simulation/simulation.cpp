@@ -671,12 +671,6 @@ void Simulation::reloadLastState() {
     discOps_->p() = pCheckpoint_;
 }
 
-void Simulation::test() {
-    std::cout << "Simulation::test: Start" << std::endl;
-    discOps_->test(settings_);
-    std::cout << "Simulation::test: End" << std::endl;
-}
-
 std::shared_ptr<Partitioning> Simulation::getPartitioning() const noexcept {
     return partitioning_;
 }

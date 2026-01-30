@@ -11,6 +11,78 @@
 #include <mpi.h>
 #include <vector>
 
+#include <algorithm>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <vector>
+
+void printMesh(const std::string &label, const std::vector<precice::VertexID> &ids, const std::vector<double> &coords, int printWidth = 24,
+               int printHeight = 10) {
+    std::cout << "[adapter-debug] " << label << " vertices=" << ids.size() << std::endl;
+
+    if (ids.empty())
+        return;
+
+    double xmin = std::numeric_limits<double>::max();
+    double xmax = std::numeric_limits<double>::lowest();
+    double ymin = std::numeric_limits<double>::max();
+    double ymax = std::numeric_limits<double>::lowest();
+
+    for (size_t i = 0; i < ids.size(); ++i) {
+        double x = coords[2 * i + 0];
+        double y = coords[2 * i + 1];
+        xmin = std::min(xmin, x);
+        xmax = std::max(xmax, x);
+        ymin = std::min(ymin, y);
+        ymax = std::max(ymax, y);
+    }
+
+    if (xmax == xmin)
+        xmax = xmin + 1.0;
+    if (ymax == ymin)
+        ymax = ymin + 1.0;
+
+    std::vector grid(printHeight, std::vector<std::string>(printWidth, "   + "));
+    std::vector count(printHeight, std::vector(printWidth, 0));
+
+    for (size_t i = 0; i < ids.size(); ++i) {
+        double x = coords[2 * i + 0];
+        double y = coords[2 * i + 1];
+
+        int gx = (int)((x - xmin) / (xmax - xmin) * (printWidth - 1));
+        int gy = (int)((y - ymin) / (ymax - ymin) * (printHeight - 1));
+        gy = printHeight - 1 - gy;
+
+        if (gx < 0 || gx >= printWidth || gy < 0 || gy >= printHeight)
+            continue;
+
+        count[gy][gx]++;
+
+        if (count[gy][gx] == 1) {
+            std::ostringstream ss;
+            ss << std::setw(4) << std::setfill('0') << ids[i];
+            grid[gy][gx] = ss.str();
+        } else {
+            grid[gy][gx] = "MULTI";
+        }
+    }
+
+    std::cout << "  Vertex layout:\n";
+    std::cout << "  +" << std::string(printWidth * 7, '-') << "+\n";
+
+    for (int j = 0; j < printHeight; ++j) {
+        std::cout << "  |";
+        for (int i = 0; i < printWidth; ++i) {
+            std::string cell = grid[j][i];
+            if (cell.size() < 5)
+                cell = std::string(5 - cell.size(), ' ') + cell;
+            std::cout << "-" << cell << " ";
+        }
+        std::cout << "|\n";
+    }
+    std::cout << "  +" << std::string(printWidth * 7, '-') << "+\n";
+}
 
 void printVector(const std::string &label, const std::vector<double> &v, int maxElements = 10) {
     std::cout << "[adapter-debug] " << label << " size=" << v.size() << " {";
@@ -45,15 +117,17 @@ int main(int argc, char *argv[]) {
     settings.loadFromFile(settingsPath);
     DEBUG(settings.printSettings());
 
-    precice::string_view fluidMeshNodes = "Fluid-Mesh-Nodes";
-    precice::string_view fluidMeshFaces = "Fluid-Mesh-Faces";
-    precice::string_view displacementDelta = "DisplacementDelta";
-    precice::string_view force = "Force";
-
     // Scope is here so MPI mem types are destroyed before MPI_Finalize
     {
+        precice::string_view fluidMeshNodes = "Fluid-Mesh-Nodes";
+        precice::string_view fluidMeshFaces = "Fluid-Mesh-Faces";
+        precice::string_view displacementDelta = "DisplacementDelta";
+        precice::string_view force = "Force";
+
         precice::Participant participant("Fluid", preciceConfigPath, ownRankNo, nRanks);
-        Simulation simulation{settings, "/home/juschli/git/numsim_new/numsim/out"};
+
+        // ToDo: Pass out folder maybe
+        Simulation simulation{settings, "out"};
         auto partitioning = simulation.getPartitioning();
         auto diskOps = simulation.getDiscreteOperators();
         auto physicalSize = settings.physicalSize;
@@ -80,34 +154,27 @@ int main(int argc, char *argv[]) {
 
         std::cout << "Phyiscal Size:" << physicalSize[0] << ", " << physicalSize[1] << "\n";
 
+        // Both Meshes have the same layout
         int idx = 0;
         for (int row = 0; row < 2; ++row) {
             double y_pos = (row == 0) ? 0.0 : static_cast<double>(physicalSize[1]);
             for (int i = 0; i < verticesWidth; ++i) {
-                double x_pos =
-                    (verticesWidth == 1) ? 0.0 : (static_cast<double>(i) / static_cast<double>(verticesWidth - 1)) * static_cast<double>(physicalSize[0]);
+                double x_pos = (verticesWidth == 1)
+                                   ? 0.0
+                                   : (static_cast<double>(i) / static_cast<double>(verticesWidth - 1)) * static_cast<double>(physicalSize[0]);
                 for (int d = 0; d < meshDim; ++d) {
                     double v = (d == 0) ? x_pos : (d == 1) ? y_pos : 0.0;
                     nodeCoords[idx++] = v;
-                }
-            }
-        }
-
-        idx = 0;
-        for (int row = 0; row < 2; ++row) {
-            double y_pos = (row == 0) ? 0.0 : static_cast<double>(physicalSize[1]);
-            for (int i = 0; i < facesWidth; ++i) {
-                double x_pos =
-                    (facesWidth == 1) ? 0.0 : (static_cast<double>(i) / static_cast<double>(facesWidth - 1)) * static_cast<double>(physicalSize[0]);
-                for (int d = 0; d < meshDim; ++d) {
-                    double v = (d == 0) ? x_pos : (d == 1) ? y_pos : 0.0;
-                    faceCoords[idx++] = v;
+                    faceCoords[idx] = v;
                 }
             }
         }
 
         participant.setMeshVertices(fluidMeshNodes, nodeCoords, nodeIDs);
         participant.setMeshVertices(fluidMeshFaces, faceCoords, faceIDs);
+
+        printMesh("Fluid Mesh", nodeIDs, nodeCoords);
+        printMesh("Fluid Faces", faceIDs, faceCoords);
 
         int displacementsDim = participant.getDataDimensions(fluidMeshNodes, displacementDelta);
         std::vector displacements(vertexSize * displacementsDim, 0.0);
@@ -126,6 +193,7 @@ int main(int argc, char *argv[]) {
         std::vector<precice::VertexID> ids(meshSize);
 
         participant.getMeshVertexIDsAndCoordinates("Solid-Mesh", ids, coords);
+        printMesh("Solid-Mesh", ids, coords);
 
         double currentTime = 0.0;
 
@@ -146,7 +214,7 @@ int main(int argc, char *argv[]) {
             std::cout << "[adapter-debug] " << "Coupling loop\n";
 
             double preciceDt = participant.getMaxTimeStepSize();
-            auto tsInfo = simulation.computeTimeStepWidth(currentTime);
+            auto tsInfo = simulation.computeTimeStepWidth();
             double dt = std::min(preciceDt, tsInfo.timeStepWidth);
             simulation.setTimeStepWidth(dt);
 
@@ -175,13 +243,13 @@ int main(int argc, char *argv[]) {
                 currentTime += dt;
                 int currentSec = static_cast<int>(currentTime);
                 int lastSec = static_cast<int>(currentTime - dt);
-                simulation.writeOutput(currentTime, currentSec, lastSec);
+                simulation.writeOutput(currentSec, lastSec);
                 forces.assign(forces.size(), 0.0);
             }
         }
 
         participant.finalize();
-        DEBUG(std::cout << "Finalizing\n");
+        DEBUG(std::cout << "You are crazy! You did it! The simulation might have finished successfully! \n");
     }
     MPI_Finalize();
     return EXIT_SUCCESS;
