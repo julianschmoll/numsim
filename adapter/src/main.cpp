@@ -237,6 +237,7 @@ int main(int argc, char *argv[]) {
         }
         printVector("Displacements (initial)", displacements, 44);
         simulation.setDisplacements(displacements);
+        simulation.saveState();
 
         while (participant.isCouplingOngoing()) {
             if (participant.requiresWritingCheckpoint()) {

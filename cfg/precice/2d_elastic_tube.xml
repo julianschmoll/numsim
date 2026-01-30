@@ -55,8 +55,8 @@
 
     <coupling-scheme:serial-implicit>
         <participants first="Fluid" second="Solid" />
-        <time-window-size value="0.0001" />
-        <max-time value="0.01" />
+        <time-window-size value="0.01" />
+        <max-time value="1" />
         <exchange data="Force" mesh="Solid-Mesh" from="Fluid" to="Solid" />
         <exchange data="DisplacementDelta" mesh="Solid-Mesh" from="Solid" to="Fluid" />
         <max-iterations value="30" />

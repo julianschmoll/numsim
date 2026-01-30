@@ -135,6 +135,18 @@ private:
     // Old state of p to reload with precice
     DataField pCheckpoint_;
 
+    DataField qCheckpoint_;
+
+    double timeStepWidthCheckpoint_ = 0;
+
+    std::vector<double> topBoundaryPositionCheckpoint_;
+    std::vector<double> bottomBoundaryPositionCheckpoint_;
+
+    std::vector<double> displacementsTopCheckpoint_;
+    std::vector<double> displacementsBottomCheckpoint_;
+
+    double checkpointTime_ = 0;
+
     /**
      * Sets boundary values of u and v.
      */

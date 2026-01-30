@@ -109,22 +109,9 @@ void Simulation::run() {
         TimeSteppingInfo timeSteppingInfo = computeTimeStepWidth();
         timeStepWidth_ = timeSteppingInfo.timeStepWidth;
 
-        setBoundaryFG(); // TODO: Korrekt? Die Reihenfolge von setBoundaryFG() und setPreliminaryVelocities() sollte hier keine Rolle spielen.
-        setPreliminaryVelocities();
-        partitioning_->exchange(fg);
-
-        setRightHandSide();
-        pressureSolver_->solve(p);
-
-        setVelocities();
-        partitioning_->exchange(uv);
-        setBoundaryUV();
-        discOps_->updateStructureCells(timeStepWidth_);
-        setStructureBoundaries();
-
-        calculateForces();
         const int lastSec = static_cast<int>(currentTime_);
-        currentTime_ += timeStepWidth_;
+        // We call this here so we have less duplicated code
+        advanceFluidSolver(timeStepWidth_);
         const int currentSec = static_cast<int>(currentTime_);
 
         printConsoleInfo(timeSteppingInfo);
@@ -163,7 +150,7 @@ void Simulation::advanceFluidSolver(double dt) {
 
     calculateForces();
 
-    currentTime_ += dt; // TODO: when do we need to update the current time?
+    currentTime_ += dt;
 }
 
 void Simulation::updateSolid() {
@@ -656,11 +643,20 @@ void Simulation::test() {
 // --------- preCICE Adapter Medthods ------------//
 // -----------------------------------------------//
 
+// ToDo: States are overkill, need to figure out what,
+// apparently uv and dt was not enough
 void Simulation::saveState() {
     DEBUG(std::cout << "Simulation::saveState" << std::endl);
     uCheckpoint_ = discOps_->u();
     vCheckpoint_ = discOps_->v();
     pCheckpoint_ = discOps_->p();
+    qCheckpoint_ = discOps_->q();
+    timeStepWidthCheckpoint_ = timeStepWidth_;
+    checkpointTime_ = currentTime_;
+    displacementsTopCheckpoint_ = discOps_->displacementsTop_;
+    displacementsBottomCheckpoint_ = discOps_->displacementsBottom_;
+    topBoundaryPositionCheckpoint_ = discOps_->topBoundaryPosition_;
+    bottomBoundaryPositionCheckpoint_ = discOps_->bottomBoundaryPosition_;
 }
 
 void Simulation::reloadLastState() {
@@ -668,6 +664,17 @@ void Simulation::reloadLastState() {
     discOps_->u() = uCheckpoint_;
     discOps_->v() = vCheckpoint_;
     discOps_->p() = pCheckpoint_;
+    discOps_->q() = qCheckpoint_;
+    currentTime_ = checkpointTime_;
+    timeStepWidth_ = timeStepWidthCheckpoint_;
+    discOps_->topBoundaryPosition_ = topBoundaryPositionCheckpoint_;
+    discOps_->bottomBoundaryPosition_ = bottomBoundaryPositionCheckpoint_;
+    discOps_->displacementsTop_ = displacementsTopCheckpoint_;
+    discOps_->displacementsBottom_ = displacementsBottomCheckpoint_;
+    discOps_->updateStructureCells(timeStepWidth_);
+    setBoundaryUV();
+    setBoundaryFG();
+    setStructureBoundaries();
 }
 
 std::shared_ptr<Partitioning> Simulation::getPartitioning() const noexcept {
@@ -697,21 +704,22 @@ void Simulation::getForces(std::vector<double> &forces) {
 }
 
 void Simulation::setDisplacements(std::vector<double> &displacements) {
+    // ToDo: This seems to be incorrect?
     std::cout << "[adapter-debug] Simulation::setDisplacements(flat) size=" << displacements.size() << std::endl;
-    const int meshDim = 2;
+    constexpr int meshDim = 2;
     const int fieldWidth = static_cast<int>(discOps_->displacementsTop_.size());
 
+    // ToDo: Add assertion for size
     std::vector top(fieldWidth, 0.0);
     std::vector bottom(fieldWidth, 0.0);
 
-    const int topOffset = 1;
+    constexpr int topOffset = 1;
     // +1 because it's a flat array with x,y,x,y,...
     const int bottomOffset = fieldWidth * meshDim + 1;
 
     for (int i = 0, idxTop = topOffset, idxBottom = bottomOffset; i < fieldWidth; ++i, idxTop += meshDim, idxBottom += meshDim) {
-        top[i] = displacements[idxTop];
-        bottom[i] = displacements[idxBottom];
+        top[i] = displacements[idxTop] * settings_.physicalSize[1];
+        bottom[i] = displacements[idxBottom]  * settings_.physicalSize[1];
     }
-
     setDisplacements(top, bottom);
 }
