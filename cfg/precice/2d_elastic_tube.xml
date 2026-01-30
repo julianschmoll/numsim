@@ -66,12 +66,9 @@
         <max-iterations value="30" />
         <absolute-convergence-measure limit="1e-3" data="DisplacementDelta" mesh="Solid-Mesh" />
         <absolute-convergence-measure limit="1e-3" data="Force" mesh="Solid-Mesh" />
-        <acceleration:IQN-IMVJ>
+        <acceleration:aitken>
             <data name="DisplacementDelta" mesh="Solid-Mesh" />
-            <preconditioner type="residual-sum" />
             <initial-relaxation value="0.1" />
-            <max-used-iterations value="10" />
-            <time-windows-reused value="1" />
-        </acceleration:IQN-IMVJ>
+        </acceleration:aitken>
     </coupling-scheme:serial-implicit>
 </precice-configuration>

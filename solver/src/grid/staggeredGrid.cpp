@@ -60,10 +60,10 @@ StaggeredGrid::StaggeredGrid(const Settings &settings, const Partitioning &parti
     DEBUG(std::cout << "DisplTop " << displacementsTop_.size() << std::endl;)
     DEBUG(std::cout << "DisplBot " << displacementsBottom_.size() << std::endl;)
 
-    for (size_t i = 0; i < bottomBoundaryPosition_.size(); i++) {
-        bottomBoundaryPosition_[i] = 0.01 * i;
-        topBoundaryPosition_[i] = settings.physicalSize[1];
-    }
+    // for (size_t i = 0; i < bottomBoundaryPosition_.size(); i++) {
+    //    bottomBoundaryPosition_[i] = 0.01 * i;
+    //    topBoundaryPosition_[i] = settings.physicalSize[1];
+    //}
     //updateStructureCells(1);
 }
 

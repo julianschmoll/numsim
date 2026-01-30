@@ -84,6 +84,7 @@ void Simulation::setDisplacements(const std::vector<double> &topDisplacements, c
         discOps_->topBoundaryPosition_[i] = std::min(domainHeight, discOps_->displacementsTop_[i]);
         discOps_->bottomBoundaryPosition_[i] = std::max(0.0, discOps_->topBoundaryPosition_[i]);
     }
+
 }
 
 void Simulation::run() {
@@ -98,12 +99,12 @@ void Simulation::run() {
     DataField &p = discOps_->p();
 
     setBoundaryUV();
-    for (size_t i = 0; i < discOps_->bottomBoundaryPosition_.size(); i++) {
-        discOps_->bottomBoundaryPosition_[i] = 0.01 * i;
-        discOps_->topBoundaryPosition_[i] = settings_.physicalSize[1];
-    }
-    discOps_->updateStructureCells(timeStepWidth_);
-    setStructureBoundaries();
+    //for (size_t i = 0; i < discOps_->bottomBoundaryPosition_.size(); i++) {
+    //    discOps_->bottomBoundaryPosition_[i] = 0.01 * i;
+    //    discOps_->topBoundaryPosition_[i] = settings_.physicalSize[1];
+    //}
+    //discOps_->updateStructureCells(timeStepWidth_);
+    //setStructureBoundaries();
     setBoundaryFG();
 
     while (currentTime_ < settings_.endTime) {
@@ -691,8 +692,9 @@ void Simulation::getForces(std::vector<double> &forces) {
     const size_t bottomOffset = static_cast<size_t>(fieldWidth) * meshDim + 1;
 
     for (int i = 0, idxTop = topOffset, idxBottom = bottomOffset; i < fieldWidth; ++i, idxTop += meshDim, idxBottom += meshDim) {
-        forces[idxTop] = discOps_->topF(i);
-        forces[idxBottom] = discOps_->bottomF(i);
+        // ToDo: Indices here are naasty
+        forces[idxTop] = discOps_->topF(i - 1);
+        forces[idxBottom] = discOps_->bottomF(i - 1);
     }
 }
 

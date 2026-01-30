@@ -144,6 +144,12 @@ void Settings::loadFromFile(const std::string &filename) {
     if (settings.count("maximumNumberOfIterations"))
         maximumNumberOfIterations = static_cast<int>(std::stod(settings["maximumNumberOfIterations"]));
 
+    if (settings.count("topWall"))
+        topWallDispl_ = std::stod(settings["topWall"]);
+
+    if (settings.count("bottomWall"))
+        bottomWallDispl_ = std::stod(settings["bottomWall"]);
+
     if (!settings.count("generateTrainingData"))
         return;
 

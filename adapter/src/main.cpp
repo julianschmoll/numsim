@@ -5,6 +5,7 @@
 #include "simulation/simulation.h"
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <iomanip>
 #include <iostream>
@@ -165,7 +166,19 @@ int main(int argc, char *argv[]) {
                 for (int d = 0; d < meshDim; ++d) {
                     double v = (d == 0) ? x_pos : (d == 1) ? y_pos : 0.0;
                     nodeCoords[idx++] = v;
-                    faceCoords[idx] = v;
+                }
+            }
+        }
+
+        idx = 0;
+        for (int row = 0; row < 2; ++row) {
+            double y_pos = (row == 0) ? 0.0 : static_cast<double>(physicalSize[1]);
+            for (int i = 0; i < facesWidth; ++i) {
+                double x_pos =
+                    (facesWidth == 1) ? 0.0 : (static_cast<double>(i) / static_cast<double>(facesWidth - 1)) * static_cast<double>(physicalSize[0]);
+                for (int d = 0; d < meshDim; ++d) {
+                    double v = (d == 0) ? x_pos : (d == 1) ? y_pos : 0.0;
+                    faceCoords[idx++] = v;
                 }
             }
         }
@@ -188,6 +201,7 @@ int main(int argc, char *argv[]) {
 
         int meshSize = participant.getMeshVertexSize("Solid-Mesh");
         int dim = participant.getMeshDimensions("Solid-Mesh");
+        std::cout << "Participant Mesh Dimensions: size=" << meshSize << " dim=" << dim << "\n";
 
         std::vector<double> coords(meshSize * dim);
         std::vector<precice::VertexID> ids(meshSize);
@@ -206,17 +220,35 @@ int main(int argc, char *argv[]) {
 
         std::cout << "preCICE expects " << participant.getMeshVertexSize(fluidMeshFaces) << " face vertices, adapter created " << facesSize << "\n";
 
+        // Set initial displacements
+        std::cout << "[adapter-debug] " << "Setting initial top wall displacements to " << settings.topWallDispl_ << " (top) and "
+                  << settings.bottomWallDispl_ << " (bottom).\n";
+
+        // +1 again because we have a flat array with x,y,x,y,...
+        const int bottomOffset = verticesWidth * meshDim + 1;
+        for (int i = 0; i < verticesWidth; ++i) {
+            int idxTop = 1 + i * meshDim;
+            int idxBottom = bottomOffset + i * meshDim;
+
+            if (idxTop >= 0 && idxTop < static_cast<int>(displacements.size()))
+                displacements[idxTop] = settings.topWallDispl_;
+            if (idxBottom >= 0 && idxBottom < static_cast<int>(displacements.size()))
+                displacements[idxBottom] = -settings.bottomWallDispl_;
+        }
+        printVector("Displacements (initial)", displacements, 44);
+        simulation.setDisplacements(displacements);
+
         while (participant.isCouplingOngoing()) {
             if (participant.requiresWritingCheckpoint()) {
                 simulation.saveState();
             }
 
-            std::cout << "[adapter-debug] " << "Coupling loop\n";
-
             double preciceDt = participant.getMaxTimeStepSize();
             auto tsInfo = simulation.computeTimeStepWidth();
             double dt = std::min(preciceDt, tsInfo.timeStepWidth);
             simulation.setTimeStepWidth(dt);
+
+            std::cout << "[adapter-debug] " << "Coupling Timestep " << dt << "\n";
 
             participant.readData(fluidMeshNodes, displacementDelta, nodeIDs, dt, displacements);
 
@@ -226,7 +258,6 @@ int main(int argc, char *argv[]) {
 
             participant.startProfilingSection("Fluid Solver Step");
             simulation.advanceFluidSolver(dt);
-            printVector("Forces (before getting)", forces, 44);
             simulation.getForces(forces);
             participant.stopLastProfilingSection();
 
