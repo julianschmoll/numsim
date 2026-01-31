@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
         std::vector<precice::VertexID> ids(meshSize);
 
         participant.getMeshVertexIDsAndCoordinates("Solid-Mesh", ids, coords);
-        //printMesh("Solid-Mesh", ids, coords);
+        printMesh("Solid-Mesh", ids, coords, 24);
 
         std::cout << "Solid-Mesh " << coords << std::endl;
 
@@ -228,7 +228,7 @@ int main(int argc, char *argv[]) {
         }
         printVector("Displacements (initial)", displacements, 44);
         simulation.setDisplacements(displacements);
-        simulation.saveState();
+        // simulation.saveState();
         participant.writeData(fluidMeshFaces, force, faceIDs, forces);
 
         while (participant.isCouplingOngoing()) {
@@ -272,7 +272,7 @@ int main(int argc, char *argv[]) {
             if (participant.requiresReadingCheckpoint()) {
                 simulation.reloadLastState();
             } else {
-                //simulation.updateSolid();
+                // simulation.updateSolid();
                 currentTime += dt;
                 int currentSec = static_cast<int>(currentTime);
                 int lastSec = static_cast<int>(currentTime - dt);

@@ -42,56 +42,57 @@ class Geometry:
         start_node_of_wall = self._current_node_id
         offset = self.cfg["walls"][orientation]["offset"]
         nx = self.cfg['geometry']['n_elements_length']
-        nodes_per_row = 2 * nx + 1
+        nodes_per_row = nx + 1
 
-        for row in range(3):
-            d_thick = row * (self.cfg['geometry']['wall_thickness'] / 2.0)
+        # Generate nodes
+        for row in range(2):
+            d_thick = row * self.cfg['geometry']['wall_thickness']
             for index in range(nodes_per_row):
-                x = index * (self.cfg["geometry"]["length"] / (2 * nx))
+                x = index * (self.cfg["geometry"]["length"] / nx)
 
                 if orientation == 'bottom':
+                    # row 0 is interface (top), row 1 is base (bottom)
                     y = offset - d_thick
                 else:
+                    # row 0 is interface (bottom), row 1 is base (top)
                     y = (self.cfg["geometry"]["height"] - offset) + d_thick
 
-                self._all_nodes.append(
-                    f"{self._current_node_id}, {x:.4f}, {y:.4f}, 0.0"
-                )
+                self._all_nodes.append(f"{self._current_node_id}, {x:.4f}, {y:.4f}")
 
                 if row == 0:
                     self._interface_nodes_dict[orientation].append(self._current_node_id)
-                    self._interface_nodes.append(self._current_node_id) # Global list for Nall
+                    self._interface_nodes.append(self._current_node_id)
 
                 if self.cfg["walls"][orientation].get('fixed_start') and index == 0:
                     self._fix_nodes.append(self._current_node_id)
-                if self.cfg["walls"][orientation].get('fixed_end') and index == 2 * nx:
+                if self.cfg["walls"][orientation].get('fixed_end') and index == nx:
                     self._fix_nodes.append(self._current_node_id)
 
                 self._current_node_id += 1
 
+        # Generate quadrilateral elements with CCW logic
+        element_start = self._current_element_id
         for i in range(nx):
-            r0 = start_node_of_wall + (2 * i)
-            r1 = r0 + nodes_per_row
-            r2 = r1 + nodes_per_row
-
-            if orientation == 'bottom':
-                n1, n2, n3, n4 = r2, r2+2, r0+2, r0
-                n5, n6, n7, n8 = r2+1, r1+2, r0+1, r1
+            if orientation == "bottom":
+                # For bottom wall, Row 1 is physically BELOW Row 0
+                n1 = start_node_of_wall + nodes_per_row + i  # R1 bottom-left
+                n2 = n1 + 1                                  # R1 bottom-right
+                n3 = start_node_of_wall + i + 1              # R0 top-right
+                n4 = n3 - 1                                  # R0 top-left
             else:
-                n1, n2, n3, n4 = r0, r0+2, r2+2, r2
-                n5, n6, n7, n8 = r0+1, r1+2, r2+1, r1
+                # For top wall, Row 0 is physically BELOW Row 1
+                n1 = start_node_of_wall + i                  # R0 bottom-left
+                n2 = n1 + 1                                  # R0 bottom-right
+                n3 = n1 + nodes_per_row + 1                  # R1 top-right
+                n4 = n1 + nodes_per_row                      # R1 top-left
 
-            self._all_elements.append(
-                f"{self._current_element_id}, "
-                f"{n1}, {n2}, {n3}, {n4}, {n5}, {n6}, {n7}, {n8}"
-            )
+            self._all_elements.append(f"{self._current_element_id}, {n1}, {n2}, {n3}, {n4}")
             self._current_element_id += 1
 
         face = "S3" if orientation == "bottom" else "S1"
         self._interface_faces.append(f"E{orientation}, {face}")
 
-        return f"E{orientation}", self._current_element_id - nx, self._current_element_id - 1
-
+        return f"E{orientation}", element_start, self._current_element_id - 1
     def _write_node_list(self, fileobj, nodes):
         """Helper to write a list of nodes formatted for CalculiX"""
         for i in range(0, len(nodes), 16):
@@ -115,7 +116,7 @@ class Geometry:
             nam_f.write(f"*NSET, NSET=N{interface_name}\n")
             self._write_node_list(nam_f, self._interface_nodes)
 
-            nam_f.write(f"*SURFACE, NAME=S{interface_name}\n")
+            nam_f.write(f"*SURFACE, NAME=S{interface_name}, TYPE=ELEMENT\n")
             for face_entry in self._interface_faces:
                 nam_f.write(f"{face_entry}\n")
 
@@ -125,7 +126,7 @@ class Geometry:
             for node_str in self._all_nodes:
                 f.write(f"{node_str}\n")
 
-            f.write("*ELEMENT, TYPE=CPE8, ELSET=Eall\n")
+            f.write("*ELEMENT, TYPE=CPE4, ELSET=Eall\n")
             f.write("\n".join(self._all_elements) + "\n")
 
             for name, s, e in self._wall_data:
@@ -142,20 +143,28 @@ class Geometry:
             f.write(f"*DENSITY\n{self.cfg['material']['density']}\n")
             f.write("*SOLID SECTION, ELSET=Eall, MATERIAL=ELASTIC\n1.0\n")
 
-            f.write("*STEP, INC=1000000\n")
-            f.write("*DYNAMIC, DIRECT, NLGEOM\n")
+            f.write("*STEP, NLGEOM, INC=1000000\n")
+            f.write("*DYNAMIC\n")
+
+            alpha = 0.0  # Mass proportional damping
+            beta = 0.001  # Stiffness proportional damping
+            f.write(f"*DAMPING, ALPHA={alpha}, BETA={beta}\n")
 
             dt = self.cfg['geometry'].get('dt', 0.01)
             duration = self.cfg['geometry'].get('t_end', 10.0)
             f.write(f"{dt}, {duration}\n")
-            f.write("*RESTART, WRITE, FREQUENCY=1\n")
+
             f.write("*BOUNDARY\n")
             if self._fix_nodes:
                 f.write("Nfix, 1, 2\n")
-            f.write(f"{mesh_name}, 3, 3\n")
+
             f.write("*CLOAD\n")
             f.write(f"N{interface_name}, 1, 0.0\n")
             f.write(f"N{interface_name}, 2, 0.0\n")
+
+            f.write(f"*NODE PRINT, NSET=N{interface_name}, FREQUENCY=1\n")
+            f.write("U, V, A\n")  # Displacement, velocity, acceleration
+
 
             f.write("*NODE FILE\nU\n")
             f.write("*EL FILE\nS, E\n")

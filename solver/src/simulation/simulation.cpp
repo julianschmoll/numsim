@@ -77,19 +77,16 @@ void Simulation::setDisplacements(const std::vector<double> &topDisplacements, c
 
     // TODO: Wir könnten die Geschwindigkeitsränder eventuell sogar hier aktualisieren
     // dann wäre kopieren und speichern der displacements unnötig.
-
     // Zu tatsächlichem Rand hinzufügen (lokal, da wir unsere globale Position kennen)
     for (int i = 0; i < n; i++) {
         discOps_->topBoundaryPosition_[i] += discOps_->displacementsTop_[i];
         discOps_->bottomBoundaryPosition_[i] += discOps_->displacementsBottom_[i];
 
-        discOps_->topBoundaryPosition_[i] = std::min(domainHeight, discOps_->displacementsTop_[i]);
-        discOps_->bottomBoundaryPosition_[i] = std::max(0.0, discOps_->displacementsBottom_[i]);
+        discOps_->topBoundaryPosition_[i] = std::min(domainHeight, discOps_->topBoundaryPosition_[i]);
+        discOps_->bottomBoundaryPosition_[i] = std::max(0.0, discOps_->bottomBoundaryPosition_[i]);
     }
 
-    std::cout << "topBoundaryPosition_ " << discOps_->topBoundaryPosition_ << std::endl;
-    std::cout << "bottomBoundaryPosition_ " << discOps_->bottomBoundaryPosition_ << std::endl;
-    // discOps_->updateStructureCells(timeStepWidth_); TODO: reaktivieren
+    discOps_->updateStructureCells(timeStepWidth_);
 }
 
 void Simulation::run() {
@@ -634,7 +631,7 @@ void Simulation::calculateForces() {
             if (discOps_->isFluid(i, j)) {
                 const double vDy = discOps_->computeDvDy(i, j);
                 // ToDo: Check formula, pressure is squared?
-                discOps_->topF(i) = 0; // -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j + 1) + p(i, j)) / 2);
+                discOps_->topF(i) = -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j + 1) + p(i, j)) / 2);
                 break;
             }
         }
@@ -645,7 +642,7 @@ void Simulation::calculateForces() {
         for (int j = v.beginJ() + 1; j < v.endJ() - 1; ++j) {
             if (discOps_->isFluid(i, j)) {
                 const double vDy = discOps_->computeDvDy(i, j);
-                discOps_->bottomF(i) = 0; //-dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j - 1) + p(i, j)) / 2);
+                discOps_->bottomF(i) = -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j - 1) + p(i, j)) / 2);
                 break;
             }
         }
@@ -723,16 +720,16 @@ void Simulation::setDisplacements(std::vector<double> &displacements) {
     std::cout << "\nSimulation::setDisplacements(flat)" << std::endl;
     std::cout << displacements << "\n\n";
 
-    constexpr int meshDim = 2;
+    constexpr int meshDim = 3;
     const int n = settings_.nCells[0];
 
     // ToDo: Add assertion for size
     std::vector top(n + 2, 0.0);
     std::vector bottom(n + 2, 0.0);
 
-    constexpr int topOffset = 1;
-    // +1 because it's a flat array with x,y,x,y,...
-    const int bottomOffset = n * meshDim + 1;
+    constexpr int bottomOffset = 1;
+    // +1 because it's a flat array with x,y,z,x,y,z...
+    const int topOffset = n * meshDim + 1;
 
     // TODO: RANDWERTE verteilen!!
 

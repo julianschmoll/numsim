@@ -29,7 +29,7 @@
         <receive-mesh name="Solid-Mesh" from="Solid" safety-factor="2" api-access="true"/>
         <provide-mesh name="Fluid-Mesh-Nodes" />
         <provide-mesh name="Fluid-Mesh-Faces" />
-        <export:vtu directory="/home/bene/CLionProjects/numsim" />
+        <export:vtu directory="/home/juschli/git/numsim" />
         <write-data name="Force" mesh="Fluid-Mesh-Faces" />
         <read-data name="DisplacementDelta" mesh="Fluid-Mesh-Nodes" />
         <mapping:nearest-projection
@@ -46,12 +46,13 @@
 
     <participant name="Solid">
         <provide-mesh name="Solid-Mesh" />
+        <export:vtu directory="/home/juschli/git/numsim_new/solid" />
         <write-data name="DisplacementDelta" mesh="Solid-Mesh" />
         <read-data name="Force" mesh="Solid-Mesh" />
         <watch-point mesh="Solid-Mesh" name="Tube-Midpoint" coordinate="0.0;0.005;0.0" />
     </participant>
 
-    <m2n:sockets acceptor="Fluid" connector="Solid" exchange-directory="/home/bene/CLionProjects/numsim" />
+    <m2n:sockets acceptor="Fluid" connector="Solid" exchange-directory="/home/juschli/git/numsim" />
 
     <coupling-scheme:serial-implicit>
         <participants first="Fluid" second="Solid" />
@@ -65,5 +66,9 @@
         <!--
         For now no acceleration as I seem to get NaNs otherwise.
         -->
+        <acceleration:aitken>
+            <data name="DisplacementDelta" mesh="Solid-Mesh" />
+            <initial-relaxation value="0.01" />
+        </acceleration:aitken>
     </coupling-scheme:serial-implicit>
 </precice-configuration>
