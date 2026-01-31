@@ -12,15 +12,15 @@
     <data:vector name="Force" />
     <data:vector name="DisplacementDelta" />
 
-    <mesh name="Fluid-Mesh-Nodes" dimensions="2">
+    <mesh name="Fluid-Mesh-Nodes" dimensions="3">
         <use-data name="DisplacementDelta" />
     </mesh>
 
-    <mesh name="Fluid-Mesh-Faces" dimensions="2">
+    <mesh name="Fluid-Mesh-Faces" dimensions="3">
         <use-data name="Force" />
     </mesh>
 
-    <mesh name="Solid-Mesh" dimensions="2">
+    <mesh name="Solid-Mesh" dimensions="3">
         <use-data name="DisplacementDelta" />
         <use-data name="Force" />
     </mesh>
@@ -29,7 +29,7 @@
         <receive-mesh name="Solid-Mesh" from="Solid" safety-factor="2" api-access="true"/>
         <provide-mesh name="Fluid-Mesh-Nodes" />
         <provide-mesh name="Fluid-Mesh-Faces" />
-        <export:vtu directory="/home/juschli/git/numsim" />
+        <export:vtu directory="/home/bene/CLionProjects/numsim" />
         <write-data name="Force" mesh="Fluid-Mesh-Faces" />
         <read-data name="DisplacementDelta" mesh="Fluid-Mesh-Nodes" />
         <mapping:nearest-projection
@@ -41,17 +41,17 @@
                 direction="read"
                 from="Solid-Mesh"
                 to="Fluid-Mesh-Nodes"
-                constraint="conservative"/>
+                constraint="consistent"/>
     </participant>
 
     <participant name="Solid">
         <provide-mesh name="Solid-Mesh" />
         <write-data name="DisplacementDelta" mesh="Solid-Mesh" />
         <read-data name="Force" mesh="Solid-Mesh" />
-        <watch-point mesh="Solid-Mesh" name="Tube-Midpoint" coordinate="0.0;0.005" />
+        <watch-point mesh="Solid-Mesh" name="Tube-Midpoint" coordinate="0.0;0.005;0.0" />
     </participant>
 
-    <m2n:sockets acceptor="Fluid" connector="Solid" exchange-directory="/home/juschli/git/numsim" />
+    <m2n:sockets acceptor="Fluid" connector="Solid" exchange-directory="/home/bene/CLionProjects/numsim" />
 
     <coupling-scheme:serial-implicit>
         <participants first="Fluid" second="Solid" />

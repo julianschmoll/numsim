@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
         auto physicalSize = settings.physicalSize;
         int meshDim = participant.getMeshDimensions(fluidMeshNodes);
 
-        assert(meshDim == 2 && "Adapter only supports 2D meshes");
+        //assert(meshDim == 2 && "Adapter only supports 2D meshes");
 
         DEBUG(std::cout << "Mesh dimension: " << meshDim << "\n");
 
@@ -176,10 +176,10 @@ int main(int argc, char *argv[]) {
         printVector("Fluid Faces", faceCoords);
 
         int displacementsDim = participant.getDataDimensions(fluidMeshNodes, displacementDelta);
-        std::vector displacements(vertexSize * displacementsDim, 0.0);
+        std::vector displacements(vertexSize * displacementsDim, 0.15);
 
         int forcesDim = participant.getDataDimensions(fluidMeshFaces, force);
-        std::vector forces(facesSize * forcesDim, 0.0);
+        std::vector forces(facesSize * forcesDim, 0.15);
 
         DEBUG(std::cout << forces.size() << " force entries\n");
 
