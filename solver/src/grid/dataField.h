@@ -1,7 +1,7 @@
 #pragma once
 
 #include "grid/array2d.h"
-#include "mpi.h"
+#include <mpi.h>
 #include <iostream>
 
 /**
