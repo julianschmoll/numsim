@@ -26,8 +26,8 @@ void printMesh(const std::string &label, const std::vector<precice::VertexID> &i
     double ymax = std::numeric_limits<double>::lowest();
 
     for (size_t i = 0; i < ids.size(); ++i) {
-        double x = coords[2 * i + 0];
-        double y = coords[2 * i + 1];
+        double x = coords[3 * i + 0];
+        double y = coords[3 * i + 1];
         xmin = std::min(xmin, x);
         xmax = std::max(xmax, x);
         ymin = std::min(ymin, y);
@@ -43,8 +43,8 @@ void printMesh(const std::string &label, const std::vector<precice::VertexID> &i
     std::vector count(printHeight, std::vector(printWidth, 0));
 
     for (size_t i = 0; i < ids.size(); ++i) {
-        double x = coords[2 * i + 0];
-        double y = coords[2 * i + 1];
+        double x = coords[3 * i + 0];
+        double y = coords[3 * i + 1];
 
         int gx = (int)((x - xmin) / (xmax - xmin) * (printWidth - 1));
         int gy = (int)((y - ymin) / (ymax - ymin) * (printHeight - 1));
@@ -176,10 +176,10 @@ int main(int argc, char *argv[]) {
         printVector("Fluid Faces", faceCoords);
 
         int displacementsDim = participant.getDataDimensions(fluidMeshNodes, displacementDelta);
-        std::vector displacements(vertexSize * displacementsDim, 0.15);
+        std::vector displacements(vertexSize * displacementsDim, 0.0);
 
         int forcesDim = participant.getDataDimensions(fluidMeshFaces, force);
-        std::vector forces(facesSize * forcesDim, 0.15);
+        std::vector forces(facesSize * forcesDim, 0.0);
 
         DEBUG(std::cout << forces.size() << " force entries\n");
 
