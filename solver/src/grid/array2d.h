@@ -151,7 +151,20 @@ void Array2d<T>::checkIndices(int i, int j) const {
 }
 
 template<typename T>
+inline std::ostream &operator<<(std::ostream& out, const std::vector<T> &arr) {
+    out << "size=" << arr.size() << ": ";
+    out << "[ ";
+    for (double d : arr) out << d << " ";
+    out << "]";
+    return out;
+}
+
+template<typename T>
 std::ostream &operator<<(std::ostream& out, const Array2d<T> &arr) {
+    if (arr.sizeI() == 1 || arr.sizeJ() == 1) {
+        out << arr.data_;
+        return out;
+    }
     for (int j = arr.sizeJ() - 1; j >= 0; --j) {
         for (int i = 0; i < arr.sizeI(); ++i) {
             out << std::setw(6) << std::setprecision(4) << arr.data_[j * arr.sizeI() + i] << " ";
@@ -169,14 +182,6 @@ inline std::ostream &operator<<(std::ostream& out, const Array2d<bool> &arr) {
         }
         if (j > 0) out << "\n";
     }
-    return out;
-}
-
-inline std::ostream &operator<<(std::ostream& out, const std::vector<double> &arr) {
-    out << "size=" << arr.size() << ": ";
-    out << "[ ";
-    for (double d : arr) out << d << " ";
-    out << "]";
     return out;
 }
 

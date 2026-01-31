@@ -193,7 +193,9 @@ int main(int argc, char *argv[]) {
         std::vector<precice::VertexID> ids(meshSize);
 
         participant.getMeshVertexIDsAndCoordinates("Solid-Mesh", ids, coords);
-        printMesh("Solid-Mesh", ids, coords);
+        //printMesh("Solid-Mesh", ids, coords);
+
+        std::cout << "Solid-Mesh " << coords << std::endl;
 
         double currentTime = 0.0;
 
@@ -257,11 +259,11 @@ int main(int argc, char *argv[]) {
 
             participant.startProfilingSection("Fluid Solver Step");
             simulation.advanceFluidSolver(dt);
-            std::cout << "Forces (before write):" << std::endl;
+            
             simulation.getForces(forces);
             participant.stopLastProfilingSection();
 
-            //printVector("Forces (before write)", forces, 44);
+            std::cout << "[adapter-debug] participant.writeData()" << std::endl;
 
             participant.writeData(fluidMeshFaces, force, faceIDs, forces);
 
@@ -270,7 +272,7 @@ int main(int argc, char *argv[]) {
             if (participant.requiresReadingCheckpoint()) {
                 simulation.reloadLastState();
             } else {
-                simulation.updateSolid();
+                //simulation.updateSolid();
                 currentTime += dt;
                 int currentSec = static_cast<int>(currentTime);
                 int lastSec = static_cast<int>(currentTime - dt);

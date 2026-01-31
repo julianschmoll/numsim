@@ -86,6 +86,9 @@ void Simulation::setDisplacements(const std::vector<double> &topDisplacements, c
         discOps_->topBoundaryPosition_[i] = std::min(domainHeight, discOps_->displacementsTop_[i]);
         discOps_->bottomBoundaryPosition_[i] = std::max(0.0, discOps_->displacementsBottom_[i]);
     }
+
+    std::cout << "topBoundaryPosition_ " << discOps_->topBoundaryPosition_ << std::endl;
+    std::cout << "bottomBoundaryPosition_ " << discOps_->bottomBoundaryPosition_ << std::endl;
     // discOps_->updateStructureCells(timeStepWidth_); TODO: reaktivieren
 }
 
@@ -631,7 +634,7 @@ void Simulation::calculateForces() {
             if (discOps_->isFluid(i, j)) {
                 const double vDy = discOps_->computeDvDy(i, j);
                 // ToDo: Check formula, pressure is squared?
-                discOps_->topF(i) = -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j + 1) + p(i, j)) / 2);
+                discOps_->topF(i) = 0; // -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j + 1) + p(i, j)) / 2);
                 break;
             }
         }
@@ -642,7 +645,7 @@ void Simulation::calculateForces() {
         for (int j = v.beginJ() + 1; j < v.endJ() - 1; ++j) {
             if (discOps_->isFluid(i, j)) {
                 const double vDy = discOps_->computeDvDy(i, j);
-                discOps_->bottomF(i) = -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j - 1) + p(i, j)) / 2);
+                discOps_->bottomF(i) = 0; //-dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j - 1) + p(i, j)) / 2);
                 break;
             }
         }
@@ -662,7 +665,7 @@ void Simulation::test() {
 // ToDo: States are overkill, need to figure out what,
 // apparently uv and dt was not enough
 void Simulation::saveState() {
-    DEBUG(std::cout << "Simulation::saveState" << std::endl);
+    DEBUG(std::cout << "\nSimulation::saveState()\n" << std::endl);
     uCheckpoint_ = discOps_->u();
     vCheckpoint_ = discOps_->v();
     pCheckpoint_ = discOps_->p();
@@ -678,7 +681,7 @@ void Simulation::saveState() {
 }
 
 void Simulation::reloadLastState() {
-    DEBUG(std::cout << "Simulation::reloadLastState" << std::endl);
+    DEBUG(std::cout << "\nSimulation::reloadLastState()\n" << std::endl);
     discOps_->u() = uCheckpoint_;
     discOps_->v() = vCheckpoint_;
     discOps_->p() = pCheckpoint_;
@@ -734,8 +737,8 @@ void Simulation::setDisplacements(std::vector<double> &displacements) {
     // TODO: RANDWERTE verteilen!!
 
     for (int i = 0, idxTop = topOffset, idxBottom = bottomOffset; i < n; ++i, idxTop += meshDim, idxBottom += meshDim) {
-        top[i + 1] = displacements[idxTop] * settings_.physicalSize[1];
-        bottom[i + 1] = displacements[idxBottom] * settings_.physicalSize[1];
+        top[i + 1] = displacements[idxTop];
+        bottom[i + 1] = displacements[idxBottom];
     }
     setDisplacements(top, bottom);
 }
