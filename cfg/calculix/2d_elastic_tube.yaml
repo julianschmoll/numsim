@@ -5,7 +5,7 @@ geometry:
   height: 2.0           # Physical Size Y in Fluid
   wall_thickness: .2     # Thickness of the wall (height)
   # This will make mesh vertices align with fluid cells (nCellsX+1)
-  n_elements_length: 81   # Elements along the wall length (should match nCells)
+  n_elements_length: 80   # Elements along the wall length (should match nCells)
 
 # Material properties (copied from 3D preCICE example)
 material:

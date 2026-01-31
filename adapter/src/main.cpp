@@ -80,7 +80,7 @@ void printMesh(const std::string &label, const std::vector<precice::VertexID> &i
     std::cout << "  +" << std::string(printWidth * 7, '-') << "+\n";
 }
 
-void printVector(const std::string &label, const std::vector<double> &v, int maxElements = 10) {
+void printVector(const std::string &label, const std::vector<double> &v, int maxElements = std::numeric_limits<int>::max()) {
     std::cout << "[adapter-debug] " << label << " size=" << v.size() << " {";
     int n = std::min<int>(static_cast<int>(v.size()), maxElements);
     for (int i = 0; i < n; ++i) {
@@ -134,8 +134,8 @@ int main(int argc, char *argv[]) {
         DEBUG(std::cout << "Mesh dimension: " << meshDim << "\n");
 
         // +1 because of vertices, not faces
-        auto verticesWidth = partitioning->nCellsLocal()[0] + 2;
-        auto facesWidth = partitioning->nCellsLocal()[0] + 2;
+        auto verticesWidth = partitioning->nCellsLocal()[0];
+        auto facesWidth = partitioning->nCellsLocal()[0];
         std::cout << "[adapter-debug] " << "Vertices width: " << verticesWidth << "\n";
         std::cout << "[adapter-debug] " << "Faces width: " << facesWidth << "\n";
         auto vertexSize = 2 * verticesWidth; // number of vertices at wet surface
@@ -153,29 +153,18 @@ int main(int argc, char *argv[]) {
         std::cout << "Phyiscal Size:" << physicalSize[0] << ", " << physicalSize[1] << "\n";
 
         // Both Meshes have the same layout
+        double dx = static_cast<double>(physicalSize[0]) / partitioning->nCellsLocal()[0];
+        
         int idx = 0;
         for (int row = 0; row < 2; ++row) {
             double y_pos = (row == 0) ? 0.0 : static_cast<double>(physicalSize[1]);
             for (int i = 0; i < verticesWidth; ++i) {
-                double x_pos = (verticesWidth == 1)
-                                   ? 0.0
-                                   : (static_cast<double>(i) / static_cast<double>(verticesWidth - 1)) * static_cast<double>(physicalSize[0]);
+                double x_pos = (static_cast<double>(i) + 0.5) * dx;
                 for (int d = 0; d < meshDim; ++d) {
                     double v = (d == 0) ? x_pos : (d == 1) ? y_pos : 0.0;
-                    nodeCoords[idx++] = v;
-                }
-            }
-        }
-
-        idx = 0;
-        for (int row = 0; row < 2; ++row) {
-            double y_pos = (row == 0) ? 0.0 : static_cast<double>(physicalSize[1]);
-            for (int i = 0; i < facesWidth; ++i) {
-                double x_pos =
-                    (facesWidth == 1) ? 0.0 : (static_cast<double>(i) / static_cast<double>(facesWidth - 1)) * static_cast<double>(physicalSize[0]);
-                for (int d = 0; d < meshDim; ++d) {
-                    double v = (d == 0) ? x_pos : (d == 1) ? y_pos : 0.0;
-                    faceCoords[idx++] = v;
+                    nodeCoords[idx] = v;
+                    faceCoords[idx] = v;
+                    idx++;
                 }
             }
         }
@@ -183,8 +172,8 @@ int main(int argc, char *argv[]) {
         participant.setMeshVertices(fluidMeshNodes, nodeCoords, nodeIDs);
         participant.setMeshVertices(fluidMeshFaces, faceCoords, faceIDs);
 
-        printMesh("Fluid Mesh", nodeIDs, nodeCoords);
-        printMesh("Fluid Faces", faceIDs, faceCoords);
+        printVector("Fluid Mesh", nodeCoords);
+        printVector("Fluid Faces", faceCoords);
 
         int displacementsDim = participant.getDataDimensions(fluidMeshNodes, displacementDelta);
         std::vector displacements(vertexSize * displacementsDim, 0.0);
@@ -268,10 +257,11 @@ int main(int argc, char *argv[]) {
 
             participant.startProfilingSection("Fluid Solver Step");
             simulation.advanceFluidSolver(dt);
+            std::cout << "Forces (before write):" << std::endl;
             simulation.getForces(forces);
             participant.stopLastProfilingSection();
 
-            printVector("Forces (before write)", forces, 44);
+            //printVector("Forces (before write)", forces, 44);
 
             participant.writeData(fluidMeshFaces, force, faceIDs, forces);
 

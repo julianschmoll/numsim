@@ -71,6 +71,10 @@ void Simulation::setDisplacements(const std::vector<double> &topDisplacements, c
 
     double domainHeight = settings_.physicalSize[1];
 
+    std::cout << "\nSimulation::setDisplacements()" << std::endl;
+    std::cout << "topDisplacements " << topDisplacements << std::endl;
+    std::cout << "bottomDisplacements " << bottomDisplacements << std::endl;
+
     // TODO: Wir könnten die Geschwindigkeitsränder eventuell sogar hier aktualisieren
     // dann wäre kopieren und speichern der displacements unnötig.
 
@@ -82,7 +86,7 @@ void Simulation::setDisplacements(const std::vector<double> &topDisplacements, c
         discOps_->topBoundaryPosition_[i] = std::min(domainHeight, discOps_->displacementsTop_[i]);
         discOps_->bottomBoundaryPosition_[i] = std::max(0.0, discOps_->displacementsBottom_[i]);
     }
-    discOps_->updateStructureCells(timeStepWidth_);
+    // discOps_->updateStructureCells(timeStepWidth_); TODO: reaktivieren
 }
 
 void Simulation::run() {
@@ -97,12 +101,12 @@ void Simulation::run() {
     DataField &p = discOps_->p();
 
     setBoundaryUV();
-    //for (size_t i = 0; i < discOps_->bottomBoundaryPosition_.size(); i++) {
-    //    discOps_->bottomBoundaryPosition_[i] = 0.01 * i;
-    //    discOps_->topBoundaryPosition_[i] = settings_.physicalSize[1];
-    //}
-    //discOps_->updateStructureCells(timeStepWidth_);
-    //setStructureBoundaries();
+    // for (size_t i = 0; i < discOps_->bottomBoundaryPosition_.size(); i++) {
+    //     discOps_->bottomBoundaryPosition_[i] = 0.01 * i;
+    //     discOps_->topBoundaryPosition_[i] = settings_.physicalSize[1];
+    // }
+    // discOps_->updateStructureCells(timeStepWidth_);
+    // setStructureBoundaries();
     setBoundaryFG();
 
     while (currentTime_ < settings_.endTime) {
@@ -115,8 +119,8 @@ void Simulation::run() {
         const int currentSec = static_cast<int>(currentTime_);
 
         printConsoleInfo(timeSteppingInfo);
-        //DEBUG(outputWriterText_->writeFile(currentTime_));
-        //outputWriterParaview_->writeFile(currentTime_);
+        // DEBUG(outputWriterText_->writeFile(currentTime_));
+        // outputWriterParaview_->writeFile(currentTime_);
 
         writeOutput(currentSec, lastSec);
     }
@@ -137,8 +141,13 @@ void Simulation::advanceFluidSolver(double dt) {
     std::vector uv = {&discOps_->u(), &discOps_->v()};
     std::vector fg = {&discOps_->f(), &discOps_->g()};
 
+    std::cout << "\nSimulation::advanceFluidSolver(" << dt << ")" << std::endl;
+    std::cout << "displacementsBottom_ " << discOps_->displacementsBottom_ << std::endl;
+
+    setBoundaryUV();
     setBoundaryFG(); // TODO: Korrekt? Die Reihenfolge von setBoundaryFG() und setPreliminaryVelocities() sollte hier keine Rolle spielen.
     setPreliminaryVelocities();
+
     partitioning_->exchange(fg);
 
     setRightHandSide();
@@ -149,6 +158,9 @@ void Simulation::advanceFluidSolver(double dt) {
     setBoundaryUV();
 
     calculateForces();
+
+    std::cout << "discOps_->bottomF() " << discOps_->bottomF() << std::endl;
+    std::cout << "discOps_->topF() " << discOps_->topF() << "\n\n";
 
     currentTime_ += dt;
 }
@@ -192,7 +204,7 @@ void Simulation::setStructureBoundaries() {
     auto &g = discOps_->g();
     auto &f = discOps_->f();
 
-    if (settings_.boundaryBottom == BoundaryType::Elastic){
+    if (settings_.boundaryBottom == BoundaryType::Elastic) {
         // u bottom border
         for (int i = u.minI() + 1; i <= u.maxI() - 1; ++i) { // TODO: we do not consider partition boundaries here
             for (int j = u.minJ(); j <= u.maxJ() - 1; ++j) {
@@ -207,12 +219,12 @@ void Simulation::setStructureBoundaries() {
                     f(i, j) = u(i, j) = 0;
                     f(i - 1, j) = u(i - 1, j) = 0;
                 } else if (topFluid && leftFluid) {
-                    f(i, j) = u(i, j) = - u(i , j + 1);
+                    f(i, j) = u(i, j) = -u(i, j + 1);
                     f(i - 1, j) = u(i - 1, j) = 0;
                 } else if (topFluid && rightFluid) {
                     f(i, j) = u(i, j) = 0;
                 } else if (topFluid) {
-                    f(i, j) = u(i, j) = - u(i, j + 1);
+                    f(i, j) = u(i, j) = -u(i, j + 1);
                 } else if (leftFluid) {
                     f(i - 1, j) = u(i - 1, j) = 0;
                 } else if (rightFluid) {
@@ -251,11 +263,11 @@ void Simulation::setStructureBoundaries() {
         }
     }
 
-    if (settings_.boundaryTop == BoundaryType::Elastic){
+    if (settings_.boundaryTop == BoundaryType::Elastic) {
         // u top border
         for (int i = u.minI() + 1; i <= u.maxI() - 1; ++i) {
             for (int j = u.maxJ(); j <= u.minJ(); --j) { // ToDo: Correct iteration?
-                if (discOps_->isFluid(i, j)) { // fluid cell
+                if (discOps_->isFluid(i, j)) {           // fluid cell
                     break;
                 }
                 const bool leftFluid = discOps_->isFluid(i - 1, j);
@@ -266,12 +278,12 @@ void Simulation::setStructureBoundaries() {
                     f(i, j) = u(i, j) = 0;
                     f(i - 1, j) = u(i - 1, j) = 0;
                 } else if (bottomFluid && leftFluid) {
-                    f(i, j) = u(i, j) = - u(i , j - 1);
+                    f(i, j) = u(i, j) = -u(i, j - 1);
                     f(i - 1, j) = u(i - 1, j) = 0;
                 } else if (bottomFluid && rightFluid) {
                     f(i, j) = u(i, j) = 0;
                 } else if (bottomFluid) {
-                    f(i, j) = u(i, j) = - u(i, j - 1);
+                    f(i, j) = u(i, j) = -u(i, j - 1);
                 } else if (leftFluid) {
                     f(i - 1, j) = u(i - 1, j) = 0;
                 } else if (rightFluid) {
@@ -286,7 +298,7 @@ void Simulation::setStructureBoundaries() {
             const double dRight = discOps_->topDisplacement(i + 1) / timeStepWidth_;
 
             for (int j = v.maxJ() + 1; j >= v.minJ() + 1; ++j) { // ToDo: Correct iteration?
-                if (discOps_->isFluid(i, j)) { // fluid cell
+                if (discOps_->isFluid(i, j)) {                   // fluid cell
                     break;
                 }
                 const bool leftFluid = discOps_->isFluid(i - 1, j);
@@ -319,122 +331,125 @@ void Simulation::setBoundaryUV() {
 
     if (partitioning_->ownContainsBoundary<Direction::Bottom>()) {
         switch (settings_.boundaryBottom) {
-            case BoundaryType::InflowNoSlip: case BoundaryType::Elastic: {
-                const auto uBottom = settings_.dirichletBcBottom[0] + speedVariance * settings_.dirichletBcBottom[0];
-                const auto vBottom = settings_.dirichletBcBottom[1] + speedVariance * settings_.dirichletBcBottom[1];
+        case BoundaryType::InflowNoSlip:
+        case BoundaryType::Elastic: {
+            const auto uBottom = settings_.dirichletBcBottom[0] + speedVariance * settings_.dirichletBcBottom[0];
+            const auto vBottom = settings_.dirichletBcBottom[1] + speedVariance * settings_.dirichletBcBottom[1];
 
-                for (int i = u.beginI(); i < u.endI(); ++i) {
-                    u(i, u.beginJ()) = 2.0 * uBottom - u(i, u.beginJ() + 1);
-                }
-
-                for (int i = v.beginI(); i < v.endI(); ++i) {
-                    v(i, v.beginJ()) = vBottom;
-                }
-                break;
+            for (int i = u.beginI(); i < u.endI(); ++i) {
+                u(i, u.beginJ()) = 2.0 * uBottom - u(i, u.beginJ() + 1);
             }
 
-            case BoundaryType::Outflow: {
-                for (int i = u.beginI(); i < u.endI(); ++i) {
-                    u(i, u.beginJ()) = u(i, u.beginJ() + 1);
-                }
-
-                for (int i = v.beginI(); i < v.endI(); ++i) {
-                    v(i, v.beginJ()) = v(i, v.beginJ() + 1);
-                }
-                break;
+            for (int i = v.beginI(); i < v.endI(); ++i) {
+                v(i, v.beginJ()) = vBottom;
             }
+            break;
+        }
+
+        case BoundaryType::Outflow: {
+            for (int i = u.beginI(); i < u.endI(); ++i) {
+                u(i, u.beginJ()) = u(i, u.beginJ() + 1);
+            }
+
+            for (int i = v.beginI(); i < v.endI(); ++i) {
+                v(i, v.beginJ()) = v(i, v.beginJ() + 1);
+            }
+            break;
+        }
         }
     }
 
     if (partitioning_->ownContainsBoundary<Direction::Top>()) {
         switch (settings_.boundaryTop) {
-            case BoundaryType::InflowNoSlip: case BoundaryType::Elastic: {
-                const auto uTop = settings_.dirichletBcTop[0] + speedVariance * settings_.dirichletBcTop[0];
-                const auto vTop = settings_.dirichletBcTop[1] + speedVariance * settings_.dirichletBcTop[1];
+        case BoundaryType::InflowNoSlip:
+        case BoundaryType::Elastic: {
+            const auto uTop = settings_.dirichletBcTop[0] + speedVariance * settings_.dirichletBcTop[0];
+            const auto vTop = settings_.dirichletBcTop[1] + speedVariance * settings_.dirichletBcTop[1];
 
-                for (int i = u.beginI(); i < u.endI(); ++i) {
-                    u(i, u.endJ() - 1) = 2.0 * uTop - u(i, u.endJ() - 2);
-                }
-
-                for (int i = v.beginI(); i < v.endI(); ++i) {
-                    v(i, v.endJ() - 1) = vTop;
-                }
-                break;
+            for (int i = u.beginI(); i < u.endI(); ++i) {
+                u(i, u.endJ() - 1) = 2.0 * uTop - u(i, u.endJ() - 2);
             }
 
-            case BoundaryType::Outflow: {
-                for (int i = u.beginI(); i < u.endI(); ++i) {
-                    u(i, u.endJ() - 1) = u(i, u.endJ() - 2);
-                }
+            for (int i = v.beginI(); i < v.endI(); ++i) {
+                v(i, v.endJ() - 1) = vTop;
+            }
+            break;
+        }
 
-                for (int i = v.beginI(); i < v.endI(); ++i) {
-                    v(i, v.endJ() - 1) = v(i, v.endJ() - 2);
-                }
-                break;
+        case BoundaryType::Outflow: {
+            for (int i = u.beginI(); i < u.endI(); ++i) {
+                u(i, u.endJ() - 1) = u(i, u.endJ() - 2);
             }
 
+            for (int i = v.beginI(); i < v.endI(); ++i) {
+                v(i, v.endJ() - 1) = v(i, v.endJ() - 2);
+            }
+            break;
+        }
         }
     }
 
     if (partitioning_->ownContainsBoundary<Direction::Left>()) {
         switch (settings_.boundaryLeft) {
-            case BoundaryType::InflowNoSlip: {
-                const auto uLeft = settings_.dirichletBcLeft[0] + speedVariance * settings_.dirichletBcLeft[0];
-                const auto vLeft = settings_.dirichletBcLeft[1] + speedVariance * settings_.dirichletBcLeft[1];
+        case BoundaryType::InflowNoSlip: {
+            const auto uLeft = settings_.dirichletBcLeft[0] + speedVariance * settings_.dirichletBcLeft[0];
+            const auto vLeft = settings_.dirichletBcLeft[1] + speedVariance * settings_.dirichletBcLeft[1];
 
-                for (int j = u.beginJ(); j < u.endJ(); ++j) {
-                    u(u.beginI(), j) = uLeft;
-                }
-
-                for (int j = v.beginJ(); j < v.endJ(); ++j) {
-                    v(v.beginI(), j) = 2.0 * vLeft - v(v.beginI() + 1, j);
-                }
-                break;
+            for (int j = u.beginJ(); j < u.endJ(); ++j) {
+                u(u.beginI(), j) = uLeft;
             }
 
-            case BoundaryType::Outflow: {
-                for (int j = u.beginJ(); j < u.endJ(); ++j) {
-                    u(u.beginI(), j) = u(u.beginI() + 1, j);
-                }
+            for (int j = v.beginJ(); j < v.endJ(); ++j) {
+                v(v.beginI(), j) = 2.0 * vLeft - v(v.beginI() + 1, j);
+            }
+            break;
+        }
 
-                for (int j = v.beginJ(); j < v.endJ(); ++j) {
-                    v(v.beginI(), j) = v(v.beginI() + 1, j);
-                }
-                break;
+        case BoundaryType::Outflow: {
+            for (int j = u.beginJ(); j < u.endJ(); ++j) {
+                u(u.beginI(), j) = u(u.beginI() + 1, j);
             }
 
-            case BoundaryType::Elastic: assert(false);
+            for (int j = v.beginJ(); j < v.endJ(); ++j) {
+                v(v.beginI(), j) = v(v.beginI() + 1, j);
+            }
+            break;
+        }
+
+        case BoundaryType::Elastic:
+            assert(false);
         }
     }
 
     if (partitioning_->ownContainsBoundary<Direction::Right>()) {
         switch (settings_.boundaryRight) {
-            case BoundaryType::InflowNoSlip: {
-                const auto uRight = settings_.dirichletBcRight[0] + speedVariance * settings_.dirichletBcRight[0];
-                const auto vRight = settings_.dirichletBcRight[1] + speedVariance * settings_.dirichletBcRight[1];
+        case BoundaryType::InflowNoSlip: {
+            const auto uRight = settings_.dirichletBcRight[0] + speedVariance * settings_.dirichletBcRight[0];
+            const auto vRight = settings_.dirichletBcRight[1] + speedVariance * settings_.dirichletBcRight[1];
 
-                for (int j = u.beginJ(); j < u.endJ(); ++j) {
-                    u(u.endI() - 1, j) = uRight;
-                }
-
-                for (int j = v.beginJ(); j < v.endJ(); ++j) {
-                    v(v.endI() - 1, j) = 2.0 * vRight - v(v.endI() - 2, j);
-                }
-                break;
+            for (int j = u.beginJ(); j < u.endJ(); ++j) {
+                u(u.endI() - 1, j) = uRight;
             }
 
-            case BoundaryType::Outflow: {
-                for (int j = u.beginJ(); j < u.endJ(); ++j) {
-                    u(u.endI() - 1, j) = u(u.endI() - 2, j);
-                }
-
-                for (int j = v.beginJ(); j < v.endJ(); ++j) {
-                    v(v.endI() - 1, j) = v(v.endI() - 2, j);
-                }
-                break;
+            for (int j = v.beginJ(); j < v.endJ(); ++j) {
+                v(v.endI() - 1, j) = 2.0 * vRight - v(v.endI() - 2, j);
             }
-            
-            case BoundaryType::Elastic: assert(false);
+            break;
+        }
+
+        case BoundaryType::Outflow: {
+            for (int j = u.beginJ(); j < u.endJ(); ++j) {
+                u(u.endI() - 1, j) = u(u.endI() - 2, j);
+            }
+
+            for (int j = v.beginJ(); j < v.endJ(); ++j) {
+                v(v.endI() - 1, j) = v(v.endI() - 2, j);
+            }
+            break;
+        }
+
+        case BoundaryType::Elastic:
+            assert(false);
         }
     }
 }
@@ -685,43 +700,42 @@ std::shared_ptr<Partitioning> Simulation::getPartitioning() const noexcept {
 
 void Simulation::getForces(std::vector<double> &forces) {
     // ToDo: This should maybe live within the adapter and not here but doing this now for simplicity
-    auto &v = discOps_->v();
-    int fieldWidth = static_cast<int>(v.endI()) - static_cast<int>(v.beginI());
-    std::cout << "Getting Forces from Simulation" << std::endl;
-    std::cout << "FieldWidth = " << 4 * fieldWidth << std::endl;
-    std::cout << "Forces Size: " << forces.size() << std::endl;
-
     const int meshDim = 2;
-    const size_t expectedSize = static_cast<size_t>(2 * fieldWidth * meshDim);
-    assert(expectedSize == forces.size());
+    const int n = settings_.nCells[0];
 
-    const size_t topOffset = 1;
-    const size_t bottomOffset = static_cast<size_t>(fieldWidth) * meshDim + 1;
+    const int topOffset = 1;
+    const int bottomOffset = n * meshDim + 1;
 
-    for (int i = 0, idxTop = topOffset, idxBottom = bottomOffset; i < fieldWidth; ++i, idxTop += meshDim, idxBottom += meshDim) {
+    for (int i = 0, idxTop = topOffset, idxBottom = bottomOffset; i < n; ++i, idxTop += meshDim, idxBottom += meshDim) {
         // ToDo: Indices here are naasty
-        forces[idxTop] = discOps_->topF(i - 1);
-        forces[idxBottom] = discOps_->bottomF(i - 1);
+        forces[idxTop] = discOps_->topF(i);
+        forces[idxBottom] = discOps_->bottomF(i);
     }
+    std::cout << "\nSimulation::getForces()" << std::endl;
+    std::cout << forces << "\n\n";
 }
 
 void Simulation::setDisplacements(std::vector<double> &displacements) {
     // ToDo: This seems to be incorrect?
-    std::cout << "[adapter-debug] Simulation::setDisplacements(flat) size=" << displacements.size() << std::endl;
+    std::cout << "\nSimulation::setDisplacements(flat)" << std::endl;
+    std::cout << displacements << "\n\n";
+
     constexpr int meshDim = 2;
-    const int fieldWidth = static_cast<int>(discOps_->displacementsTop_.size());
+    const int n = settings_.nCells[0];
 
     // ToDo: Add assertion for size
-    std::vector top(fieldWidth, 0.0);
-    std::vector bottom(fieldWidth, 0.0);
+    std::vector top(n + 2, 0.0);
+    std::vector bottom(n + 2, 0.0);
 
     constexpr int topOffset = 1;
     // +1 because it's a flat array with x,y,x,y,...
-    const int bottomOffset = fieldWidth * meshDim + 1;
+    const int bottomOffset = n * meshDim + 1;
 
-    for (int i = 0, idxTop = topOffset, idxBottom = bottomOffset; i < fieldWidth; ++i, idxTop += meshDim, idxBottom += meshDim) {
-        top[i] = displacements[idxTop] * settings_.physicalSize[1];
-        bottom[i] = displacements[idxBottom]  * settings_.physicalSize[1];
+    // TODO: RANDWERTE verteilen!!
+
+    for (int i = 0, idxTop = topOffset, idxBottom = bottomOffset; i < n; ++i, idxTop += meshDim, idxBottom += meshDim) {
+        top[i + 1] = displacements[idxTop] * settings_.physicalSize[1];
+        bottom[i + 1] = displacements[idxBottom] * settings_.physicalSize[1];
     }
     setDisplacements(top, bottom);
 }

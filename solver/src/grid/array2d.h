@@ -172,6 +172,14 @@ inline std::ostream &operator<<(std::ostream& out, const Array2d<bool> &arr) {
     return out;
 }
 
+inline std::ostream &operator<<(std::ostream& out, const std::vector<double> &arr) {
+    out << "size=" << arr.size() << ": ";
+    out << "[ ";
+    for (double d : arr) out << d << " ";
+    out << "]";
+    return out;
+}
+
 template<typename T>
 int Array2d<T>::sizeI() const { return size_[0]; };
 

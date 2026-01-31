@@ -50,7 +50,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--cleanup",
         type=bool,
-        default=True,
+        default=False,
         help="Clean up simulation files after run",
     )
 
