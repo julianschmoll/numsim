@@ -30,6 +30,8 @@ public:
      */
     void run();
 
+    void initializeDisplacements(std::vector<double> &displacements);
+
     /**
      * Saves current state of u, v and p.
      */

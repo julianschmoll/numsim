@@ -86,7 +86,7 @@ void Simulation::setDisplacements(const std::vector<double> &topDisplacements, c
         discOps_->bottomBoundaryPosition_[i] = std::max(0.0, discOps_->bottomBoundaryPosition_[i]);
     }
 
-    discOps_->updateStructureCells(timeStepWidth_);
+    //discOps_->updateStructureCells(timeStepWidth_);
 }
 
 void Simulation::run() {
@@ -135,6 +135,14 @@ void Simulation::run() {
         uint64_t ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         std::cout << "Simulation finished in " << ms << "ms" << std::endl;
     }
+}
+
+void Simulation::initializeDisplacements(std::vector<double> &displacements) {
+    setBoundaryUV();
+    setDisplacements(displacements);
+    discOps_->updateStructureCells(42); // 42 weil Wert egal
+    setStructureBoundaries();
+    setBoundaryFG();
 }
 
 void Simulation::advanceFluidSolver(double dt) {
@@ -627,7 +635,7 @@ void Simulation::calculateForces() {
 
     // collect forces orthogonal to top boundary
     for (int i = v.beginI() + 1; i < v.endI() - 1; ++i) {
-        for (int j = v.endJ() - 2; j > v.beginJ(); --j) {
+        for (int j = v.endJ() - 1; j > v.beginJ(); --j) {
             if (discOps_->isFluid(i, j)) {
                 const double vDy = discOps_->computeDvDy(i, j);
                 // ToDo: Check formula, pressure is squared?
@@ -639,10 +647,10 @@ void Simulation::calculateForces() {
 
     // collect forces orthogonal to bottom boundary
     for (int i = v.beginI() + 1; i < v.endI() - 1; ++i) {
-        for (int j = v.beginJ() + 1; j < v.endJ() - 1; ++j) {
+        for (int j = v.beginJ(); j < v.endJ() - 1; ++j) {
             if (discOps_->isFluid(i, j)) {
-                const double vDy = discOps_->computeDvDy(i, j);
-                discOps_->bottomF(i) = -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j - 1) + p(i, j)) / 2);
+                const double vDy = discOps_->computeDvDy(i, j - 1);
+                discOps_->bottomF(i) = dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j - 1) + p(i, j)) / 2);
                 break;
             }
         }
@@ -700,14 +708,17 @@ std::shared_ptr<Partitioning> Simulation::getPartitioning() const noexcept {
 
 void Simulation::getForces(std::vector<double> &forces) {
     // ToDo: This should maybe live within the adapter and not here but doing this now for simplicity
-    const int meshDim = 2;
+    const int meshDim = 3;
     const int n = settings_.nCells[0];
 
+    // ToDo: When meshDim is 3 and we have +1 for y component,
+    // we have 0 Displacements. when we do on x component, we
+    // get displacements and also when dimensions are 2 -> we only write
+    // the first cells!
     const int topOffset = 1;
     const int bottomOffset = n * meshDim + 1;
 
     for (int i = 0, idxTop = topOffset, idxBottom = bottomOffset; i < n; ++i, idxTop += meshDim, idxBottom += meshDim) {
-        // ToDo: Indices here are naasty
         forces[idxTop] = discOps_->topF(i);
         forces[idxBottom] = discOps_->bottomF(i);
     }

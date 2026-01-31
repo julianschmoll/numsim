@@ -227,8 +227,9 @@ int main(int argc, char *argv[]) {
                 displacements[idxBottom] = -settings.bottomWallDispl_;
         }
         printVector("Displacements (initial)", displacements, 44);
-        simulation.setDisplacements(displacements);
-        // simulation.saveState();
+
+        simulation.initializeDisplacements(displacements);
+
         participant.writeData(fluidMeshFaces, force, faceIDs, forces);
 
         while (participant.isCouplingOngoing()) {
@@ -272,7 +273,7 @@ int main(int argc, char *argv[]) {
             if (participant.requiresReadingCheckpoint()) {
                 simulation.reloadLastState();
             } else {
-                // simulation.updateSolid();
+                simulation.updateSolid();
                 currentTime += dt;
                 int currentSec = static_cast<int>(currentTime);
                 int lastSec = static_cast<int>(currentTime - dt);
