@@ -238,6 +238,7 @@ int main(int argc, char *argv[]) {
         printVector("Displacements (initial)", displacements, 44);
         simulation.setDisplacements(displacements);
         simulation.saveState();
+        participant.writeData(fluidMeshFaces, force, faceIDs, forces);
 
         while (participant.isCouplingOngoing()) {
             if (participant.requiresWritingCheckpoint()) {
@@ -252,8 +253,16 @@ int main(int argc, char *argv[]) {
             std::cout << "[adapter-debug] " << "Coupling Timestep " << dt << "\n";
 
             participant.readData(fluidMeshNodes, displacementDelta, nodeIDs, dt, displacements);
-
             printVector("Displacements (read)", displacements, 44);
+
+            double maxDispl = 0.0;
+            for (size_t i = 0; i < displacements.size(); ++i) {
+                maxDispl = std::max(maxDispl, std::abs(displacements[i]));
+            }
+            if (maxDispl > 100.0) {
+                std::cerr << "ERROR: Received invalid displacement magnitude: " << maxDispl << "\n";
+                MPI_Abort(MPI_COMM_WORLD, 1);
+            }
 
             simulation.setDisplacements(displacements);
 

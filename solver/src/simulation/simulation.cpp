@@ -67,7 +67,7 @@ void Simulation::setDisplacements(const std::vector<double> &topDisplacements, c
     assert(n == static_cast<int>(topDisplacements.size()));
     assert(n == static_cast<int>(bottomDisplacements.size()));
     discOps_->displacementsTop_ = topDisplacements;
-    discOps_->displacementsBottom_ = topDisplacements;
+    discOps_->displacementsBottom_ = bottomDisplacements;
 
     double domainHeight = settings_.physicalSize[1];
 
@@ -80,9 +80,9 @@ void Simulation::setDisplacements(const std::vector<double> &topDisplacements, c
         discOps_->bottomBoundaryPosition_[i] += discOps_->displacementsBottom_[i];
 
         discOps_->topBoundaryPosition_[i] = std::min(domainHeight, discOps_->displacementsTop_[i]);
-        discOps_->bottomBoundaryPosition_[i] = std::max(0.0, discOps_->topBoundaryPosition_[i]);
+        discOps_->bottomBoundaryPosition_[i] = std::max(0.0, discOps_->displacementsBottom_[i]);
     }
-
+    discOps_->updateStructureCells(timeStepWidth_);
 }
 
 void Simulation::run() {
@@ -153,6 +153,7 @@ void Simulation::advanceFluidSolver(double dt) {
     currentTime_ += dt;
 }
 
+// ToDo: We never call this?
 void Simulation::updateSolid() {
     DataField &q = discOps_->q();
     // Struktur anpassen
@@ -651,6 +652,8 @@ void Simulation::saveState() {
     vCheckpoint_ = discOps_->v();
     pCheckpoint_ = discOps_->p();
     qCheckpoint_ = discOps_->q();
+    fCheckpoint_ = discOps_->f();
+    gCheckpoint_ = discOps_->g();
     timeStepWidthCheckpoint_ = timeStepWidth_;
     checkpointTime_ = currentTime_;
     displacementsTopCheckpoint_ = discOps_->displacementsTop_;
@@ -665,6 +668,8 @@ void Simulation::reloadLastState() {
     discOps_->v() = vCheckpoint_;
     discOps_->p() = pCheckpoint_;
     discOps_->q() = qCheckpoint_;
+    discOps_->f() = fCheckpoint_;
+    discOps_->g() = gCheckpoint_;
     currentTime_ = checkpointTime_;
     timeStepWidth_ = timeStepWidthCheckpoint_;
     discOps_->topBoundaryPosition_ = topBoundaryPositionCheckpoint_;
@@ -672,9 +677,6 @@ void Simulation::reloadLastState() {
     discOps_->displacementsTop_ = displacementsTopCheckpoint_;
     discOps_->displacementsBottom_ = displacementsBottomCheckpoint_;
     discOps_->updateStructureCells(timeStepWidth_);
-    setBoundaryUV();
-    setBoundaryFG();
-    setStructureBoundaries();
 }
 
 std::shared_ptr<Partitioning> Simulation::getPartitioning() const noexcept {

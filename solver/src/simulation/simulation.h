@@ -137,6 +137,10 @@ private:
 
     DataField qCheckpoint_;
 
+    DataField fCheckpoint_;
+
+    DataField gCheckpoint_;
+
     double timeStepWidthCheckpoint_ = 0;
 
     std::vector<double> topBoundaryPositionCheckpoint_;
