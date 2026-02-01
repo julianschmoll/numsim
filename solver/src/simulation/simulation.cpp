@@ -163,18 +163,23 @@ void Simulation::advanceFluidSolver(double dt) {
     currentTime_ += dt;
 }
 
-// ToDo: We never call this?
 void Simulation::updateSolid() {
-    DataField &q = discOps_->q();
-    // Struktur anpassen
+    auto &q = discOps_->q();
+
     discOps_->updateStructureCells(timeStepWidth_);
+
     setBoundaryUV();
     setBoundaryFG();
+
+    setPreliminaryVelocities();
     setStructureBoundaries();
-    // unphysical corrective pressure q berechnen
+
+    setRightHandSide();
     pressureSolver_->solve(q);
-    // geschwindigkeiten korrigieren
+
     correctVelocities();
+
+    std::cout << discOps_->structure_ << "\n";
 }
 
 void Simulation::printConsoleInfo(const TimeSteppingInfo &timeSteppingInfo) const {
@@ -639,7 +644,7 @@ void Simulation::calculateForces() {
     for (int i = v.beginI() + 1; i < v.endI() - 1; ++i) {
         for (int j = v.beginJ(); j < v.endJ() - 1; ++j) {
             if (discOps_->isFluid(i, j)) {
-                const double vDy = discOps_->computeDvDy(i, j - 1);
+                const double vDy = discOps_->computeDvDy(i, j);
                 discOps_->bottomF(i) = dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j - 1) + p(i, j)) / 2);
                 break;
             }
