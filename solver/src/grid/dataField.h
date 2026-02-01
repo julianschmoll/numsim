@@ -1,14 +1,14 @@
 #pragma once
 
 #include "grid/array2d.h"
-#include "mpi.h"
+#include <mpi.h>
 #include <iostream>
 
 /**
  * @class DataField
  * @brief 2D Data representation containing method for interpolation.
  */
-class DataField : public Array2d {
+class DataField : public Array2d<double> {
 public:
     /**
      * Constructs DataField with grid size, offset, and index ranges.
@@ -135,6 +135,16 @@ public:
 
     /// MPI Datatype to exchange columns.
     MPI_Datatype mpiColType() const;
+
+    /**
+     * Returns the max value in the 2D Array using c++ standard library.
+     *
+     * Convenience method, so that iteration over both dimensions is not
+     * necessary to retrieve max value.
+     *
+     * @return Max value.
+     */
+    double absMax() const;
 
 private:
     /// Grid Spacing

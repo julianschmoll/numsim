@@ -17,5 +17,17 @@ find_package(precice REQUIRED CONFIG)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE precice::precice)
 
+find_package(MPI REQUIRED)
+
+include_directories(${MPI_INCLUDE_PATH})
+if(MPI_COMPILE_FLAGS)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+            COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
+endif()
+if(MPI_LINK_FLAGS)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+            LINK_FLAGS "${MPI_LINK_FLAGS}")
+endif()
+
 # install adapter executable in build directory
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${PROJECT_SOURCE_DIR}/../build)

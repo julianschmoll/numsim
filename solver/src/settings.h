@@ -4,7 +4,7 @@
 #include <iostream>
 
 enum class IterSolverType { SOR, GaussSeidel, CG };
-enum class BoundaryType { InflowNoSlip, Outflow };
+enum class BoundaryType { InflowNoSlip, Outflow, Elastic };
 
 /**
  * @class Settings
@@ -94,6 +94,9 @@ struct Settings {
 
     /// range of velocity for training
     std::array<double, 2> velocityRange;
+
+    double topWallDispl_ = 0.2;
+    double bottomWallDispl_ = 0.2;
 
     /**
      * Parses a text file with settings.

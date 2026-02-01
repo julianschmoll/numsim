@@ -2,6 +2,7 @@
 
 #include "macros.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <mpi.h>
@@ -10,7 +11,7 @@ DataField::DataField()
     : meshWidth_({0, 0}), offset_({0, 0}), fieldID_(EMPTY_ID) {}
 
 DataField::DataField(const std::array<int, 2> size, const std::array<double, 2> meshWidth, const std::array<double, 2> offset, int fieldID)
-    : Array2d(size), meshWidth_(meshWidth), offset_(offset), fieldID_(fieldID) {
+    : Array2d<double>(size), meshWidth_(meshWidth), offset_(offset), fieldID_(fieldID) {
     const int numberX = endI() - beginI();
     const int numberY = endJ() - beginJ();
 
@@ -19,7 +20,7 @@ DataField::DataField(const std::array<int, 2> size, const std::array<double, 2> 
 }
 
 DataField::DataField(DataField &&other) noexcept
-    : Array2d(std::move(other)), meshWidth_(other.meshWidth_), offset_(other.offset_), fieldID_(other.fieldID_), mpiColType_(other.mpiColType_) {
+    : Array2d<double>(std::move(other)), meshWidth_(other.meshWidth_), offset_(other.offset_), fieldID_(other.fieldID_), mpiColType_(other.mpiColType_) {
     other.mpiColType_ = MPI_DATATYPE_NULL;
 }
 
@@ -30,7 +31,7 @@ DataField &DataField::operator=(DataField &&other) noexcept {
     if (mpiColType_ != MPI_DATATYPE_NULL) {
         MPI_Type_free(&mpiColType_);
     }
-    Array2d::operator=(std::move(other));
+    Array2d<double>::operator=(std::move(other));
     meshWidth_ = other.meshWidth_;
     offset_ = other.offset_;
     fieldID_ = other.fieldID_;
@@ -40,7 +41,7 @@ DataField &DataField::operator=(DataField &&other) noexcept {
 }
 
 DataField::DataField(const DataField &other)
-    : Array2d(other),
+    : Array2d<double>(other),
       meshWidth_(other.meshWidth_),
       offset_(other.offset_),
       fieldID_(other.fieldID_) {
@@ -59,7 +60,7 @@ DataField &DataField::operator=(const DataField &other) noexcept {
         mpiColType_ = MPI_DATATYPE_NULL;
     }
 
-    Array2d::operator=(other);
+    Array2d<double>::operator=(other);
     meshWidth_ = other.meshWidth_;
     offset_ = other.offset_;
     fieldID_ = other.fieldID_;
@@ -151,4 +152,8 @@ double DataField::interpolateAt(double x, double y) const {
 
 MPI_Datatype DataField::mpiColType() const {
     return mpiColType_;
+}
+
+double DataField::absMax() const {
+    return std::fabs(*std::max_element(data_.begin(), data_.end(), [](const double a, const double b) { return std::fabs(a) < std::fabs(b); }));
 }

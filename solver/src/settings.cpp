@@ -76,10 +76,14 @@ void Settings::loadFromFile(const std::string &filename) {
     if (settings.count("boundaryBottom")) {
         if (settings["boundaryBottom"] == "Outflow")
             boundaryBottom = BoundaryType::Outflow;
+        else if (settings["boundaryBottom"] == "Elastic")
+            boundaryBottom = BoundaryType::Elastic;
     }
     if (settings.count("boundaryTop")) {
         if (settings["boundaryTop"] == "Outflow")
             boundaryTop = BoundaryType::Outflow;
+        else if (settings["boundaryTop"] == "Elastic")
+            boundaryTop = BoundaryType::Elastic;
     }
     if (settings.count("boundaryLeft")) {
         if (settings["boundaryLeft"] == "Outflow")
@@ -139,6 +143,12 @@ void Settings::loadFromFile(const std::string &filename) {
         epsilon = std::stod(settings["epsilon"]);
     if (settings.count("maximumNumberOfIterations"))
         maximumNumberOfIterations = static_cast<int>(std::stod(settings["maximumNumberOfIterations"]));
+
+    if (settings.count("topWall"))
+        topWallDispl_ = std::stod(settings["topWall"]);
+
+    if (settings.count("bottomWall"))
+        bottomWallDispl_ = std::stod(settings["bottomWall"]);
 
     if (!settings.count("generateTrainingData"))
         return;

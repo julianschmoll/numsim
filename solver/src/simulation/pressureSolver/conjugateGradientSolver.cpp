@@ -20,10 +20,11 @@ void ConjugateGradientSolver::updatePressure(double alpha) {
     // paralleisierbar
     for (int j = d.beginJ() + 1; j < d.endJ() - 1; ++j) {
         for (int i = d.beginI() + 1; i < d.endI() - 1; ++i) {
+            if (grid_->isSolid(i, j)) continue;
             p(i, j) += alpha * d(i, j);
         }
     }
-    setBoundaryValues();
+    setBoundaryValues(p);
     partitioning_->exchange(p);
 }
 
@@ -34,6 +35,7 @@ void ConjugateGradientSolver::updateDirection(double beta) {
     // paralleisierbar
     for (int j = d.beginJ() + 1; j < d.endJ() - 1; ++j) {
         for (int i = d.beginI() + 1; i < d.endI() - 1; ++i) {
+            if (grid_->isSolid(i, j)) continue;
             d(i, j) = rhs(i, j) + beta * d(i, j);
         }
     }
@@ -48,6 +50,7 @@ double ConjugateGradientSolver::decreaseResidual(const DataField &d, double alph
     // paralleisierbar
     for (int j = d.beginJ() + 1; j < d.endJ() - 1; ++j) {
         for (int i = d.beginI() + 1; i < d.endI() - 1; ++i) {
+            if (grid_->isSolid(i, j)) continue;
             rhs(i, j) -= alpha * applyDiffusionOperator(d, i, j); // rhs becomes residual
             localSquareResidual += rhs(i, j) * rhs(i, j);
         }
@@ -69,6 +72,7 @@ double ConjugateGradientSolver::calculateAlpha() {
     // paralleisierbar
     for (int j = d.beginJ() + 1; j < d.endJ() - 1; ++j) {
         for (int i = d.beginI() + 1; i < d.endI() - 1; ++i) {
+            if (grid_->isSolid(i, j)) continue;
             rdDotLocal += rhs(i, j) * d(i, j);
             dAdDotLocal += d(i, j) * applyDiffusionOperator(d, i, j);
         }
@@ -80,9 +84,8 @@ double ConjugateGradientSolver::calculateAlpha() {
 
 // alpha = gradient descent strength
 // beta = direction update parameter
-void ConjugateGradientSolver::solve() {
+void ConjugateGradientSolver::solve(DataField &p) {
 
-    DataField &p = grid_->p();
     DataField &rhs = grid_->rhs();
     DataField &d = direction_;
 
@@ -93,6 +96,7 @@ void ConjugateGradientSolver::solve() {
     // initial descent direction equals residual
     for (int j = d.beginJ() + 1; j < d.endJ() - 1; ++j) {
         for (int i = d.beginI() + 1; i < d.endI() - 1; ++i) {
+            if (grid_->isSolid(i, j)) continue;
             d(i, j) = rhs(i, j);
         }
     }

@@ -15,7 +15,7 @@ public:
      * @param alpha: Donor cell contribution factor, range from 0 to 1. If set 0, pure central
      * differences discretization is used.
      */
-    DiscreteOperators(const std::array<int, 2> &nCells, const std::array<double, 2> &meshWidth, const Partitioning &partitioning, double alpha);
+    DiscreteOperators(const Settings &settings, const Partitioning &partitioning, double alpha);
 
     /**
      * Computes du²/dx
@@ -125,6 +125,25 @@ public:
      */
     double computeDpDy(int i, int j) const;
 
+    /**
+     * Computes dq/dx
+     *
+     * @param i Index in x-direction
+     * @param j Index in y-direction
+     * @return Derivative of q in x-direction
+     */
+    double computeDqDx(int i, int j) const;
+
+    /**
+     * Computes dq/dy
+     *
+     * @param i Index in x-direction
+     * @param j Index in y-direction
+     * @return Derivative of q in x-direction
+     */
+    double computeDqDy(int i, int j) const;
+
+    
 private:
     double alpha_;
 };

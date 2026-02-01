@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<precice-configuration>
+    <log>
+        <sink
+                filter="%Severity% > debug and %Rank% = 0"
+                format="---[precice] %ColorizedSeverity% %Message%"
+                enabled="true" />
+    </log>
+
+    <profiling mode="fundamental" synchronize="false" />
+
+    <data:vector name="Force" />
+    <data:vector name="DisplacementDelta" />
+
+    <mesh name="Fluid-Mesh-Nodes" dimensions="3">
+        <use-data name="DisplacementDelta" />
+    </mesh>
+
+    <mesh name="Fluid-Mesh-Faces" dimensions="3">
+        <use-data name="Force" />
+    </mesh>
+
+    <mesh name="Solid-Mesh" dimensions="3">
+        <use-data name="DisplacementDelta" />
+        <use-data name="Force" />
+    </mesh>
+
+    <participant name="Fluid">
+        <receive-mesh name="Solid-Mesh" from="Solid" safety-factor="2" api-access="true"/>
+        <provide-mesh name="Fluid-Mesh-Nodes" />
+        <provide-mesh name="Fluid-Mesh-Faces" />
+        <export:vtu directory="/home/juschli/git/numsim" />
+        <write-data name="Force" mesh="Fluid-Mesh-Faces" />
+        <read-data name="DisplacementDelta" mesh="Fluid-Mesh-Nodes" />
+        <mapping:nearest-projection
+                direction="write"
+                from="Fluid-Mesh-Faces"
+                to="Solid-Mesh"
+                constraint="conservative"/>
+        <mapping:nearest-projection
+                direction="read"
+                from="Solid-Mesh"
+                to="Fluid-Mesh-Nodes"
+                constraint="consistent"/>
+    </participant>
+
+    <participant name="Solid">
+        <provide-mesh name="Solid-Mesh" />
+        <export:vtu directory="/home/juschli/git/numsim_new/solid" />
+        <write-data name="DisplacementDelta" mesh="Solid-Mesh" />
+        <read-data name="Force" mesh="Solid-Mesh" />
+        <watch-point mesh="Solid-Mesh" name="Tube-Midpoint" coordinate="0.0;0.005;0.0" />
+    </participant>
+
+    <m2n:sockets acceptor="Fluid" connector="Solid" exchange-directory="/home/juschli/git/numsim" />
+
+    <coupling-scheme:serial-implicit>
+        <participants first="Fluid" second="Solid" />
+        <time-window-size value="0.01" />
+        <max-time value="1" />
+        <exchange data="Force" mesh="Solid-Mesh" from="Fluid" to="Solid" />
+        <exchange data="DisplacementDelta" mesh="Solid-Mesh" from="Solid" to="Fluid" />
+        <max-iterations value="30" />
+        <absolute-convergence-measure limit="1e-3" data="DisplacementDelta" mesh="Solid-Mesh" />
+        <absolute-convergence-measure limit="1e-3" data="Force" mesh="Solid-Mesh" />
+        <!--
+        For now no acceleration as I seem to get NaNs otherwise.
+        -->
+        <acceleration:aitken>
+            <data name="DisplacementDelta" mesh="Solid-Mesh" />
+            <initial-relaxation value="0.01" />
+        </acceleration:aitken>
+    </coupling-scheme:serial-implicit>
+</precice-configuration>

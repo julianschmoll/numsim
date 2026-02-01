@@ -10,7 +10,6 @@ add_library(${LIBRARY_NAME}
         settings.cpp
 
         # grid stuff
-        grid/array2d.cpp
         grid/staggeredGrid.cpp
         grid/dataField.cpp
 

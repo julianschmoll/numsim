@@ -1,14 +1,18 @@
 #include "simulation.h"
+#include "grid/staggeredGrid.h"
 #include "macros.h"
 #include "outputWriter/outputWriterParaviewParallel.h"
 #include "outputWriter/outputWriterTextParallel.h"
 #include "settings.h"
 #include "simulation/pressureSolver/conjugateGradientSolver.h"
 #include "simulation/pressureSolver/redBlackSolver.h"
+#include <cassert>
 #include <chrono>
-#include <iostream>
-#include <ostream>
 #include <cmath>
+#include <iomanip>
+#include <iostream>
+#include <memory>
+#include <ostream>
 
 Simulation::Simulation(const Settings &settings, const std::string &folderName) {
     settings_ = settings;
@@ -24,19 +28,17 @@ Simulation::Simulation(const Settings &settings, const std::string &folderName) 
     if (settings_.useDonorCell) {
         if (partitioning_->onPrimaryRank())
             std::cout << " -- Using Donor Cell." << std::endl;
-        discOps_ = std::make_unique<DiscreteOperators>(partitioning_->nCellsLocal(), meshWidth_, *partitioning_,
-                                                       settings_.alpha);
+        discOps_ = std::make_unique<DiscreteOperators>(settings_, *partitioning_, settings_.alpha);
     } else {
         if (partitioning_->onPrimaryRank())
             std::cout << " -- Using Central Differences." << std::endl;
-        discOps_ = std::make_unique<DiscreteOperators>(partitioning_->nCellsLocal(), meshWidth_, *partitioning_, 0.0);
+        discOps_ = std::make_unique<DiscreteOperators>(settings_, *partitioning_, 0.0);
     }
 
     if (settings_.pressureSolver == IterSolverType::SOR) {
         if (partitioning_->onPrimaryRank())
             std::cout << " -- Using (Red-Black) SOR solver." << std::endl;
-        pressureSolver_ =
-                std::make_unique<RedBlackSolver>(discOps_, partitioning_, settings_);
+        pressureSolver_ = std::make_unique<RedBlackSolver>(discOps_, partitioning_, settings_);
     } else if (settings_.pressureSolver == IterSolverType::GaussSeidel) {
         if (partitioning_->onPrimaryRank())
             std::cout << " -- Using (Red-Black) Gauss-Seidel solver." << std::endl;
@@ -55,51 +57,72 @@ Simulation::Simulation(const Settings &settings, const std::string &folderName) 
     outputWriterText_ = std::make_unique<OutputWriterTextParallel>(discOps_, *partitioning_, folderName);
 }
 
-void Simulation::writeOutput(const double currentTime, const int currentSec, const int lastSec) const {
-    if (currentSec > lastSec && !settings_.generateTrainingData) [[unlikely]] {
-        outputWriterParaview_->writeFile(currentTime);
+void Simulation::writeOutput(const int currentSec, const int lastSec) const {
+    outputWriterParaview_->writeFile(currentTime_);
+}
+
+void Simulation::setDisplacements(const std::vector<double> &topDisplacements, const std::vector<double> &bottomDisplacements) {
+    // TODO: Unsere Displacements haben 2 Einträge mehr als die innere Zellenanzahl.. Stimmt das?
+    int n = discOps_->displacementsTop_.size();
+    assert(n == static_cast<int>(topDisplacements.size()));
+    assert(n == static_cast<int>(bottomDisplacements.size()));
+    discOps_->displacementsTop_ = topDisplacements;
+    discOps_->displacementsBottom_ = bottomDisplacements;
+
+    double domainHeight = settings_.physicalSize[1];
+
+    // TODO: Wir könnten die Geschwindigkeitsränder eventuell sogar hier aktualisieren
+    // dann wäre kopieren und speichern der displacements unnötig.
+    // Zu tatsächlichem Rand hinzufügen (lokal, da wir unsere globale Position kennen)
+    for (int i = 0; i < n; i++) {
+        discOps_->topBoundaryPosition_[i] += discOps_->displacementsTop_[i];
+        discOps_->bottomBoundaryPosition_[i] += discOps_->displacementsBottom_[i];
+
+        discOps_->topBoundaryPosition_[i] = std::min(domainHeight, discOps_->topBoundaryPosition_[i]);
+        discOps_->bottomBoundaryPosition_[i] = std::max(0.0, discOps_->bottomBoundaryPosition_[i]);
     }
+
+    //discOps_->updateStructureCells(timeStepWidth_);
 }
 
 void Simulation::run() {
 
     const auto start = std::chrono::high_resolution_clock::now();
 
-    double currentTime = 0.0;
+    currentTime_ = 0.0;
 
     std::vector uv = {&discOps_->u(), &discOps_->v()};
     std::vector fg = {&discOps_->f(), &discOps_->g()};
 
-    setBoundaryUV(currentTime);
+    DataField &p = discOps_->p();
+
+    setBoundaryUV();
+    // for (size_t i = 0; i < discOps_->bottomBoundaryPosition_.size(); i++) {
+    //     discOps_->bottomBoundaryPosition_[i] = 0.01 * i;
+    //     discOps_->topBoundaryPosition_[i] = settings_.physicalSize[1];
+    // }
+    // discOps_->updateStructureCells(timeStepWidth_);
+    // setStructureBoundaries();
     setBoundaryFG();
 
-    while (currentTime < settings_.endTime) {
-        TimeSteppingInfo timeSteppingInfo = computeTimeStepWidth(currentTime);
+    while (currentTime_ < settings_.endTime) {
+        TimeSteppingInfo timeSteppingInfo = computeTimeStepWidth();
         timeStepWidth_ = timeSteppingInfo.timeStepWidth;
 
-        setPreliminaryVelocities();
-        setBoundaryFG();
-        partitioning_->exchange(fg);
+        const int lastSec = static_cast<int>(currentTime_);
+        // We call this here so we have less duplicated code
+        advanceFluidSolver(timeStepWidth_);
+        const int currentSec = static_cast<int>(currentTime_);
 
-        setRightHandSide();
-        pressureSolver_->solve();
+        printConsoleInfo(timeSteppingInfo);
+        // DEBUG(outputWriterText_->writeFile(currentTime_));
+        // outputWriterParaview_->writeFile(currentTime_);
 
-        setVelocities();
-        partitioning_->exchange(uv);
-        setBoundaryUV(currentTime);
-
-        const int lastSec = static_cast<int>(currentTime);
-        currentTime += timeStepWidth_;
-        const int currentSec = static_cast<int>(currentTime);
-
-        printConsoleInfo(currentTime, timeSteppingInfo);
-        DEBUG(outputWriterText_->writeFile(currentTime));
-
-        writeOutput(currentTime, currentSec, lastSec);
+        writeOutput(currentSec, lastSec);
     }
 
     if (settings_.generateTrainingData)
-        outputWriterParaview_->writeFile(currentTime);
+        outputWriterParaview_->writeFile(currentTime_);
 
     partitioning_->barrier();
 
@@ -110,146 +133,326 @@ void Simulation::run() {
     }
 }
 
-void Simulation::printConsoleInfo(double currentTime, const TimeSteppingInfo &timeSteppingInfo) const {
+void Simulation::initializeDisplacements(std::vector<double> &displacements) {
+    setBoundaryUV();
+    setDisplacements(displacements);
+    discOps_->updateStructureCells(42); // 42 weil Wert egal
+    setStructureBoundaries();
+    setBoundaryFG();
+}
+
+void Simulation::advanceFluidSolver(double dt) {
+    std::vector uv = {&discOps_->u(), &discOps_->v()};
+    std::vector fg = {&discOps_->f(), &discOps_->g()};
+
+    setBoundaryUV();
+    setBoundaryFG(); // TODO: Korrekt? Die Reihenfolge von setBoundaryFG() und setPreliminaryVelocities() sollte hier keine Rolle spielen.
+    setPreliminaryVelocities();
+
+    partitioning_->exchange(fg);
+
+    setRightHandSide();
+    pressureSolver_->solve(discOps_->p());
+
+    setVelocities();
+    partitioning_->exchange(uv);
+    setBoundaryUV();
+
+    calculateForces();
+
+    currentTime_ += dt;
+}
+
+void Simulation::updateSolid() {
+    auto &q = discOps_->q();
+
+    discOps_->updateStructureCells(timeStepWidth_);
+
+    setBoundaryUV();
+    setBoundaryFG();
+
+    setPreliminaryVelocities();
+    setStructureBoundaries();
+
+    setRightHandSide();
+    pressureSolver_->solve(q);
+
+    correctVelocities();
+
+    std::cout << discOps_->structure_ << "\n";
+}
+
+void Simulation::printConsoleInfo(const TimeSteppingInfo &timeSteppingInfo) const {
     static double lastProgress10th = 0;
     if (partitioning_->onPrimaryRank()) {
-        double progress = currentTime / settings_.endTime * 100;
+        double progress = currentTime_ / settings_.endTime * 100;
         if (progress >= lastProgress10th) {
             std::cout << "Progress: ";
             std::cout << std::fixed << std::setw(5) << std::setprecision(1) << progress << "%: ";
-            std::cout << std::fixed << std::setw(5) << std::setprecision(2) << currentTime << "s / ";
+            std::cout << std::fixed << std::setw(5) << std::setprecision(2) << currentTime_ << "s / ";
             std::cout << std::fixed << std::setprecision(2) << settings_.endTime << "s\n";
-            DEBUG(std::cout << " -- max(u,v) = " << std::fixed << std::setprecision(2) << timeSteppingInfo.maxVelocity
-                            << ", ")
+            DEBUG(std::cout << " -- max(u,v) = " << std::fixed << std::setprecision(2) << timeSteppingInfo.maxVelocity << ", ")
             DEBUG(std::cout << "dt = " << std::fixed << std::setprecision(4) << timeSteppingInfo.timeStepWidth << "\n")
-            DEBUG(std::cout << " -- div constraint = " << std::fixed << std::setprecision(2)
-                            << timeSteppingInfo.convectiveConstraint << ", ")
-            DEBUG(std::cout << "conectivity constraint = " << std::fixed << std::setprecision(2)
-                            << timeSteppingInfo.convectiveConstraint << "\n");
+            DEBUG(std::cout << " -- div constraint = " << std::fixed << std::setprecision(2) << timeSteppingInfo.convectiveConstraint << ", ")
+            DEBUG(std::cout << "conectivity constraint = " << std::fixed << std::setprecision(2) << timeSteppingInfo.convectiveConstraint << "\n");
             lastProgress10th += 10;
         }
     }
 }
 
-void Simulation::setBoundaryUV(double currentTime) {
+// must be called after updating structure
+void Simulation::setStructureBoundaries() {
+    auto &u = discOps_->u();
+    auto &v = discOps_->v();
+    auto &g = discOps_->g();
+    auto &f = discOps_->f();
+
+    if (settings_.boundaryBottom == BoundaryType::Elastic) {
+        // u bottom border
+        for (int i = u.minI() + 1; i <= u.maxI() - 1; ++i) { // TODO: we do not consider partition boundaries here
+            for (int j = u.minJ(); j <= u.maxJ() - 1; ++j) {
+                if (discOps_->isFluid(i, j)) { // fluid cell
+                    break;
+                }
+                const bool leftFluid = discOps_->isFluid(i - 1, j);
+                const bool rightFluid = discOps_->isFluid(i + 1, j);
+                const bool topFluid = discOps_->isFluid(i, j + 1);
+
+                if (topFluid && leftFluid && rightFluid) {
+                    f(i, j) = u(i, j) = 0;
+                    f(i - 1, j) = u(i - 1, j) = 0;
+                } else if (topFluid && leftFluid) {
+                    f(i, j) = u(i, j) = -u(i, j + 1);
+                    f(i - 1, j) = u(i - 1, j) = 0;
+                } else if (topFluid && rightFluid) {
+                    f(i, j) = u(i, j) = 0;
+                } else if (topFluid) {
+                    f(i, j) = u(i, j) = -u(i, j + 1);
+                } else if (leftFluid) {
+                    f(i - 1, j) = u(i - 1, j) = 0;
+                } else if (rightFluid) {
+                    f(i, j) = u(i, j) = 0;
+                }
+            }
+        }
+        // v bottom border
+        for (int i = v.minI() + 1; i <= v.maxI() - 1; ++i) {
+            const double dCenter = discOps_->bottomDisplacement(i) / timeStepWidth_;
+            const double dLeft = discOps_->bottomDisplacement(i - 1) / timeStepWidth_;
+            const double dRight = discOps_->bottomDisplacement(i + 1) / timeStepWidth_;
+
+            for (int j = v.minJ(); j <= v.maxJ() - 1; ++j) {
+                if (discOps_->isFluid(i, j)) { // fluid cell
+                    break;
+                }
+                const bool leftFluid = discOps_->isFluid(i - 1, j);
+                const bool rightFluid = discOps_->isFluid(i + 1, j);
+                const bool topFluid = discOps_->isFluid(i, j + 1);
+
+                if (topFluid && leftFluid && rightFluid) {
+                    g(i, j) = v(i, j) = dCenter;
+                } else if (topFluid && leftFluid) {
+                    g(i, j) = v(i, j) = dCenter;
+                } else if (topFluid && rightFluid) {
+                    g(i, j) = v(i, j) = dCenter;
+                } else if (topFluid) {
+                    g(i, j) = v(i, j) = dCenter;
+                } else if (leftFluid) {
+                    g(i, j) = v(i, j) = dCenter + dRight - v(i - 1, j);
+                } else if (rightFluid) {
+                    g(i, j) = v(i, j) = dLeft + dCenter - v(i + i, j);
+                }
+            }
+        }
+    }
+
+    if (settings_.boundaryTop == BoundaryType::Elastic) {
+        // u top border
+        for (int i = u.minI() + 1; i <= u.maxI() - 1; ++i) {
+            for (int j = u.maxJ(); j <= u.minJ(); --j) { // ToDo: Correct iteration?
+                if (discOps_->isFluid(i, j)) {           // fluid cell
+                    break;
+                }
+                const bool leftFluid = discOps_->isFluid(i - 1, j);
+                const bool rightFluid = discOps_->isFluid(i + 1, j);
+                const bool bottomFluid = discOps_->isFluid(i, j - 1);
+
+                if (bottomFluid && leftFluid && rightFluid) {
+                    f(i, j) = u(i, j) = 0;
+                    f(i - 1, j) = u(i - 1, j) = 0;
+                } else if (bottomFluid && leftFluid) {
+                    f(i, j) = u(i, j) = -u(i, j - 1);
+                    f(i - 1, j) = u(i - 1, j) = 0;
+                } else if (bottomFluid && rightFluid) {
+                    f(i, j) = u(i, j) = 0;
+                } else if (bottomFluid) {
+                    f(i, j) = u(i, j) = -u(i, j - 1);
+                } else if (leftFluid) {
+                    f(i - 1, j) = u(i - 1, j) = 0;
+                } else if (rightFluid) {
+                    f(i, j) = u(i, j) = 0;
+                }
+            }
+        }
+        // v top border
+        for (int i = v.minI() + 1; i <= v.maxI() - 1; ++i) {
+            const double dCenter = discOps_->topDisplacement(i) / timeStepWidth_;
+            const double dLeft = discOps_->topDisplacement(i - 1) / timeStepWidth_;
+            const double dRight = discOps_->topDisplacement(i + 1) / timeStepWidth_;
+
+            for (int j = v.maxJ() + 1; j >= v.minJ() + 1; ++j) { // ToDo: Correct iteration?
+                if (discOps_->isFluid(i, j)) {                   // fluid cell
+                    break;
+                }
+                const bool leftFluid = discOps_->isFluid(i - 1, j);
+                const bool rightFluid = discOps_->isFluid(i + 1, j);
+                const bool bottomFluid = discOps_->isFluid(i, j - 1);
+
+                if (bottomFluid && leftFluid && rightFluid) {
+                    g(i, j - 1) = v(i, j - 1) = dCenter;
+                } else if (bottomFluid && leftFluid) {
+                    g(i, j - 1) = v(i, j - 1) = dCenter;
+                } else if (bottomFluid && rightFluid) {
+                    g(i, j - 1) = v(i, j - 1) = dCenter;
+                } else if (bottomFluid) {
+                    g(i, j - 1) = v(i, j - 1) = dCenter;
+                } else if (leftFluid) {
+                    g(i, j - 1) = v(i, j - 1) = dCenter + dRight - v(i - 1, j - 1);
+                } else if (rightFluid) {
+                    g(i, j - 1) = v(i, j - 1) = dLeft + dCenter - v(i + i, j - 1);
+                }
+            }
+        }
+    }
+}
+
+void Simulation::setBoundaryUV() {
     auto &u = discOps_->u();
     auto &v = discOps_->v();
 
-    double speed_variance = settings_.dirichletAmplitude * sin(settings_.dirichletFrequency * (settings_.dirichletTimeShift + currentTime) * M_PI);
+    double speedVariance = settings_.dirichletAmplitude * sin(settings_.dirichletFrequency * (settings_.dirichletTimeShift + currentTime_) * M_PI);
 
     if (partitioning_->ownContainsBoundary<Direction::Bottom>()) {
         switch (settings_.boundaryBottom) {
-            case BoundaryType::InflowNoSlip: {
-                const auto uBottom = settings_.dirichletBcBottom[0] + speed_variance * settings_.dirichletBcBottom[0];
-                const auto vBottom = settings_.dirichletBcBottom[1] + speed_variance * settings_.dirichletBcBottom[1];
+        case BoundaryType::InflowNoSlip:
+        case BoundaryType::Elastic: {
+            const auto uBottom = settings_.dirichletBcBottom[0] + speedVariance * settings_.dirichletBcBottom[0];
+            const auto vBottom = settings_.dirichletBcBottom[1] + speedVariance * settings_.dirichletBcBottom[1];
 
-                for (int i = u.beginI(); i < u.endI(); ++i) {
-                    u(i, u.beginJ()) = 2.0 * uBottom - u(i, u.beginJ() + 1);
-                }
-
-                for (int i = v.beginI(); i < v.endI(); ++i) {
-                    v(i, v.beginJ()) = vBottom;
-                }
-                break;
+            for (int i = u.beginI(); i < u.endI(); ++i) {
+                u(i, u.beginJ()) = 2.0 * uBottom - u(i, u.beginJ() + 1);
             }
 
-            case BoundaryType::Outflow: {
-                for (int i = u.beginI(); i < u.endI(); ++i) {
-                    u(i, u.beginJ()) = u(i, u.beginJ() + 1);
-                }
-
-                for (int i = v.beginI(); i < v.endI(); ++i) {
-                    v(i, v.beginJ()) = v(i, v.beginJ() + 1);
-                }
-                break;
+            for (int i = v.beginI(); i < v.endI(); ++i) {
+                v(i, v.beginJ()) = vBottom;
             }
+            break;
+        }
+
+        case BoundaryType::Outflow: {
+            for (int i = u.beginI(); i < u.endI(); ++i) {
+                u(i, u.beginJ()) = u(i, u.beginJ() + 1);
+            }
+
+            for (int i = v.beginI(); i < v.endI(); ++i) {
+                v(i, v.beginJ()) = v(i, v.beginJ() + 1);
+            }
+            break;
+        }
         }
     }
 
     if (partitioning_->ownContainsBoundary<Direction::Top>()) {
         switch (settings_.boundaryTop) {
-            case BoundaryType::InflowNoSlip: {
-                const auto uTop = settings_.dirichletBcTop[0] + speed_variance * settings_.dirichletBcTop[0];
-                const auto vTop = settings_.dirichletBcTop[1] + speed_variance * settings_.dirichletBcTop[1];
+        case BoundaryType::InflowNoSlip:
+        case BoundaryType::Elastic: {
+            const auto uTop = settings_.dirichletBcTop[0] + speedVariance * settings_.dirichletBcTop[0];
+            const auto vTop = settings_.dirichletBcTop[1] + speedVariance * settings_.dirichletBcTop[1];
 
-                for (int i = u.beginI(); i < u.endI(); ++i) {
-                    u(i, u.endJ() - 1) = 2.0 * uTop - u(i, u.endJ() - 2);
-                }
-
-                for (int i = v.beginI(); i < v.endI(); ++i) {
-                    v(i, v.endJ() - 1) = vTop;
-                }
-                break;
+            for (int i = u.beginI(); i < u.endI(); ++i) {
+                u(i, u.endJ() - 1) = 2.0 * uTop - u(i, u.endJ() - 2);
             }
 
-            case BoundaryType::Outflow: {
-                for (int i = u.beginI(); i < u.endI(); ++i) {
-                    u(i, u.endJ() - 1) = u(i, u.endJ() - 2);
-                }
-
-                for (int i = v.beginI(); i < v.endI(); ++i) {
-                    v(i, v.endJ() - 1) = v(i, v.endJ() - 2);
-                }
-                break;
+            for (int i = v.beginI(); i < v.endI(); ++i) {
+                v(i, v.endJ() - 1) = vTop;
             }
+            break;
+        }
+
+        case BoundaryType::Outflow: {
+            for (int i = u.beginI(); i < u.endI(); ++i) {
+                u(i, u.endJ() - 1) = u(i, u.endJ() - 2);
+            }
+
+            for (int i = v.beginI(); i < v.endI(); ++i) {
+                v(i, v.endJ() - 1) = v(i, v.endJ() - 2);
+            }
+            break;
+        }
         }
     }
 
     if (partitioning_->ownContainsBoundary<Direction::Left>()) {
         switch (settings_.boundaryLeft) {
-            case BoundaryType::InflowNoSlip: {
-                const auto uLeft = settings_.dirichletBcLeft[0] + speed_variance * settings_.dirichletBcLeft[0];
-                const auto vLeft = settings_.dirichletBcLeft[1] + speed_variance * settings_.dirichletBcLeft[1];
+        case BoundaryType::InflowNoSlip: {
+            const auto uLeft = settings_.dirichletBcLeft[0] + speedVariance * settings_.dirichletBcLeft[0];
+            const auto vLeft = settings_.dirichletBcLeft[1] + speedVariance * settings_.dirichletBcLeft[1];
 
-                for (int j = u.beginJ(); j < u.endJ(); ++j) {
-                    u(u.beginI(), j) = uLeft;
-                }
-
-                for (int j = v.beginJ(); j < v.endJ(); ++j) {
-                    v(v.beginI(), j) = 2.0 * vLeft - v(v.beginI() + 1, j);
-                }
-                break;
+            for (int j = u.beginJ(); j < u.endJ(); ++j) {
+                u(u.beginI(), j) = uLeft;
             }
 
-            case BoundaryType::Outflow: {
-                for (int j = u.beginJ(); j < u.endJ(); ++j) {
-                    u(u.beginI(), j) = u(u.beginI() + 1, j);
-                }
-
-                for (int j = v.beginJ(); j < v.endJ(); ++j) {
-                    v(v.beginI(), j) = v(v.beginI() + 1, j);
-                }
-                break;
+            for (int j = v.beginJ(); j < v.endJ(); ++j) {
+                v(v.beginI(), j) = 2.0 * vLeft - v(v.beginI() + 1, j);
             }
+            break;
+        }
+
+        case BoundaryType::Outflow: {
+            for (int j = u.beginJ(); j < u.endJ(); ++j) {
+                u(u.beginI(), j) = u(u.beginI() + 1, j);
+            }
+
+            for (int j = v.beginJ(); j < v.endJ(); ++j) {
+                v(v.beginI(), j) = v(v.beginI() + 1, j);
+            }
+            break;
+        }
+
+        case BoundaryType::Elastic:
+            assert(false);
         }
     }
 
     if (partitioning_->ownContainsBoundary<Direction::Right>()) {
         switch (settings_.boundaryRight) {
-            case BoundaryType::InflowNoSlip: {
-                const auto uRight = settings_.dirichletBcRight[0] + speed_variance * settings_.dirichletBcRight[0];
-                const auto vRight = settings_.dirichletBcRight[1] + speed_variance * settings_.dirichletBcRight[1];
+        case BoundaryType::InflowNoSlip: {
+            const auto uRight = settings_.dirichletBcRight[0] + speedVariance * settings_.dirichletBcRight[0];
+            const auto vRight = settings_.dirichletBcRight[1] + speedVariance * settings_.dirichletBcRight[1];
 
-                for (int j = u.beginJ(); j < u.endJ(); ++j) {
-                    u(u.endI() - 1, j) = uRight;
-                }
-
-                for (int j = v.beginJ(); j < v.endJ(); ++j) {
-                    v(v.endI() - 1, j) = 2.0 * vRight - v(v.endI() - 2, j);
-                }
-                break;
+            for (int j = u.beginJ(); j < u.endJ(); ++j) {
+                u(u.endI() - 1, j) = uRight;
             }
 
-            case BoundaryType::Outflow: {
-                for (int j = u.beginJ(); j < u.endJ(); ++j) {
-                    u(u.endI() - 1, j) = u(u.endI() - 2, j);
-                }
-
-                for (int j = v.beginJ(); j < v.endJ(); ++j) {
-                    v(v.endI() - 1, j) = v(v.endI() - 2, j);
-                }
-                break;
+            for (int j = v.beginJ(); j < v.endJ(); ++j) {
+                v(v.endI() - 1, j) = 2.0 * vRight - v(v.endI() - 2, j);
             }
+            break;
+        }
+
+        case BoundaryType::Outflow: {
+            for (int j = u.beginJ(); j < u.endJ(); ++j) {
+                u(u.endI() - 1, j) = u(u.endI() - 2, j);
+            }
+
+            for (int j = v.beginJ(); j < v.endJ(); ++j) {
+                v(v.endI() - 1, j) = v(v.endI() - 2, j);
+            }
+            break;
+        }
+
+        case BoundaryType::Elastic:
+            assert(false);
         }
     }
 }
@@ -261,112 +464,14 @@ void Simulation::setBoundaryFG() {
     auto &u = discOps_->u();
     auto &v = discOps_->v();
 
-    if (partitioning_->ownContainsBoundary<Direction::Bottom>()) {
-        switch (settings_.boundaryBottom) {
-            case BoundaryType::InflowNoSlip: {
-                for (int i = f.beginI(); i < f.endI(); ++i) {
-                    f(i, f.beginJ()) = u(i, f.beginJ());
-                }
+    // TODO: Hier werden Randwerte von u und v einfach kopiert. Wir sollten das mit der anderen Methode zusammenlegen.
+    // TODO: Dass ich zum testen weniger implementieren muss werd ich einfach das ganze Feld kopieren.
 
-                for (int i = g.beginI(); i < g.endI(); ++i) {
-                    g(i, g.beginJ()) = v(i, g.beginJ());
-                }
-                break;
-            }
-
-            case BoundaryType::Outflow: {
-                for (int i = f.beginI(); i < f.endI(); ++i) {
-                    f(i, f.beginJ()) = f(i, f.beginJ() + 1);
-                }
-
-                for (int i = g.beginI(); i < g.endI(); ++i) {
-                    g(i, g.beginJ()) = g(i, g.beginJ() + 1);
-                }
-                break;
-            }
-        }
-    }
-
-    if (partitioning_->ownContainsBoundary<Direction::Top>()) {
-        switch (settings_.boundaryTop) {
-            case BoundaryType::InflowNoSlip: {
-                for (int i = f.beginI(); i < f.endI(); ++i) {
-                    f(i, f.endJ() - 1) = u(i, f.endJ() - 1);
-                }
-
-                for (int i = g.beginI(); i < g.endI(); ++i) {
-                    g(i, g.endJ() - 1) = v(i, g.endJ() - 1);
-                }
-                break;
-            }
-
-            case BoundaryType::Outflow: {
-                for (int i = f.beginI(); i < f.endI(); ++i) {
-                    f(i, f.endJ() - 1) = f(i, f.endJ() - 2);
-                }
-
-                for (int i = g.beginI(); i < g.endI(); ++i) {
-                    g(i, g.endJ() - 1) = g(i, g.endJ() - 2);
-                }
-                break;
-            }
-        }
-    }
-
-    if (partitioning_->ownContainsBoundary<Direction::Left>()) {
-        switch (settings_.boundaryLeft) {
-            case BoundaryType::InflowNoSlip: {
-                for (int j = f.beginJ(); j < f.endJ(); ++j) {
-                    f(f.beginI(), j) = u(f.beginI(), j);
-                }
-
-                for (int j = g.beginJ(); j < g.endJ(); ++j) {
-                    g(g.beginI(), j) = v(g.beginI(), j);
-                }
-                break;
-            }
-
-            case BoundaryType::Outflow: {
-                for (int j = f.beginJ(); j < f.endJ(); ++j) {
-                    f(f.beginI(), j) = f(f.beginI() + 1, j);
-                }
-
-                for (int j = g.beginJ(); j < g.endJ(); ++j) {
-                    g(g.beginI(), j) = g(g.beginI() + 1, j);
-                }
-                break;
-            }
-        }
-    }
-
-    if (partitioning_->ownContainsBoundary<Direction::Right>()) {
-        switch (settings_.boundaryRight) {
-            case BoundaryType::InflowNoSlip: {
-                for (int j = f.beginJ(); j < f.endJ(); ++j) {
-                    f(f.endI() - 1, j) = u(f.endI() - 1, j);
-                }
-
-                for (int j = g.beginJ(); j < g.endJ(); ++j) {
-                    g(g.endI() - 1, j) = v(g.endI() - 1, j);
-                }
-                break;
-            }
-
-            case BoundaryType::Outflow: {
-                for (int j = f.beginJ(); j < f.endJ(); ++j) {
-                    f(f.endI() - 1, j) = f(f.endI() - 2, j);
-                }
-
-                for (int j = g.beginJ(); j < g.endJ(); ++j) {
-                    g(g.endI() - 1, j) = g(g.endI() - 2, j);
-                }
-                break;
-            }
-        }
-    }
+    f = u;
+    g = v;
 }
 
-TimeSteppingInfo Simulation::computeTimeStepWidth(double currentTime) {
+TimeSteppingInfo Simulation::computeTimeStepWidth() {
     const double uMaxLocal = discOps_->u().absMax();
     const double vMaxLocal = discOps_->v().absMax();
 
@@ -390,8 +495,8 @@ TimeSteppingInfo Simulation::computeTimeStepWidth(double currentTime) {
 
     dt = std::min(dt, settings_.maximumDt);
 
-    if (currentTime + dt > settings_.endTime) {
-        dt = settings_.endTime - currentTime;
+    if (currentTime_ + dt > settings_.endTime) {
+        dt = settings_.endTime - currentTime_;
     }
 
     TimeSteppingInfo info{.convectiveConstraint = std::min(convectiveU, convectiveV),
@@ -400,6 +505,10 @@ TimeSteppingInfo Simulation::computeTimeStepWidth(double currentTime) {
                           .timeStepWidth = dt};
 
     return info;
+}
+
+void Simulation::setTimeStepWidth(double dt) {
+    timeStepWidth_ = dt;
 }
 
 void Simulation::setPreliminaryVelocities() {
@@ -412,6 +521,8 @@ void Simulation::setPreliminaryVelocities() {
 
     for (int j = u.beginJ() + 1; j < u.endJ() - 1; j++) {
         for (int i = u.beginI() + 1; i < u.endI() - 1; i++) {
+            if (discOps_->isSolid(i, j) || discOps_->isSolid(i + 1, j))
+                continue;
             const double uDxx = discOps_->computeD2uDx2(i, j);
             const double u2Dx = discOps_->computeDu2Dx(i, j);
             const double uDyy = discOps_->computeD2uDy2(i, j);
@@ -426,6 +537,8 @@ void Simulation::setPreliminaryVelocities() {
 
     for (int j = v.beginJ() + 1; j < v.endJ() - 1; j++) {
         for (int i = v.beginI() + 1; i < v.endI() - 1; i++) {
+            if (discOps_->isSolid(i, j) || discOps_->isSolid(i, j + 1))
+                continue;
             const double vDxx = discOps_->computeD2vDx2(i, j);
             const double v2Dy = discOps_->computeDv2Dy(i, j);
             const double vDyy = discOps_->computeD2vDy2(i, j);
@@ -453,6 +566,8 @@ void Simulation::setRightHandSide() {
 
     for (int j = rhs.beginJ() + 1; j < rhs.endJ() - 1; j++) {
         for (int i = rhs.beginI() + 1; i < rhs.endI() - 1; i++) {
+            if (discOps_->isSolid(i, j))
+                continue;
             const double diffF = (f(i, j) - f(i - 1, j)) * invDx;
             const double diffG = (g(i, j) - g(i, j - 1)) * invDy;
             rhs(i, j) = invTimeStep * (diffF + diffG);
@@ -466,6 +581,8 @@ void Simulation::setVelocities() {
 
     for (int j = u.beginJ() + 1; j < u.endJ() - 1; j++) {
         for (int i = u.beginI() + 1; i < u.endI() - 1; i++) {
+            if (discOps_->isSolid(i, j) || discOps_->isSolid(i + 1, j))
+                continue;
             u(i, j) = f(i, j) - timeStepWidth_ * discOps_->computeDpDx(i, j);
         }
     }
@@ -475,21 +592,153 @@ void Simulation::setVelocities() {
 
     for (int j = v.beginJ() + 1; j < v.endJ() - 1; j++) {
         for (int i = v.beginI() + 1; i < v.endI() - 1; i++) {
+            if (discOps_->isSolid(i, j) || discOps_->isSolid(i, j + 1))
+                continue;
             v(i, j) = g(i, j) - timeStepWidth_ * discOps_->computeDpDy(i, j);
         }
     }
 }
 
+void Simulation::correctVelocities() {
+    auto &u = discOps_->u();
+
+    for (int j = u.beginJ() + 1; j < u.endJ() - 1; j++) {
+        for (int i = u.beginI() + 1; i < u.endI() - 1; i++) {
+            if (discOps_->isSolid(i, j) || discOps_->isSolid(i + 1, j))
+                continue;
+            u(i, j) -= timeStepWidth_ * discOps_->computeDqDx(i, j);
+        }
+    }
+
+    auto &v = discOps_->v();
+
+    for (int j = v.beginJ() + 1; j < v.endJ() - 1; j++) {
+        for (int i = v.beginI() + 1; i < v.endI() - 1; i++) {
+            if (discOps_->isSolid(i, j) || discOps_->isSolid(i, j + 1))
+                continue;
+            v(i, j) -= timeStepWidth_ * discOps_->computeDqDy(i, j);
+        }
+    }
+}
+
+void Simulation::calculateForces() {
+    auto &v = discOps_->v();
+    auto &p = discOps_->p();
+
+    const double invRe = 1.0 / settings_.re;
+    const double dx = discOps_->dx();
+
+    // collect forces orthogonal to top boundary
+    for (int i = v.beginI() + 1; i < v.endI() - 1; ++i) {
+        for (int j = v.endJ() - 1; j > v.beginJ(); --j) {
+            if (discOps_->isFluid(i, j)) {
+                const double vDy = discOps_->computeDvDy(i, j);
+                // ToDo: Check formula, pressure is squared?
+                discOps_->topF(i) = -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j + 1) + p(i, j)) / 2);
+                break;
+            }
+        }
+    }
+
+    // collect forces orthogonal to bottom boundary
+    for (int i = v.beginI() + 1; i < v.endI() - 1; ++i) {
+        for (int j = v.beginJ(); j < v.endJ() - 1; ++j) {
+            if (discOps_->isFluid(i, j)) {
+                const double vDy = discOps_->computeDvDy(i, j);
+                discOps_->bottomF(i) = dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j - 1) + p(i, j)) / 2);
+                break;
+            }
+        }
+    }
+}
+
+void Simulation::test() {
+    std::cout << "Simulation::test: Start" << std::endl;
+    discOps_->test(settings_);
+    std::cout << "Simulation::test: End" << std::endl;
+}
+
+// -----------------------------------------------//
+// --------- preCICE Adapter Medthods ------------//
+// -----------------------------------------------//
+
+// ToDo: States are overkill, need to figure out what,
+// apparently uv and dt was not enough
 void Simulation::saveState() {
-    DEBUG(std::cout << "Simulation::saveState" << std::endl);
+    DEBUG(std::cout << "\nSimulation::saveState()\n" << std::endl);
     uCheckpoint_ = discOps_->u();
     vCheckpoint_ = discOps_->v();
     pCheckpoint_ = discOps_->p();
+    qCheckpoint_ = discOps_->q();
+    fCheckpoint_ = discOps_->f();
+    gCheckpoint_ = discOps_->g();
+    timeStepWidthCheckpoint_ = timeStepWidth_;
+    checkpointTime_ = currentTime_;
+    displacementsTopCheckpoint_ = discOps_->displacementsTop_;
+    displacementsBottomCheckpoint_ = discOps_->displacementsBottom_;
+    topBoundaryPositionCheckpoint_ = discOps_->topBoundaryPosition_;
+    bottomBoundaryPositionCheckpoint_ = discOps_->bottomBoundaryPosition_;
+    structureCheckpoint_ = discOps_->structure_;
 }
 
 void Simulation::reloadLastState() {
-    DEBUG(std::cout << "Simulation::reloadLastState" << std::endl);
+    DEBUG(std::cout << "\nSimulation::reloadLastState()\n" << std::endl);
     discOps_->u() = uCheckpoint_;
     discOps_->v() = vCheckpoint_;
     discOps_->p() = pCheckpoint_;
+    discOps_->q() = qCheckpoint_;
+    discOps_->f() = fCheckpoint_;
+    discOps_->g() = gCheckpoint_;
+    currentTime_ = checkpointTime_;
+    timeStepWidth_ = timeStepWidthCheckpoint_;
+    discOps_->topBoundaryPosition_ = topBoundaryPositionCheckpoint_;
+    discOps_->bottomBoundaryPosition_ = bottomBoundaryPositionCheckpoint_;
+    discOps_->displacementsTop_ = displacementsTopCheckpoint_;
+    discOps_->displacementsBottom_ = displacementsBottomCheckpoint_;
+    discOps_->structure_ = structureCheckpoint_;
+}
+
+std::shared_ptr<Partitioning> Simulation::getPartitioning() const noexcept {
+    return partitioning_;
+}
+
+void Simulation::getForces(std::vector<double> &forces) {
+    const int meshDim = 3;
+    const int n = settings_.nCells[0];
+
+    const int topOffset = n * meshDim + 1;
+    const int bottomOffset = 1;
+
+    forces.assign(forces.size(), 0.0);
+
+    for (int i = 0, idxTop = topOffset, idxBottom = bottomOffset; i < n; ++i, idxTop += meshDim, idxBottom += meshDim) {
+        forces[idxTop] = discOps_->topF(i);
+        forces[idxBottom] = discOps_->bottomF(i);
+    }
+}
+
+void Simulation::setDisplacements(std::vector<double> &displacements) {
+
+    constexpr int meshDim = 3;
+    const int n = settings_.nCells[0];
+
+    std::vector top(n + 2, 0.0);
+    std::vector bottom(n + 2, 0.0);
+    assert(displacements.size() == 2*n*meshDim);
+
+    constexpr int bottomOffset = 1;
+
+    // +1 because it's a flat array with x,y,z,x,y,z...
+    const int topOffset = n * meshDim + 1;
+
+    for (int i = 0, idxTop = topOffset, idxBottom = bottomOffset; i < n; ++i, idxTop += meshDim, idxBottom += meshDim) {
+        top[i + 1] = displacements[idxTop];
+        bottom[i + 1] = displacements[idxBottom];
+    }
+    setDisplacements(top, bottom);
+}
+
+
+double Simulation::getCurrentTime() {
+    return currentTime_;
 }

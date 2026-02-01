@@ -34,8 +34,10 @@ private:
     DataField u_; // field variable for u with global size, contains only the local values, other entries are 0
     DataField v_; // field variable for v with global size, contains only the local values, other entries are 0
     DataField p_; // field variable for p with global size, contains only the local values, other entries are 0
+    DataField f_;
 
     DataField uGlobal_; // on rank 0: field variable for u that gathers values from all ranks, on other ranks: nullptr
     DataField vGlobal_; // on rank 0: field variable for v that gathers values from all ranks, on other ranks: nullptr
     DataField pGlobal_; // on rank 0: field variable for p that gathers values from all ranks, on other ranks: nullptr
+    DataField fGlobal_;
 };

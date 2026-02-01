@@ -3,15 +3,13 @@
 #include "macros.h"
 #include "simulation/partitioning.h"
 #include <limits>
-#include <vector>
 
 RedBlackSolver::RedBlackSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning, const Settings &settings)
     : PressureSolver(std::move(grid), std::move(partitioning), settings) {}
 
-void RedBlackSolver::solve() {
+void RedBlackSolver::solve(DataField &p) {
     int it = 0;
 
-    DataField &p = grid_->p();
     DataField &rhs = grid_->rhs();
 
     const double dx2 = grid_->dx() * grid_->dx();
@@ -35,6 +33,9 @@ void RedBlackSolver::solve() {
     auto [i0, j0] = partitioning_->nodeOffset();
     const int globalOffset = (i0 + j0) % 2;
 
+    setBoundaryValues(p);
+    setStructureBoundaries(p);
+
     while (globalPressureError_ > epsilonSquared && it < settings_.maximumNumberOfIterations) {
         localPressureError_ = 0.0;
         // rb = 0 is red, rb=1 is black pass
@@ -45,6 +46,7 @@ void RedBlackSolver::solve() {
                 const int offset = (beginI + rb + globalOffset + j) & 1;
 #pragma omp simd reduction(+ : localPressureError_)
                 for (int i = beginI + offset; i < endI; i += 2) {
+                    if (grid_->isSolid(i, j)) continue;
                     const double pDxx = (p(i - 1, j) + p(i + 1, j)) * invDx2;
                     const double pDyy = (p(i, j - 1) + p(i, j + 1)) * invDy2;
                     const double pNew = oneMinusOmega * p(i, j) + omegaTimesScalingFactor * (pDxx + pDyy - rhs(i, j));
@@ -53,7 +55,8 @@ void RedBlackSolver::solve() {
                 }
             }
             partitioning_->nonBlockingExchange(p);
-            setBoundaryValues();
+            setBoundaryValues(p);
+            setStructureBoundaries(p);
             partitioning_->waitForAllMPIRequests();
         }
         MPI_Allreduce(&localPressureError_, &globalPressureError_, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
