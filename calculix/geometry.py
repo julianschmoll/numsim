@@ -57,7 +57,7 @@ class Geometry:
                     # row 0 is interface (bottom), row 1 is base (top)
                     y = (self.cfg["geometry"]["height"] - offset) + d_thick
 
-                self._all_nodes.append(f"{self._current_node_id}, {x:.4f}, {y:.4f}")
+                self._all_nodes.append(f"{self._current_node_id}, {x:.4f}, {y:.4f}, 0.0")
 
                 if row == 0:
                     self._interface_nodes_dict[orientation].append(self._current_node_id)
@@ -157,10 +157,12 @@ class Geometry:
             f.write("*BOUNDARY\n")
             if self._fix_nodes:
                 f.write("Nfix, 1, 2\n")
+                f.write("Nfix, 3, 3, 0.0\n")
 
             f.write("*CLOAD\n")
             f.write(f"N{interface_name}, 1, 0.0\n")
             f.write(f"N{interface_name}, 2, 0.0\n")
+            f.write(f"N{interface_name}, 3, 0.0\n")
 
             f.write(f"*NODE PRINT, NSET=N{interface_name}, FREQUENCY=1\n")
             f.write("U, V, A\n")  # Displacement, velocity, acceleration
