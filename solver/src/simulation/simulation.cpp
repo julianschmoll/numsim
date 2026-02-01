@@ -71,10 +71,6 @@ void Simulation::setDisplacements(const std::vector<double> &topDisplacements, c
 
     double domainHeight = settings_.physicalSize[1];
 
-    std::cout << "\nSimulation::setDisplacements()" << std::endl;
-    std::cout << "topDisplacements " << topDisplacements << std::endl;
-    std::cout << "bottomDisplacements " << bottomDisplacements << std::endl;
-
     // TODO: Wir könnten die Geschwindigkeitsränder eventuell sogar hier aktualisieren
     // dann wäre kopieren und speichern der displacements unnötig.
     // Zu tatsächlichem Rand hinzufügen (lokal, da wir unsere globale Position kennen)
@@ -149,9 +145,6 @@ void Simulation::advanceFluidSolver(double dt) {
     std::vector uv = {&discOps_->u(), &discOps_->v()};
     std::vector fg = {&discOps_->f(), &discOps_->g()};
 
-    std::cout << "\nSimulation::advanceFluidSolver(" << dt << ")" << std::endl;
-    std::cout << "displacementsBottom_ " << discOps_->displacementsBottom_ << std::endl;
-
     setBoundaryUV();
     setBoundaryFG(); // TODO: Korrekt? Die Reihenfolge von setBoundaryFG() und setPreliminaryVelocities() sollte hier keine Rolle spielen.
     setPreliminaryVelocities();
@@ -166,9 +159,6 @@ void Simulation::advanceFluidSolver(double dt) {
     setBoundaryUV();
 
     calculateForces();
-
-    std::cout << "discOps_->bottomF() " << discOps_->bottomF() << std::endl;
-    std::cout << "discOps_->topF() " << discOps_->topF() << "\n\n";
 
     currentTime_ += dt;
 }
@@ -708,43 +698,42 @@ std::shared_ptr<Partitioning> Simulation::getPartitioning() const noexcept {
 }
 
 void Simulation::getForces(std::vector<double> &forces) {
-    // ToDo: This should maybe live within the adapter and not here but doing this now for simplicity
     const int meshDim = 3;
     const int n = settings_.nCells[0];
 
     const int topOffset = n * meshDim + 1;
     const int bottomOffset = 1;
 
+    forces.assign(forces.size(), 0.0);
+
     for (int i = 0, idxTop = topOffset, idxBottom = bottomOffset; i < n; ++i, idxTop += meshDim, idxBottom += meshDim) {
         forces[idxTop] = discOps_->topF(i);
         forces[idxBottom] = discOps_->bottomF(i);
     }
-
-    std::cout << "\nSimulation::getForces()" << std::endl;
-    std::cout << forces << "\n\n";
 }
 
 void Simulation::setDisplacements(std::vector<double> &displacements) {
-    // ToDo: This seems to be incorrect?
-    std::cout << "\nSimulation::setDisplacements(flat)" << std::endl;
-    std::cout << displacements << "\n\n";
 
     constexpr int meshDim = 3;
     const int n = settings_.nCells[0];
 
-    // ToDo: Add assertion for size
     std::vector top(n + 2, 0.0);
     std::vector bottom(n + 2, 0.0);
+    assert(displacements.size() == 2*n*meshDim);
 
     constexpr int bottomOffset = 1;
+
     // +1 because it's a flat array with x,y,z,x,y,z...
     const int topOffset = n * meshDim + 1;
-
-    // TODO: RANDWERTE verteilen!!
 
     for (int i = 0, idxTop = topOffset, idxBottom = bottomOffset; i < n; ++i, idxTop += meshDim, idxBottom += meshDim) {
         top[i + 1] = displacements[idxTop];
         bottom[i + 1] = displacements[idxBottom];
     }
     setDisplacements(top, bottom);
+}
+
+
+double Simulation::getCurrentTime() {
+    return currentTime_;
 }

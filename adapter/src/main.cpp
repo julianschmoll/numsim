@@ -15,7 +15,7 @@
 
 void printMesh(const std::string &label, const std::vector<precice::VertexID> &ids, const std::vector<double> &coords, int printWidth = 24,
                int printHeight = 10) {
-    std::cout << "[adapter-debug] " << label << " vertices=" << ids.size() << std::endl;
+    std::cout << "- [adapter] " << label << " vertices=" << ids.size() << std::endl;
 
     if (ids.empty())
         return;
@@ -81,7 +81,7 @@ void printMesh(const std::string &label, const std::vector<precice::VertexID> &i
 }
 
 void printVector(const std::string &label, const std::vector<double> &v, int maxElements = std::numeric_limits<int>::max()) {
-    std::cout << "[adapter-debug] " << label << " size=" << v.size() << " {";
+    std::cout << "- [adapter] " << label << " size=" << v.size() << " {";
     int n = std::min<int>(static_cast<int>(v.size()), maxElements);
     for (int i = 0; i < n; ++i) {
         std::cout << v[i];
@@ -102,8 +102,8 @@ int main(int argc, char *argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &nRanks);
 
     if (argc != 3) {
-        std::cout << "The adapter was called with an incorrect number of arguments.\n";
-        std::cout << "Usage: ./numsim_adapter [precice config] [scenario file]\n\n";
+        std::cout << "- [adapter] The adapter was called with an incorrect number of arguments.\n";
+        std::cout << "      Usage: ./numsim_adapter [precice config] [scenario file]\n\n";
         return EXIT_FAILURE;
     }
     const std::string preciceConfigPath(argv[1]);
@@ -136,8 +136,6 @@ int main(int argc, char *argv[]) {
         // +1 because of vertices, not faces
         auto verticesWidth = partitioning->nCellsLocal()[0];
         auto facesWidth = partitioning->nCellsLocal()[0];
-        std::cout << "[adapter-debug] " << "Vertices width: " << verticesWidth << "\n";
-        std::cout << "[adapter-debug] " << "Faces width: " << facesWidth << "\n";
         auto vertexSize = 2 * verticesWidth; // number of vertices at wet surface
         auto facesSize = 2 * facesWidth;
 
@@ -149,8 +147,6 @@ int main(int argc, char *argv[]) {
 
         std::vector<double> faceCoords(facesSize * meshDim);
         std::vector<precice::VertexID> faceIDs(facesSize);
-
-        std::cout << "Phyiscal Size:" << physicalSize[0] << ", " << physicalSize[1] << "\n";
 
         // Both Meshes have the same layout
         double dx = static_cast<double>(physicalSize[0]) / partitioning->nCellsLocal()[0];
@@ -172,8 +168,8 @@ int main(int argc, char *argv[]) {
         participant.setMeshVertices(fluidMeshNodes, nodeCoords, nodeIDs);
         participant.setMeshVertices(fluidMeshFaces, faceCoords, faceIDs);
 
-        printVector("Fluid Mesh", nodeCoords);
-        printVector("Fluid Faces", faceCoords);
+        DEBUG(printVector("Fluid Mesh", nodeCoords));
+        DEBUG(printVector("Fluid Faces", faceCoords));
 
         int displacementsDim = participant.getDataDimensions(fluidMeshNodes, displacementDelta);
         std::vector displacements(vertexSize * displacementsDim, 0.0);
@@ -187,7 +183,6 @@ int main(int argc, char *argv[]) {
 
         int meshSize = participant.getMeshVertexSize("Solid-Mesh");
         int dim = participant.getMeshDimensions("Solid-Mesh");
-        std::cout << "Participant Mesh Dimensions: size=" << meshSize << " dim=" << dim << "\n";
 
         std::vector<double> coords(meshSize * dim);
         std::vector<precice::VertexID> ids(meshSize);
@@ -195,14 +190,10 @@ int main(int argc, char *argv[]) {
         participant.getMeshVertexIDsAndCoordinates("Solid-Mesh", ids, coords);
         printMesh("Solid-Mesh", ids, coords, 24);
 
-        std::cout << "Solid-Mesh " << coords << std::endl;
-
         double currentTime = 0.0;
 
-        std::cout << "[adapter-debug] " << "Starting coupling loop\n";
-
-        printVector("nodeCoords", nodeCoords, 50);
-        printVector("faceCoords", faceCoords, 50);
+        DEBUG(printVector("nodeCoords", nodeCoords, 50));
+        DEBUG(printVector("faceCoords", faceCoords, 50));
 
         DEBUG(std::cout << "preCICE expects " << participant.getMeshVertexSize(fluidMeshNodes) << " node vertices, adapter created " << vertexSize
                         << "\n");
@@ -212,8 +203,7 @@ int main(int argc, char *argv[]) {
         assert(participant.getMeshVertexSize(fluidMeshFaces) == facesSize);
 
         // Set initial displacements
-        std::cout << "[adapter-debug] " << "Setting initial top wall displacements to " << settings.topWallDispl_ << " (top) and "
-                  << settings.bottomWallDispl_ << " (bottom).\n";
+        std::cout << "- [adapter] Setting initial displacements...\n";
 
         // +1 again because we have a flat array with x,y,x,y,...
         const int bottomOffset = verticesWidth * meshDim + 1;
@@ -226,7 +216,7 @@ int main(int argc, char *argv[]) {
             if (idxBottom >= 0 && idxBottom < static_cast<int>(displacements.size()))
                 displacements[idxBottom] = -settings.bottomWallDispl_;
         }
-        printVector("Displacements (initial)", displacements, 44);
+        DEBUG(printVector("Displacements (initial)", displacements, 44));
 
         simulation.initializeDisplacements(displacements);
 
@@ -242,10 +232,8 @@ int main(int argc, char *argv[]) {
             double dt = std::min(preciceDt, tsInfo.timeStepWidth);
             simulation.setTimeStepWidth(dt);
 
-            std::cout << "[adapter-debug] " << "Coupling Timestep " << dt << "\n";
-
             participant.readData(fluidMeshNodes, displacementDelta, nodeIDs, dt, displacements);
-            printVector("Displacements (read)", displacements, 44);
+            DEBUG(printVector("Displacements (read)", displacements, 44));
 
             double maxDispl = 0.0;
             for (size_t i = 0; i < displacements.size(); ++i) {
@@ -264,8 +252,6 @@ int main(int argc, char *argv[]) {
             simulation.getForces(forces);
             participant.stopLastProfilingSection();
 
-            std::cout << "[adapter-debug] participant.writeData()" << std::endl;
-
             participant.writeData(fluidMeshFaces, force, faceIDs, forces);
 
             participant.advance(dt);
@@ -277,13 +263,13 @@ int main(int argc, char *argv[]) {
                 currentTime += dt;
                 int currentSec = static_cast<int>(currentTime);
                 int lastSec = static_cast<int>(currentTime - dt);
+                assert(simulation.getCurrentTime() == currentTime);
                 simulation.writeOutput(currentSec, lastSec);
-                forces.assign(forces.size(), 0.0);
             }
         }
 
         participant.finalize();
-        DEBUG(std::cout << "You are crazy! You did it! The simulation might have finished successfully! \n");
+        std::cout << "- [adapter] You are crazy! You did it! The simulation might have finished successfully! \n";
     }
     MPI_Finalize();
     return EXIT_SUCCESS;
