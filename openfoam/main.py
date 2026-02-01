@@ -1,8 +1,39 @@
 import argparse
 from pathlib import Path
 import logging
+import xml.etree.ElementTree as ET
 
 import case
+
+def read_precice_config(precice_cfg_path):
+    namespaces = {
+        'data': 'data',
+        'm2n': 'm2n',
+        'coupling-scheme': 'coupling-scheme',
+        'participant': 'participant',
+        'mesh': 'mesh',
+        'mapping': 'mapping',
+        'export': 'export',
+        'acceleration': 'acceleration'
+    }
+
+    for prefix, uri in namespaces.items():
+        ET.register_namespace(prefix, uri)
+
+    with open(precice_cfg_path, "r", encoding="utf-8") as xml_file:
+        xml_text = xml_file.read()
+
+    ns_defs = " ".join([f'xmlns:{k}="{v}"' for k, v in namespaces.items()])
+    if "<precice-configuration " in xml_text:
+        xml_text = xml_text.replace("<precice-configuration", f"<precice-configuration {ns_defs}")
+    else:
+        xml_text = xml_text.replace("<precice-configuration>", f"<precice-configuration {ns_defs}>")
+
+    root = ET.fromstring(xml_text)
+    dt_element = root.find(".//{*}time-window-size")
+
+    if dt_element is not None:
+        return {"dt": dt_element.get("value")}
 
 
 def read_config(filename):
@@ -38,6 +69,8 @@ def main(scenario_cfg, precice_cfg_path, cleanup=True):
     if precice_cfg_path:
         cfg["coupled"] = True
         cfg["precice_cfg"] = str(Path(precice_cfg_path).resolve())
+        dt = read_precice_config(precice_cfg_path).get("dt", 0.001)
+        cfg["maximumDt"] = float(dt)
 
     case.generate(simulation_folder, cfg)
     case.run(

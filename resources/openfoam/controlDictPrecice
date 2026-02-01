@@ -17,8 +17,7 @@ stopAt endTime;
 
 endTime 0.5;
 
-// ToDo: Read from preCICE
-deltaT 0.01;
+deltaT $maximumDt;
 
 writeControl timeStep;
 
