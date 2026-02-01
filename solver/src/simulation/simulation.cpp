@@ -82,7 +82,7 @@ void Simulation::setDisplacements(const std::vector<double> &topDisplacements, c
         discOps_->bottomBoundaryPosition_[i] = std::max(0.0, discOps_->bottomBoundaryPosition_[i]);
     }
 
-    //discOps_->updateStructureCells(timeStepWidth_);
+    // discOps_->updateStructureCells(timeStepWidth_);
 }
 
 void Simulation::run() {
@@ -331,13 +331,14 @@ void Simulation::setBoundaryUV() {
     auto &v = discOps_->v();
 
     double speedVariance = settings_.dirichletAmplitude * sin(settings_.dirichletFrequency * (settings_.dirichletTimeShift + currentTime_) * M_PI);
+    bool inflowActive = currentTime_ >= settings_.startBurst_ && currentTime_ <= settings_.endBurst_;
 
     if (partitioning_->ownContainsBoundary<Direction::Bottom>()) {
         switch (settings_.boundaryBottom) {
         case BoundaryType::InflowNoSlip:
         case BoundaryType::Elastic: {
-            const auto uBottom = settings_.dirichletBcBottom[0] + speedVariance * settings_.dirichletBcBottom[0];
-            const auto vBottom = settings_.dirichletBcBottom[1] + speedVariance * settings_.dirichletBcBottom[1];
+            const auto uBottom = inflowActive ? settings_.dirichletBcBottom[0] + speedVariance * settings_.dirichletBcBottom[0] : 0.0;
+            const auto vBottom = inflowActive ? settings_.dirichletBcBottom[1] + speedVariance * settings_.dirichletBcBottom[1] : 0.0;
 
             for (int i = u.beginI(); i < u.endI(); ++i) {
                 u(i, u.beginJ()) = 2.0 * uBottom - u(i, u.beginJ() + 1);
@@ -366,8 +367,8 @@ void Simulation::setBoundaryUV() {
         switch (settings_.boundaryTop) {
         case BoundaryType::InflowNoSlip:
         case BoundaryType::Elastic: {
-            const auto uTop = settings_.dirichletBcTop[0] + speedVariance * settings_.dirichletBcTop[0];
-            const auto vTop = settings_.dirichletBcTop[1] + speedVariance * settings_.dirichletBcTop[1];
+            const auto uTop = inflowActive ? settings_.dirichletBcTop[0] + speedVariance * settings_.dirichletBcTop[0] : 0.0;
+            const auto vTop = inflowActive ? settings_.dirichletBcTop[1] + speedVariance * settings_.dirichletBcTop[1] : 0.0;
 
             for (int i = u.beginI(); i < u.endI(); ++i) {
                 u(i, u.endJ() - 1) = 2.0 * uTop - u(i, u.endJ() - 2);
@@ -395,8 +396,8 @@ void Simulation::setBoundaryUV() {
     if (partitioning_->ownContainsBoundary<Direction::Left>()) {
         switch (settings_.boundaryLeft) {
         case BoundaryType::InflowNoSlip: {
-            const auto uLeft = settings_.dirichletBcLeft[0] + speedVariance * settings_.dirichletBcLeft[0];
-            const auto vLeft = settings_.dirichletBcLeft[1] + speedVariance * settings_.dirichletBcLeft[1];
+            const auto uLeft = inflowActive ? settings_.dirichletBcLeft[0] + speedVariance * settings_.dirichletBcLeft[0] : 0.0;
+            const auto vLeft = inflowActive ? settings_.dirichletBcLeft[1] + speedVariance * settings_.dirichletBcLeft[1] : 0.0;
 
             for (int j = u.beginJ(); j < u.endJ(); ++j) {
                 u(u.beginI(), j) = uLeft;
@@ -427,8 +428,8 @@ void Simulation::setBoundaryUV() {
     if (partitioning_->ownContainsBoundary<Direction::Right>()) {
         switch (settings_.boundaryRight) {
         case BoundaryType::InflowNoSlip: {
-            const auto uRight = settings_.dirichletBcRight[0] + speedVariance * settings_.dirichletBcRight[0];
-            const auto vRight = settings_.dirichletBcRight[1] + speedVariance * settings_.dirichletBcRight[1];
+            const auto uRight = inflowActive ? settings_.dirichletBcRight[0] + speedVariance * settings_.dirichletBcRight[0] : 0.0;
+            const auto vRight = inflowActive ? settings_.dirichletBcRight[1] + speedVariance * settings_.dirichletBcRight[1] : 0.0;
 
             for (int j = u.beginJ(); j < u.endJ(); ++j) {
                 u(u.endI() - 1, j) = uRight;
@@ -724,7 +725,7 @@ void Simulation::setDisplacements(std::vector<double> &displacements) {
 
     std::vector top(n + 2, 0.0);
     std::vector bottom(n + 2, 0.0);
-    assert(displacements.size() == 2*n*meshDim);
+    assert(displacements.size() == 2 * n * meshDim);
 
     constexpr int bottomOffset = 1;
 
@@ -737,7 +738,6 @@ void Simulation::setDisplacements(std::vector<double> &displacements) {
     }
     setDisplacements(top, bottom);
 }
-
 
 double Simulation::getCurrentTime() {
     return currentTime_;
