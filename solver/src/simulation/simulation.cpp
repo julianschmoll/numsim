@@ -718,14 +718,22 @@ void Simulation::getForces(std::vector<double> &forces) {
     const int meshDim = 3;
     const int n = settings_.nCells[0];
 
-    const int topOffset = n * meshDim + 1;
-    const int bottomOffset = 1;
+    constexpr int coordOffset = 1; // x: 0, y: 1, z: 2
+    const int topOffset    = coordOffset + n * meshDim;
+    const int bottomOffset = coordOffset;
+
+    const double domainHeight = settings_.physicalSize[1];
+    const double eps = 1e-10;
 
     forces.assign(forces.size(), 0.0);
 
     for (int i = 0, idxTop = topOffset, idxBottom = bottomOffset; i < n; ++i, idxTop += meshDim, idxBottom += meshDim) {
-        forces[idxTop] = discOps_->topF(i);
-        forces[idxBottom] = discOps_->bottomF(i);
+        if (discOps_->topBoundaryPosition(i) >= domainHeight - eps && discOps_->topF(i) > 0) {
+            forces[idxTop] = discOps_->topF(i);
+        }
+        if (discOps_->bottomBoundaryPosition(i) <= eps && discOps_->bottomF(i) < 0) {
+           forces[idxBottom] = discOps_->bottomF(i);
+        }
     }
 }
 
