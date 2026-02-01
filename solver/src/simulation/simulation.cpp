@@ -712,25 +712,14 @@ void Simulation::getForces(std::vector<double> &forces) {
     const int meshDim = 3;
     const int n = settings_.nCells[0];
 
-    // ToDo: When meshDim is 3 and we have +1 for y component,
-    // we have 0 Displacements. when we do on x component, we
-    // get displacements and also when dimensions are 2 -> we only write
-    // the first cells!
     const int topOffset = n * meshDim + 1;
     const int bottomOffset = 1;
 
-    for (int i = 0; i < n + 2; i++) {
-        discOps_->topF(i - 1) = 0;
-        discOps_->bottomF(i - 1) = 0;
-    }
-    discOps_->topF(int(n / 2)) = 0.1;
-    discOps_->bottomF(int(n / 2)) = -1;
     for (int i = 0, idxTop = topOffset, idxBottom = bottomOffset; i < n; ++i, idxTop += meshDim, idxBottom += meshDim) {
         forces[idxTop] = discOps_->topF(i);
         forces[idxBottom] = discOps_->bottomF(i);
     }
-    // forces[20 * meshDim + 1] = -0.1;
-    // forces[120 * meshDim + 1] = 0.1;
+
     std::cout << "\nSimulation::getForces()" << std::endl;
     std::cout << forces << "\n\n";
 }
