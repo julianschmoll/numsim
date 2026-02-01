@@ -46,7 +46,12 @@ def add_openfoam_keys(cfg):
             p_cond = "type fixedValue; value uniform 0;"
             has_outflow_boundary = True
         elif vx or vy:
-            if "frequency" in cfg:
+            if "startBurst" in cfg and "endBurst" in cfg:
+                cfg["initialU"] = f"({vx} {vy} 0)" if cfg["startBurst"] <= 0 else "(0 0 0)"
+                cfg["u"] = f"({vx} {vy} 0)"
+                u_cond = get_template("burstBoundary").substitute(cfg)
+                p_cond = "type fixedFluxPressure; value uniform 0;"
+            elif "frequency" in cfg:
                 cfg["scale"] = 2 * math.pi * cfg["frequency"] * cfg["timeShift"]
                 cfg["level"] = f"({vx} {vy} {0})"
                 u_cond = get_template("dynamicBoundary").substitute(cfg)

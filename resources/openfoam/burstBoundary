@@ -1,0 +1,8 @@
+type            uniformFixedValue;
+uniformValue    table
+                (
+                    (0 $initialU)
+                    ($startBurst $u)
+                    ($endBurst (0 0 0))
+                    (1 (0 0 0))
+                );
