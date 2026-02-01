@@ -683,6 +683,7 @@ void Simulation::saveState() {
     displacementsBottomCheckpoint_ = discOps_->displacementsBottom_;
     topBoundaryPositionCheckpoint_ = discOps_->topBoundaryPosition_;
     bottomBoundaryPositionCheckpoint_ = discOps_->bottomBoundaryPosition_;
+    structureCheckpoint_ = discOps_->structure_;
 }
 
 void Simulation::reloadLastState() {
@@ -699,7 +700,7 @@ void Simulation::reloadLastState() {
     discOps_->bottomBoundaryPosition_ = bottomBoundaryPositionCheckpoint_;
     discOps_->displacementsTop_ = displacementsTopCheckpoint_;
     discOps_->displacementsBottom_ = displacementsBottomCheckpoint_;
-    discOps_->updateStructureCells(timeStepWidth_);
+    discOps_->structure_ = structureCheckpoint_;
 }
 
 std::shared_ptr<Partitioning> Simulation::getPartitioning() const noexcept {

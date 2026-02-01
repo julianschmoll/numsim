@@ -1,4 +1,5 @@
 #pragma once
+#include "grid/array2d.h"
 #include "outputWriter/outputWriter.h"
 #include "partitioning.h"
 #include "settings.h"
@@ -150,6 +151,7 @@ private:
 
     std::vector<double> displacementsTopCheckpoint_;
     std::vector<double> displacementsBottomCheckpoint_;
+    Array2d<bool> structureCheckpoint_;
 
     double checkpointTime_ = 0;
 
