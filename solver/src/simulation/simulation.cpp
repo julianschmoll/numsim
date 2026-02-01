@@ -627,14 +627,20 @@ void Simulation::calculateForces() {
 
     const double invRe = 1.0 / settings_.re;
     const double dx = discOps_->dx();
+    const double dy = discOps_->dy();
 
     // collect forces orthogonal to top boundary
     for (int i = v.beginI() + 1; i < v.endI() - 1; ++i) {
         for (int j = v.endJ() - 1; j > v.beginJ(); --j) {
             if (discOps_->isFluid(i, j)) {
-                const double vDy = discOps_->computeDvDy(i, j);
-                // ToDo: Check formula, pressure is squared?
-                discOps_->topF(i) = -dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j + 1) + p(i, j)) / 2);
+                const double fBoundary = invRe * discOps_->computeDvDy(i, j) - v(i, j) * v(i, j) - (p(i, j + 1) + p(i, j)) / 2;
+                const double fBefore   = invRe * discOps_->computeDvDy(i, j - 1) - v(i, j - 1) * v(i, j - 1) - (p(i, j) + p(i, j - 1)) / 2; // TODO: assert that domain is large enough?
+
+                const double lowerCellEdge = discOps_->globalDomainPosJ(j);
+                const double boundary = discOps_->topBoundaryPosition(i);
+                const double a = (boundary - lowerCellEdge) / dy;
+
+                discOps_->topF(i) = -dx * ((1 - a) * fBefore + a * fBoundary);
                 break;
             }
         }
@@ -644,8 +650,14 @@ void Simulation::calculateForces() {
     for (int i = v.beginI() + 1; i < v.endI() - 1; ++i) {
         for (int j = v.beginJ(); j < v.endJ() - 1; ++j) {
             if (discOps_->isFluid(i, j)) {
-                const double vDy = discOps_->computeDvDy(i, j);
-                discOps_->bottomF(i) = dx * (invRe * vDy - v(i, j) * v(i, j) - (p(i, j - 1) + p(i, j)) / 2);
+                const double fBoundary = invRe * discOps_->computeDvDy(i, j) - v(i, j - 1) * v(i, j - 1) - (p(i, j - 1) + p(i, j)) / 2;
+                const double fBefore   = invRe * discOps_->computeDvDy(i, j + 1) - v(i, j) * v(i, j) - (p(i, j) + p(i, j + 1)) / 2;
+
+                const double lowerCellEdge = discOps_->globalDomainPosJ(j);
+                const double boundary = discOps_->bottomBoundaryPosition(i);
+                const double a = (boundary - lowerCellEdge) / dy;
+
+                discOps_->bottomF(i) = dx * ((1 - a) * fBoundary + a * fBefore);
                 break;
             }
         }
