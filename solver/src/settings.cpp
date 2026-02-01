@@ -150,6 +150,12 @@ void Settings::loadFromFile(const std::string &filename) {
     if (settings.count("bottomWall"))
         bottomWallDispl_ = std::stod(settings["bottomWall"]);
 
+    if (settings.count("startBurst"))
+        startBurst_ = std::stod(settings["startBurst"]);
+
+    if (settings.count("endBurst"))
+        endBurst_ = std::stod(settings["endBurst"]);
+
     if (!settings.count("generateTrainingData"))
         return;
 

@@ -2,6 +2,7 @@
 
 #include <array>
 #include <iostream>
+#include <limits>
 
 enum class IterSolverType { SOR, GaussSeidel, CG };
 enum class BoundaryType { InflowNoSlip, Outflow, Elastic };
@@ -97,6 +98,11 @@ struct Settings {
 
     double topWallDispl_ = 0.2;
     double bottomWallDispl_ = 0.2;
+
+    double startBurst_ = 0;
+
+    double endBurst_ = std::numeric_limits<double>::max();
+
 
     /**
      * Parses a text file with settings.

@@ -19,10 +19,8 @@ boundaryRight  = Outflow
 topWall = 0.2
 bottomWall = 0.2
 
-# Dirichlet boundary flow speed variation (scales with mean flow speed)
-amplitude = 0.5
-frequency = 2
-timeShift = 0
+startBurst = 0.02
+endBurst = 0.05
 
 # Dirichlet boundary conditions
 dirichletBottomX = 0
