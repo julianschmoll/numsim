@@ -57,9 +57,11 @@ Simulation::Simulation(const Settings &settings, const std::string &folderName) 
     outputWriterText_ = std::make_unique<OutputWriterTextParallel>(discOps_, *partitioning_, folderName);
 }
 
-void Simulation::writeOutput(const int currentSec, const int lastSec) const {
-    outputWriterParaview_->writeFile(currentTime_);
-    DEBUG(outputWriterText_->writeFile(currentTime_);)
+void Simulation::writeOutput(const int currentSec, const int lastSec, bool always) const {
+    if (always || currentSec > lastSec) {
+        outputWriterParaview_->writeFile(currentTime_);
+        DEBUG(outputWriterText_->writeFile(currentTime_));
+    }
 }
 
 void Simulation::setDisplacements(const std::vector<double> &topDisplacements, const std::vector<double> &bottomDisplacements) {
@@ -82,8 +84,6 @@ void Simulation::setDisplacements(const std::vector<double> &topDisplacements, c
         discOps_->topBoundaryPosition_[i] = std::min(domainHeight, discOps_->topBoundaryPosition_[i]);
         discOps_->bottomBoundaryPosition_[i] = std::max(0.0, discOps_->bottomBoundaryPosition_[i]);
     }
-
-    // discOps_->updateStructureCells(timeStepWidth_);
 }
 
 void Simulation::run() {
@@ -97,14 +97,14 @@ void Simulation::run() {
 
     DataField &p = discOps_->p();
 
-    setBoundaryUV();
-    // for (size_t i = 0; i < discOps_->bottomBoundaryPosition_.size(); i++) {
-    //     discOps_->bottomBoundaryPosition_[i] = 0.01 * i;
-    //     discOps_->topBoundaryPosition_[i] = settings_.physicalSize[1];
-    // }
-    // discOps_->updateStructureCells(timeStepWidth_);
-    // setStructureBoundaries();
-    setBoundaryFG();
+    size_t n = settings_.nCells[0] + 2;
+    std::vector<double> topDisplacements(n, 0);
+    std::vector<double> bottomDisplacements(n, 0);
+    for (size_t i = 0; i < discOps_->bottomBoundaryPosition_.size(); i++) {
+        bottomDisplacements[i] = (i <= n / 2) ? 0.03 * i : 0.03 * (n - i);
+    }
+    initializeDisplacements(topDisplacements, bottomDisplacements);
+
 
     while (currentTime_ < settings_.endTime) {
         TimeSteppingInfo timeSteppingInfo = computeTimeStepWidth();
@@ -116,9 +116,6 @@ void Simulation::run() {
         const int currentSec = static_cast<int>(currentTime_);
 
         printConsoleInfo(timeSteppingInfo);
-        // DEBUG(outputWriterText_->writeFile(currentTime_));
-        // outputWriterParaview_->writeFile(currentTime_);
-
         writeOutput(currentSec, lastSec);
     }
 
@@ -137,7 +134,15 @@ void Simulation::run() {
 void Simulation::initializeDisplacements(std::vector<double> &displacements) {
     setBoundaryUV();
     setDisplacements(displacements);
-    discOps_->updateStructureCells(42); // 42 weil Wert egal
+    discOps_->updateStructureCells(0); // 0 weil Wert egal
+    setStructureBoundaries();
+    setBoundaryFG();
+}
+
+void Simulation::initializeDisplacements(const std::vector<double> &topDisplacements, const std::vector<double> &bottomDisplacements) {
+    setBoundaryUV();
+    setDisplacements(topDisplacements, bottomDisplacements);
+    discOps_->updateStructureCells(0); // 0 weil Wert egal
     setStructureBoundaries();
     setBoundaryFG();
 }

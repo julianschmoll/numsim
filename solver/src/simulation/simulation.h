@@ -32,6 +32,7 @@ public:
     void run();
 
     void initializeDisplacements(std::vector<double> &displacements);
+    void initializeDisplacements(const std::vector<double> &topDisplacements, const std::vector<double> &bottomDisplacements);
 
     /**
      * Saves current state of u, v and p.
@@ -50,7 +51,7 @@ public:
      */
     explicit Simulation(const Settings &settings, const std::string &folderName);
 
-    void writeOutput(int currentSec, int lastSec) const;
+    void writeOutput(const int currentSec, const int lastSec, bool always = true) const;
 
     /**
      * Updates final velocities based on solved pressure.
