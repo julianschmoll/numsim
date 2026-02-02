@@ -5,7 +5,7 @@
 #include <limits>
 
 enum class IterSolverType { SOR, GaussSeidel, CG };
-enum class BoundaryType { InflowNoSlip, Outflow, Elastic };
+enum class BoundaryType { InflowNoSlip, Outflow, Coupled };
 
 /**
  * @class Settings

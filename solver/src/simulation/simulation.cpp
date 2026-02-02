@@ -208,7 +208,7 @@ void Simulation::setStructureBoundaries() {
     auto &g = discOps_->g();
     auto &f = discOps_->f();
 
-    if (settings_.boundaryBottom == BoundaryType::Elastic) {
+    if (settings_.boundaryBottom == BoundaryType::Coupled) {
         // u bottom border
         for (int i = u.minI() + 1; i <= u.maxI() - 1; ++i) { // TODO: we do not consider partition boundaries here
             for (int j = u.minJ(); j <= u.maxJ() - 1; ++j) {
@@ -267,7 +267,7 @@ void Simulation::setStructureBoundaries() {
         }
     }
 
-    if (settings_.boundaryTop == BoundaryType::Elastic) {
+    if (settings_.boundaryTop == BoundaryType::Coupled) {
         // u top border
         for (int i = u.minI() + 1; i <= u.maxI() - 1; ++i) {
             for (int j = u.maxJ(); j <= u.minJ(); --j) { // ToDo: Correct iteration?
@@ -337,7 +337,7 @@ void Simulation::setBoundaryUV() {
     if (partitioning_->ownContainsBoundary<Direction::Bottom>()) {
         switch (settings_.boundaryBottom) {
         case BoundaryType::InflowNoSlip:
-        case BoundaryType::Elastic: {
+        case BoundaryType::Coupled: {
             const auto uBottom = inflowActive ? settings_.dirichletBcBottom[0] + speedVariance * settings_.dirichletBcBottom[0] : 0.0;
             const auto vBottom = inflowActive ? settings_.dirichletBcBottom[1] + speedVariance * settings_.dirichletBcBottom[1] : 0.0;
 
@@ -367,7 +367,7 @@ void Simulation::setBoundaryUV() {
     if (partitioning_->ownContainsBoundary<Direction::Top>()) {
         switch (settings_.boundaryTop) {
         case BoundaryType::InflowNoSlip:
-        case BoundaryType::Elastic: {
+        case BoundaryType::Coupled: {
             const auto uTop = inflowActive ? settings_.dirichletBcTop[0] + speedVariance * settings_.dirichletBcTop[0] : 0.0;
             const auto vTop = inflowActive ? settings_.dirichletBcTop[1] + speedVariance * settings_.dirichletBcTop[1] : 0.0;
 
@@ -421,7 +421,7 @@ void Simulation::setBoundaryUV() {
             break;
         }
 
-        case BoundaryType::Elastic:
+        case BoundaryType::Coupled:
             assert(false);
         }
     }
@@ -453,7 +453,7 @@ void Simulation::setBoundaryUV() {
             break;
         }
 
-        case BoundaryType::Elastic:
+        case BoundaryType::Coupled:
             assert(false);
         }
     }
@@ -725,6 +725,7 @@ void Simulation::getForces(std::vector<double> &forces) {
     const int bottomOffset = coordOffset;
 
     const double domainHeight = settings_.physicalSize[1];
+    const double eps = 1e-10;
 
     forces.assign(forces.size(), 0.0);
 

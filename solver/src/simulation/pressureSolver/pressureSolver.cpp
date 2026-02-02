@@ -22,7 +22,7 @@ void PressureSolver::setBoundaryValues(DataField &p) {
                 }
                 break;
             }
-            case BoundaryType::Elastic: break; // TODO: setStructureBoundaries() macht das eigentlich
+            case BoundaryType::Coupled: break; // TODO: setStructureBoundaries() macht das eigentlich
         }
     }
 
@@ -41,7 +41,7 @@ void PressureSolver::setBoundaryValues(DataField &p) {
                 }
                 break;
             }
-            case BoundaryType::Elastic: break; // TODO: setStructureBoundaries() macht das eigentlich
+            case BoundaryType::Coupled: break; // TODO: setStructureBoundaries() macht das eigentlich
         }
     }
 
@@ -61,7 +61,7 @@ void PressureSolver::setBoundaryValues(DataField &p) {
                 break;
             }
             
-            case BoundaryType::Elastic: assert(false);
+            case BoundaryType::Coupled: assert(false);
         }
     }
 
@@ -81,7 +81,7 @@ void PressureSolver::setBoundaryValues(DataField &p) {
                 break;
             }
 
-            case BoundaryType::Elastic: assert(false);
+            case BoundaryType::Coupled: assert(false);
         }
     }
 }

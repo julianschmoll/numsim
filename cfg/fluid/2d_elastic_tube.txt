@@ -10,8 +10,8 @@ gX = 0.0              # external forces, set to (gX,gY) = (0,-9.81) to account f
 gY = 0.0
 
 # Boundary conditions
-boundaryBottom = Elastic
-boundaryTop    = Elastic
+boundaryBottom = Coupled
+boundaryTop    = Coupled
 boundaryLeft   = InflowNoSlip
 boundaryRight  = Outflow
 
