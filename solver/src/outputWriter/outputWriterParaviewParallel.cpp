@@ -59,12 +59,24 @@ void OutputWriterParaviewParallel::gatherData() {
     v_.setToZero();
     p_.setToZero();
 
+    DataField &u = grid_->u();
+    DataField &v = grid_->v();
+    DataField &p = grid_->p();
+
+    for (int j = p.minJ(); j <= p.maxJ(); j++) {
+        for (int i = p.minI(); i <= p.maxI(); i++) {
+            if (grid_->isSolid(i, j)) {
+                if (i <= u.maxI()) u(i, j) = 0;
+                if (j <= v.maxJ()) v(i, j) = 0;
+                p(i, j) = 0;
+            }
+        }
+    }
+
     for (int j = 0; j < jEnd; j++) {
         for (int i = 0; i < iEnd; i++) {
             const double x = i * dx;
             const double y = j * dy;
-
-            bool isSolid = grid_->isSolid(i, j);
 
             // get global indices
             const int iGlobal = nodeOffset[0] + i;
@@ -75,9 +87,9 @@ void OutputWriterParaviewParallel::gatherData() {
             } else if (j == jEnd - 1) {
                 f_(iGlobal, jGlobal) = grid_->topF().interpolateAt(x, 0);
             }
-            u_(iGlobal, jGlobal) = isSolid ? 0 : grid_->u().interpolateAt(x, y);
-            v_(iGlobal, jGlobal) = isSolid ? 0 : grid_->v().interpolateAt(x, y);
-            p_(iGlobal, jGlobal) = isSolid ? 0 : grid_->p().interpolateAt(x, y);
+            u_(iGlobal, jGlobal) = grid_->u().interpolateAt(x, y);
+            v_(iGlobal, jGlobal) = grid_->v().interpolateAt(x, y);
+            p_(iGlobal, jGlobal) = grid_->p().interpolateAt(x, y);
         }
     }
 
