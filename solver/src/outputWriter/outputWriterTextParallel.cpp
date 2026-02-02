@@ -175,6 +175,25 @@ void OutputWriterTextParallel::writeFile(double currentTime) {
         }
     }
     file << std::endl;
+
+    // write structure cells
+    // ---------
+    // write header lines
+    file << "Structure (" << grid_->p().size()[0] << "x" << grid_->p().size()[1] << "): " << std::endl << std::string(fieldWidth, ' ') << "|";
+    for (int i = grid_->p().beginI(); i < grid_->p().endI(); i++) {
+        file << std::setw(fieldWidth) << i;
+    }
+    file << std::endl << std::string(fieldWidth * (grid_->p().size()[0] + 2) + 1, '-') << std::endl;
+
+    // write structure values
+    for (int j = grid_->p().endJ() - 1; j >= grid_->p().beginJ(); j--) {
+        file << std::setw(fieldWidth) << j << "|";
+        for (int i = grid_->p().beginI(); i < grid_->p().endI(); i++) {
+            file << std::setw(fieldWidth) << (grid_->isSolid(i, j) ? "#" : ".");
+        }
+        file << std::endl;
+    }
+    file << std::endl;
 }
 
 void OutputWriterTextParallel::writePressureFile() const {

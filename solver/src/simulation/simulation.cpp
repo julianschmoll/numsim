@@ -59,6 +59,7 @@ Simulation::Simulation(const Settings &settings, const std::string &folderName) 
 
 void Simulation::writeOutput(const int currentSec, const int lastSec) const {
     outputWriterParaview_->writeFile(currentTime_);
+    DEBUG(outputWriterText_->writeFile(currentTime_);)
 }
 
 void Simulation::setDisplacements(const std::vector<double> &topDisplacements, const std::vector<double> &bottomDisplacements) {
