@@ -145,9 +145,8 @@ void Simulation::initializeDisplacements(std::vector<double> &displacements) {
 void Simulation::advanceFluidSolver(double dt) {
     std::vector uv = {&discOps_->u(), &discOps_->v()};
     std::vector fg = {&discOps_->f(), &discOps_->g()};
-
     setBoundaryUV();
-    setBoundaryFG(); // TODO: Korrekt? Die Reihenfolge von setBoundaryFG() und setPreliminaryVelocities() sollte hier keine Rolle spielen.
+    setBoundaryFG();
     setStructureBoundaries();
     setPreliminaryVelocities();
 
@@ -155,7 +154,6 @@ void Simulation::advanceFluidSolver(double dt) {
 
     setRightHandSide();
     pressureSolver_->solve(discOps_->p());
-
     setVelocities();
     partitioning_->exchange(uv);
     setBoundaryUV();
@@ -168,17 +166,19 @@ void Simulation::advanceFluidSolver(double dt) {
 void Simulation::updateSolid() {
     auto &q = discOps_->q();
 
-    discOps_->updateStructureCells(timeStepWidth_);
+    bool correctionRequired = discOps_->updateStructureCells(timeStepWidth_);
 
-    setBoundaryUV();
-    setBoundaryFG();
-    setStructureBoundaries();
-    setPreliminaryVelocities();
-
-    setRightHandSide();
-    pressureSolver_->solve(q);
-
-    correctVelocities();
+    if (correctionRequired) {
+        setBoundaryUV();
+        setBoundaryFG();
+        setStructureBoundaries();
+        setPreliminaryVelocities();
+    
+        setRightHandSide();
+        pressureSolver_->solve(q);
+    
+        correctVelocities();
+    }
 
     std::cout << discOps_->structure_ << "\n";
 }

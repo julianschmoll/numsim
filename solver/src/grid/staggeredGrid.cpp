@@ -71,7 +71,7 @@ double StaggeredGrid::globalDomainPosJ(int j) {
     return (partitioning_.nodeOffset()[1] + j) * dy(); // TODO: drüber nachdenken.
 }
 
-void StaggeredGrid::updateStructureCells(double dt) {
+bool StaggeredGrid::updateStructureCells(double dt) {
     const int leftDomainBoundaryOffset = int(partitioning_.ownContainsBoundary<Direction::Left>());
     const int rightDomainBoundaryOffset = int(partitioning_.ownContainsBoundary<Direction::Right>());
 
@@ -85,6 +85,7 @@ void StaggeredGrid::updateStructureCells(double dt) {
     constexpr double eps = 1e-10;
 
     bool foundFluid = false;
+    bool correctionRequired = false;
 
     // Top -> Bottom Iteration (fixing bottom edge shifted structure cells)
     for (int i = beginI; i <= endI; ++i) {
@@ -98,6 +99,7 @@ void StaggeredGrid::updateStructureCells(double dt) {
             } else if (isSolid(i, j)) { // cell oberhalb der bottom boundary line and solid
                 // fluid rein setzen, werte korrigieren
                 structure_(i, j) = Fluid;
+                correctionRequired = true;
                 v_(i, j) = bottomDisplacement(i) / dt;
                 if (i < endI) u_(i, j) = 0;
                 p_(i, j) = p_(i, j + 1);
@@ -117,6 +119,7 @@ void StaggeredGrid::updateStructureCells(double dt) {
                 structure_(i, j) = Solid;
             } else if (isSolid(i, j)) {
                 structure_(i, j) = Fluid;
+                correctionRequired = true;
                 v_(i, j - 1) = topDisplacement(i) / dt;
                 if (i < endI) u_(i, j) = 0;
                 p_(i, j) = p_(i, j - 1);
@@ -124,9 +127,7 @@ void StaggeredGrid::updateStructureCells(double dt) {
         }
         foundFluid = false;
     }
-
-    return;
-
+    return correctionRequired;
 }
 
 void StaggeredGrid::initializeStructureField() {
