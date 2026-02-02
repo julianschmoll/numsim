@@ -63,11 +63,15 @@ void OutputWriterParaviewParallel::gatherData() {
     DataField &v = grid_->v();
     DataField &p = grid_->p();
 
-    for (int j = p.minJ(); j <= p.maxJ(); j++) {
-        for (int i = p.minI(); i <= p.maxI(); i++) {
+    for (int j = p.minJ() + 1; j < p.maxJ(); j++) {
+        for (int i = p.minI() + 1; i < p.maxI(); i++) {
             if (grid_->isSolid(i, j)) {
-                if (i <= u.maxI()) u(i, j) = 0;
-                if (j <= v.maxJ()) v(i, j) = 0;
+                if (i < u.maxI() && grid_->isSolid(i + 1, j) || i == u.minI() || i == u.maxI()) {
+                    u(i, j) = 0;
+                }
+                if (j < v.maxJ() && grid_->isSolid(i, j + 1) || j == v.minJ() || j == v.maxJ()) {
+                    v(i, j) = 0;
+                }
                 p(i, j) = 0;
             }
         }
