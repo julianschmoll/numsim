@@ -21,7 +21,7 @@ deltaT $maximumDt;
 
 writeControl timeStep;
 
-writeInterval 10;
+writeInterval 1;
 
 purgeWrite 0;
 
