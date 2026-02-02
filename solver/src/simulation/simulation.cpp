@@ -172,9 +172,8 @@ void Simulation::updateSolid() {
 
     setBoundaryUV();
     setBoundaryFG();
-
-    setPreliminaryVelocities();
     setStructureBoundaries();
+    setPreliminaryVelocities();
 
     setRightHandSide();
     pressureSolver_->solve(q);
@@ -724,9 +723,6 @@ void Simulation::getForces(std::vector<double> &forces) {
     constexpr int coordOffset = 1; // x: 0, y: 1, z: 2
     const int topOffset    = coordOffset + n * meshDim;
     const int bottomOffset = coordOffset;
-
-    const double domainHeight = settings_.physicalSize[1];
-    const double eps = 1e-10;
 
     forces.assign(forces.size(), 0.0);
 
