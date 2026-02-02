@@ -15,13 +15,6 @@ boundaryTop    = Coupled
 boundaryLeft   = InflowNoSlip
 boundaryRight  = Outflow
 
-# Initial Displacements
-topWall = 0.2
-bottomWall = 0.2
-
-startBurst = 0.02
-endBurst = 0.05
-
 # Dirichlet boundary conditions
 dirichletBottomX = 0
 dirichletBottomY = 0

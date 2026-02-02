@@ -147,11 +147,11 @@ void run(int ownRankNo, int nRanks, const std::string preciceConfigPath, Setting
     int meshSize = participant.getMeshVertexSize("Solid-Mesh");
     int dim = participant.getMeshDimensions("Solid-Mesh");
 
-    std::vector<double> coords(meshSize * dim);
-    std::vector<precice::VertexID> ids(meshSize);
+    std::vector<double> participantCoords(meshSize * dim);
+    std::vector<precice::VertexID> participantIDs(meshSize);
 
-    participant.getMeshVertexIDsAndCoordinates("Solid-Mesh", ids, coords);
-    printMesh("Solid-Mesh", ids, coords, 24);
+    participant.getMeshVertexIDsAndCoordinates("Solid-Mesh", participantIDs, participantCoords);
+    printMesh("Solid-Mesh", participantIDs, participantCoords, 24);
 
     double currentTime = 0.0;
 
@@ -165,6 +165,10 @@ void run(int ownRankNo, int nRanks, const std::string preciceConfigPath, Setting
     // Set initial displacements
     std::cout << "- [adapter] Setting initial displacements...\n";
 
+    int topOffset = static_cast<int>(participantCoords.size() / 2) + 1;
+    double topWallDispl = participantCoords[1];
+    double bottomWallDispl = settings.physicalSize[1] - participantCoords[topOffset];
+
     // +1 again because we have a flat array with x,y,x,y,...
     const int bottomOffset = verticesWidth * meshDim + 1;
     for (int i = 0; i < verticesWidth; ++i) {
@@ -172,9 +176,9 @@ void run(int ownRankNo, int nRanks, const std::string preciceConfigPath, Setting
         int idxBottom = bottomOffset + i * meshDim;
 
         if (idxTop >= 0 && idxTop < static_cast<int>(displacements.size()))
-            displacements[idxTop] = settings.topWallDispl_;
+            displacements[idxTop] = topWallDispl;
         if (idxBottom >= 0 && idxBottom < static_cast<int>(displacements.size()))
-            displacements[idxBottom] = -settings.bottomWallDispl_;
+            displacements[idxBottom] = -bottomWallDispl;
     }
 
     simulation.initializeDisplacements(displacements);
