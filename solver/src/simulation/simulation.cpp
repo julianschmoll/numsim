@@ -147,6 +147,7 @@ void Simulation::advanceFluidSolver(double dt) {
 
     setBoundaryUV();
     setBoundaryFG(); // TODO: Korrekt? Die Reihenfolge von setBoundaryFG() und setPreliminaryVelocities() sollte hier keine Rolle spielen.
+    setStructureBoundaries();
     setPreliminaryVelocities();
 
     partitioning_->exchange(fg);
@@ -300,7 +301,7 @@ void Simulation::setStructureBoundaries() {
             const double dLeft = discOps_->topDisplacement(i - 1) / timeStepWidth_;
             const double dRight = discOps_->topDisplacement(i + 1) / timeStepWidth_;
 
-            for (int j = v.maxJ() + 1; j >= v.minJ() + 1; ++j) { // ToDo: Correct iteration?
+            for (int j = v.maxJ() + 1; j >= v.minJ() + 1; --j) { // ToDo: Correct iteration?
                 if (discOps_->isFluid(i, j)) {                   // fluid cell
                     break;
                 }
@@ -728,12 +729,8 @@ void Simulation::getForces(std::vector<double> &forces) {
     forces.assign(forces.size(), 0.0);
 
     for (int i = 0, idxTop = topOffset, idxBottom = bottomOffset; i < n; ++i, idxTop += meshDim, idxBottom += meshDim) {
-        if (discOps_->topBoundaryPosition(i) >= domainHeight && discOps_->topF(i) > 0) {
-            forces[idxTop] = discOps_->topF(i);
-        }
-        if (discOps_->bottomBoundaryPosition(i) <= 0 && discOps_->bottomF(i) < 0) {
-           forces[idxBottom] = discOps_->bottomF(i);
-        }
+        forces[idxTop] = discOps_->topF(i);
+        forces[idxBottom] = discOps_->bottomF(i);
     }
 }
 
