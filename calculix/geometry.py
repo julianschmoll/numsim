@@ -146,12 +146,12 @@ class Geometry:
             f.write("*STEP, NLGEOM, INC=1000000\n")
             f.write("*DYNAMIC\n")
 
-            alpha = 0.0  # Mass proportional damping
-            beta = 0.001  # Stiffness proportional damping
+            alpha = self.cfg["geometry"].get("alpha", 0.0)
+            beta = self.cfg["geometry"].get("beta", 0.001)
             f.write(f"*DAMPING, ALPHA={alpha}, BETA={beta}\n")
 
-            dt = self.cfg['geometry'].get('dt', 0.01)
-            duration = self.cfg['geometry'].get('t_end', 10.0)
+            dt = self.cfg.get('dt', 0.01)
+            duration = self.cfg.get('t_end', 1000.0)
             f.write(f"{dt}, {duration}\n")
 
             f.write("*BOUNDARY\n")
@@ -165,11 +165,10 @@ class Geometry:
             f.write(f"N{interface_name}, 3, 0.0\n")
 
             f.write(f"*NODE PRINT, NSET=N{interface_name}, FREQUENCY=1\n")
-            f.write("U, V, A\n")  # Displacement, velocity, acceleration
-
+            f.write("U, V, A\n")
 
             f.write("*NODE FILE\nU\n")
             f.write("*EL FILE\nS, E\n")
             f.write("*END STEP\n")
 
-            return filepath.parent / filepath.stem
+        return filepath.parent / filepath.stem
