@@ -46,20 +46,18 @@ protected:
 
     /// Field for unphysical corrective pressure for solid cell movement correction
     DataField q_;
-
-
-public:
-    Array2d<bool> structure_;
-
-    std::vector<double> bottomBoundaryPosition_;
-    std::vector<double> topBoundaryPosition_;
-
+    
     DataField fTop_;
     DataField fBottom_;
 
-
+public:
+    std::vector<double> bottomBoundaryPosition_;
+    std::vector<double> topBoundaryPosition_;
+    
     std::vector<double> displacementsTop_;
     std::vector<double> displacementsBottom_;
+
+    Array2d<bool> structure_;
 
     /**
      * Destructs Staggered Grid instance.

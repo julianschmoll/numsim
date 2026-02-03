@@ -160,15 +160,9 @@ private:
     double checkpointTime_ = 0;
 
     /**
-     * Sets boundary values of u and v.
+     * Sets boundary values of u, v, f and g.
      */
-    void setBoundaryUV();
-
-    /**
-     * Sets boundary values of F and G.
-     */
-    void setBoundaryFG();
-
+    void setOuterVelocityBoundaries();
 
     /**
      * Sets preliminary velocities.

@@ -55,14 +55,10 @@ StaggeredGrid::StaggeredGrid(const Settings &settings, const Partitioning &parti
 
     v_ = DataField({vWidth, vHeight}, meshWidth_, {0.5, 0.0}, V_ID);
     g_ = DataField({vWidth, vHeight}, meshWidth_, {0.5, 0.0}, G_ID);
-
-    DEBUG(std::cout << v_.sizeI() << std::endl;)
-    DEBUG(std::cout << "DisplTop " << displacementsTop_.size() << std::endl;)
-    DEBUG(std::cout << "DisplBot " << displacementsBottom_.size() << std::endl;)
 }
 
 double StaggeredGrid::globalDomainPosJ(int j) {
-    return (partitioning_.nodeOffset()[1] + j) * dy(); // TODO: drüber nachdenken.
+    return (partitioning_.nodeOffset()[1] + j) * dy();
 }
 
 bool StaggeredGrid::updateStructureCells(double dt) {
@@ -85,12 +81,13 @@ bool StaggeredGrid::updateStructureCells(double dt) {
     for (int i = beginI; i <= endI; ++i) {
         for (int j = endJ - 1; j >= beginI; --j) {
             if (isFluid(i, j)) foundFluid = true;
-            if (!foundFluid)  // Noch nicht außerhalb der top boundary
+            if (!foundFluid) {
                 continue;
+            }
             double upperCellEdge = globalDomainPosJ(j + 1);
-            if (upperCellEdge < bottomBoundaryPosition(i) + eps) {  // cell unterhalb der bottom boundary line
+            if (upperCellEdge < bottomBoundaryPosition(i) + eps) {
                 structure_(i, j) = Solid;
-            } else if (isSolid(i, j)) { // cell oberhalb der bottom boundary line and solid
+            } else if (isSolid(i, j)) {
                 // fluid rein setzen, werte korrigieren
                 structure_(i, j) = Fluid;
                 correctionRequired = true;
@@ -106,8 +103,9 @@ bool StaggeredGrid::updateStructureCells(double dt) {
     for (int i = beginI; i <= endI; ++i) {
         for (int j = beginJ + 1; j <= endJ - 1; ++j) {
             if (isFluid(i, j)) foundFluid = true;
-            if (!foundFluid)  // Noch nicht außerhalb der bottom boundary
+            if (!foundFluid) {
                 continue;
+            }
             double lowerCellEdge = globalDomainPosJ(j);
             if (lowerCellEdge > topBoundaryPosition(i) - eps) {
                 structure_(i, j) = Solid;
@@ -125,11 +123,10 @@ bool StaggeredGrid::updateStructureCells(double dt) {
 }
 
 void StaggeredGrid::initializeStructureField() {
-    // TODO: only initialize domain boundary with solid?!
     const int endI = structure_.maxI();
     const int endJ = structure_.maxJ();
 
-    for (int j = -1; j <= endJ; ++j) { // inneres Feld
+    for (int j = -1; j <= endJ; ++j) {
         for (int i = -1; i <= endI - 1; ++i) {
             structure_(i, j) = Fluid;
         }
@@ -159,7 +156,6 @@ void StaggeredGrid::initializeStructureField() {
 
 void StaggeredGrid::test(const Settings &settings) {
     // TODO: Testcode: lid_driven_cavity.txt
-
     const int iOffset = partitioning_.nodeOffset()[0];
 
     initializeStructureField();
