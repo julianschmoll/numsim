@@ -144,15 +144,14 @@ class Geometry:
             f.write("*SOLID SECTION, ELSET=Eall, MATERIAL=ELASTIC\n1.0\n")
 
             f.write("*STEP, NLGEOM, INC=1000000\n")
-            f.write("*DYNAMIC\n")
+            f.write("*DYNAMIC, DIRECT\n")
+            dt = self.cfg.get('dt', 0.01)
+            duration = self.cfg.get("t_end", 1)
+            f.write(f"{dt}, {duration}\n")
 
             alpha = self.cfg["material"].get("alpha", 0.0)
             beta = self.cfg["material"].get("beta", 0.001)
             f.write(f"*DAMPING, ALPHA={alpha}, BETA={beta}\n")
-
-            dt = self.cfg.get('dt', 0.01)
-            duration = self.cfg.get('t_end', 1000.0)
-            f.write(f"{dt}, {duration}\n")
 
             f.write("*BOUNDARY\n")
             if self._fix_nodes:

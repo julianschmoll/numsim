@@ -8,7 +8,7 @@ geometry:
   n_elements_length: 80   # Elements along the wall length (should match nCells)
 
 dt: 0.01
-t_end: 1
+t_end: 2
 
 # Material properties (copied from 3D preCICE example)
 material:
