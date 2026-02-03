@@ -116,7 +116,7 @@ void Simulation::run() {
         const int currentSec = static_cast<int>(currentTime_);
 
         printConsoleInfo(timeSteppingInfo);
-        writeOutput(currentSec, lastSec);
+        writeOutput(currentSec, lastSec, false);
     }
 
     if (settings_.generateTrainingData)
@@ -133,18 +133,34 @@ void Simulation::run() {
 
 void Simulation::initializeDisplacements(std::vector<double> &displacements) {
     setBoundaryUV();
-    setDisplacements(displacements);
+    setBoundaryFG();
+
+    constexpr int meshDim = 3;
+    const int n = settings_.nCells[0];
+
+    assert(displacements.size() == 2 * n * meshDim);
+
+    // +1 because it's a flat array with x,y,z,x,y,z...
+    const int topOffset = n * meshDim + 1;
+    constexpr int bottomOffset = 1;
+
+    for (int i = 0, idxTop = topOffset, idxBottom = bottomOffset; i < n; ++i, idxTop += meshDim, idxBottom += meshDim) {
+        discOps_->topBoundaryPosition_[i + 1] += displacements[idxTop];
+        discOps_->bottomBoundaryPosition_[i + 1] += displacements[idxBottom];
+    }
     discOps_->updateStructureCells(0); // 0 weil Wert egal
     setStructureBoundaries();
-    setBoundaryFG();
 }
 
 void Simulation::initializeDisplacements(const std::vector<double> &topDisplacements, const std::vector<double> &bottomDisplacements) {
     setBoundaryUV();
-    setDisplacements(topDisplacements, bottomDisplacements);
+    setBoundaryFG();
+    for (size_t i = 0; i < settings_.nCells[0] + 2; i++) {
+        discOps_->topBoundaryPosition_[i] += topDisplacements[i];
+        discOps_->bottomBoundaryPosition_[i] += bottomDisplacements[i];
+    }
     discOps_->updateStructureCells(0); // 0 weil Wert egal
     setStructureBoundaries();
-    setBoundaryFG();
 }
 
 void Simulation::advanceFluidSolver(double dt) {
@@ -189,10 +205,10 @@ void Simulation::updateSolid() {
 }
 
 void Simulation::printConsoleInfo(const TimeSteppingInfo &timeSteppingInfo) const {
-    static double lastProgress10th = 0;
+    static double lastProgressStep = 0;
     if (partitioning_->onPrimaryRank()) {
         double progress = currentTime_ / settings_.endTime * 100;
-        if (progress >= lastProgress10th) {
+        if (progress >= lastProgressStep) {
             std::cout << "Progress: ";
             std::cout << std::fixed << std::setw(5) << std::setprecision(1) << progress << "%: ";
             std::cout << std::fixed << std::setw(5) << std::setprecision(2) << currentTime_ << "s / ";
@@ -201,7 +217,7 @@ void Simulation::printConsoleInfo(const TimeSteppingInfo &timeSteppingInfo) cons
             DEBUG(std::cout << "dt = " << std::fixed << std::setprecision(4) << timeSteppingInfo.timeStepWidth << "\n")
             DEBUG(std::cout << " -- div constraint = " << std::fixed << std::setprecision(2) << timeSteppingInfo.convectiveConstraint << ", ")
             DEBUG(std::cout << "conectivity constraint = " << std::fixed << std::setprecision(2) << timeSteppingInfo.convectiveConstraint << "\n");
-            lastProgress10th += 10;
+            lastProgressStep += 5;
         }
     }
 }
