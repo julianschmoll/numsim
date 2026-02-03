@@ -1,8 +1,8 @@
 #pragma once
 
 #include "grid/array2d.h"
-#include <mpi.h>
 #include <iostream>
+#include <mpi.h>
 
 /**
  * @class DataField
@@ -61,7 +61,7 @@ public:
      * @param other The DataField object to copy from.
      * @return Copy of DataField.
      */
-    DataField& operator=(const DataField& other) noexcept;
+    DataField &operator=(const DataField &other) noexcept;
 
     /**
      * Destructor for DataField.

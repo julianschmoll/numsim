@@ -11,8 +11,7 @@
 #include <vector>
 
 StaggeredGrid::StaggeredGrid(const Settings &settings, const Partitioning &partitioning)
-    : nCells_(settings.nCells),
-      meshWidth_({settings.physicalSize[0] / nCells_[0], settings.physicalSize[1] / nCells_[1]}), 
+    : nCells_(settings.nCells), meshWidth_({settings.physicalSize[0] / nCells_[0], settings.physicalSize[1] / nCells_[1]}),
       partitioning_(partitioning) {
 
     int vWidth = nCells_[0] + 2;
@@ -80,7 +79,8 @@ bool StaggeredGrid::updateStructureCells(double dt) {
     // Top -> Bottom Iteration (fixing bottom edge shifted structure cells)
     for (int i = beginI; i <= endI; ++i) {
         for (int j = endJ - 1; j >= beginI; --j) {
-            if (isFluid(i, j)) foundFluid = true;
+            if (isFluid(i, j))
+                foundFluid = true;
             if (!foundFluid) {
                 continue;
             }
@@ -92,7 +92,8 @@ bool StaggeredGrid::updateStructureCells(double dt) {
                 structure_(i, j) = Fluid;
                 correctionRequired = true;
                 v_(i, j) = bottomDisplacement(i) / dt;
-                if (i < endI) u_(i, j) = 0;
+                if (i < endI)
+                    u_(i, j) = 0;
                 p_(i, j) = p_(i, j + 1);
             }
         }
@@ -102,7 +103,8 @@ bool StaggeredGrid::updateStructureCells(double dt) {
     // Bottom -> Top Iteration (fixing top edge shifted structure cells)
     for (int i = beginI; i <= endI; ++i) {
         for (int j = beginJ + 1; j <= endJ - 1; ++j) {
-            if (isFluid(i, j)) foundFluid = true;
+            if (isFluid(i, j))
+                foundFluid = true;
             if (!foundFluid) {
                 continue;
             }
@@ -113,7 +115,8 @@ bool StaggeredGrid::updateStructureCells(double dt) {
                 structure_(i, j) = Fluid;
                 correctionRequired = true;
                 v_(i, j - 1) = topDisplacement(i) / dt;
-                if (i < endI) u_(i, j) = 0;
+                if (i < endI)
+                    u_(i, j) = 0;
                 p_(i, j) = p_(i, j - 1);
             }
         }
@@ -145,7 +148,7 @@ void StaggeredGrid::initializeStructureField() {
     if (partitioning_.ownContainsBoundary<Direction::Left>()) {
         for (int j = -1; j <= endJ; j++) {
             structure_(-1, j) = Solid;
-        } 
+        }
     }
     if (partitioning_.ownContainsBoundary<Direction::Right>()) {
         for (int j = -1; j <= endJ; j++) {

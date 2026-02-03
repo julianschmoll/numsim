@@ -19,14 +19,11 @@ OutputWriterParaviewParallel::OutputWriterParaviewParallel(std::shared_ptr<Stagg
 
       // create field variables for resulting values, only for local data as send buffer
       u_(nPointsGlobal_, grid_->meshWidth(), {0.0, 0.5}), v_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.0}),
-      p_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.5}),
-      f_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.5}),
+      p_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.5}), f_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.5}),
 
       // create field variables for resulting values, after MPI communication
       uGlobal_(nPointsGlobal_, grid_->meshWidth(), {0.0, 0.5}), vGlobal_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.0}),
-      pGlobal_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.5}),
-      fGlobal_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.5})
-{
+      pGlobal_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.5}), fGlobal_(nPointsGlobal_, grid_->meshWidth(), {0.5, 0.5}) {
     // Create a vtkWriter_
     vtkWriter_ = vtkSmartPointer<vtkXMLImageDataWriter>::New();
 }

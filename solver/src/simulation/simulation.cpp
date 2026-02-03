@@ -5,10 +5,10 @@
 #include "settings.h"
 #include "simulation/pressureSolver/conjugateGradientSolver.h"
 #include "simulation/pressureSolver/redBlackSolver.h"
-#include <fstream>
 #include <cassert>
 #include <chrono>
 #include <cmath>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <memory>
@@ -105,7 +105,6 @@ void Simulation::run() {
     }
     initializeDisplacements(topDisplacements, bottomDisplacements);
 
-
     while (currentTime_ < settings_.endTime) {
         TimeSteppingInfo timeSteppingInfo = computeTimeStepWidth();
         timeStepWidth_ = timeSteppingInfo.timeStepWidth;
@@ -189,10 +188,10 @@ void Simulation::updateSolid() {
         setOuterVelocityBoundaries();
         setStructureBoundaries();
         setPreliminaryVelocities();
-    
+
         setRightHandSide();
         pressureSolver_->solve(q);
-    
+
         setVelocities();
     }
 
@@ -644,7 +643,7 @@ void Simulation::calculateForces() {
         for (int j = v.endJ() - 1; j > v.beginJ(); --j) {
             if (discOps_->isFluid(i, j)) {
                 const double fBoundary = invRe * discOps_->computeDvDy(i, j) - v(i, j) * v(i, j) - (p(i, j + 1) + p(i, j)) / 2;
-                const double fBefore   = invRe * discOps_->computeDvDy(i, j - 1) - v(i, j - 1) * v(i, j - 1) - (p(i, j) + p(i, j - 1)) / 2;
+                const double fBefore = invRe * discOps_->computeDvDy(i, j - 1) - v(i, j - 1) * v(i, j - 1) - (p(i, j) + p(i, j - 1)) / 2;
 
                 const double lowerCellEdge = discOps_->globalDomainPosJ(j);
                 const double boundary = discOps_->topBoundaryPosition(i);
@@ -661,7 +660,7 @@ void Simulation::calculateForces() {
         for (int j = v.beginJ(); j < v.endJ() - 1; ++j) {
             if (discOps_->isFluid(i, j)) {
                 const double fBoundary = invRe * discOps_->computeDvDy(i, j) - v(i, j - 1) * v(i, j - 1) - (p(i, j - 1) + p(i, j)) / 2;
-                const double fBefore   = invRe * discOps_->computeDvDy(i, j + 1) - v(i, j) * v(i, j) - (p(i, j) + p(i, j + 1)) / 2;
+                const double fBefore = invRe * discOps_->computeDvDy(i, j + 1) - v(i, j) * v(i, j) - (p(i, j) + p(i, j + 1)) / 2;
 
                 const double lowerCellEdge = discOps_->globalDomainPosJ(j);
                 const double boundary = discOps_->bottomBoundaryPosition(i);
@@ -729,7 +728,7 @@ void Simulation::getForces(std::vector<double> &forces) {
     const int n = settings_.nCells[0];
 
     constexpr int coordOffset = 1; // x: 0, y: 1, z: 2
-    const int topOffset    = coordOffset + n * meshDim;
+    const int topOffset = coordOffset + n * meshDim;
     const int bottomOffset = coordOffset;
 
     forces.assign(forces.size(), 0.0);
@@ -765,14 +764,10 @@ double Simulation::getCurrentTime() {
     return currentTime_;
 }
 
-
-
-void Simulation::writeLineToFile(const std::string& filePath, const std::string& line)
-{
+void Simulation::writeLineToFile(const std::string &filePath, const std::string &line) {
     std::ofstream file(filePath, std::ios::app); // std::ios::app = append mode
 
-    if (!file.is_open())
-    {
+    if (!file.is_open()) {
         std::cerr << "Failed to open file: " << filePath << std::endl;
         return;
     }

@@ -2,8 +2,8 @@
 
 #include "grid/staggeredGrid.h"
 #include "pressureSolver.h"
-#include "simulation/partitioning.h"
 #include "settings.h"
+#include "simulation/partitioning.h"
 #include <memory>
 
 /**
@@ -31,7 +31,7 @@ public:
     /**
      * Solves the poisson problem for the pressure.
      */
-    void solve(DataField& p) override;
+    void solve(DataField &p) override;
 
 private:
     /// Relaxation factor

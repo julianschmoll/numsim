@@ -2,7 +2,8 @@
 #include "grid/dataField.h"
 #include <cmath>
 
-ConjugateGradientSolver::ConjugateGradientSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning, const Settings &settings)
+ConjugateGradientSolver::ConjugateGradientSolver(std::shared_ptr<StaggeredGrid> grid, std::shared_ptr<Partitioning> partitioning,
+                                                 const Settings &settings)
     : PressureSolver(std::move(grid), std::move(partitioning), settings), direction_(grid_->p().size(), grid_->meshWidth()),
       dx2_(grid_->dx() * grid_->dx()), dy2_(grid_->dy() * grid_->dy()), invDx2_(1.0 / dx2_), invDy2_(1.0 / dy2_) {}
 
@@ -20,7 +21,8 @@ void ConjugateGradientSolver::updatePressure(double alpha) {
     // paralleisierbar
     for (int j = d.beginJ() + 1; j < d.endJ() - 1; ++j) {
         for (int i = d.beginI() + 1; i < d.endI() - 1; ++i) {
-            if (grid_->isSolid(i, j)) continue;
+            if (grid_->isSolid(i, j))
+                continue;
             p(i, j) += alpha * d(i, j);
         }
     }
@@ -35,7 +37,8 @@ void ConjugateGradientSolver::updateDirection(double beta) {
     // paralleisierbar
     for (int j = d.beginJ() + 1; j < d.endJ() - 1; ++j) {
         for (int i = d.beginI() + 1; i < d.endI() - 1; ++i) {
-            if (grid_->isSolid(i, j)) continue;
+            if (grid_->isSolid(i, j))
+                continue;
             d(i, j) = rhs(i, j) + beta * d(i, j);
         }
     }
@@ -50,7 +53,8 @@ double ConjugateGradientSolver::decreaseResidual(const DataField &d, double alph
     // paralleisierbar
     for (int j = d.beginJ() + 1; j < d.endJ() - 1; ++j) {
         for (int i = d.beginI() + 1; i < d.endI() - 1; ++i) {
-            if (grid_->isSolid(i, j)) continue;
+            if (grid_->isSolid(i, j))
+                continue;
             rhs(i, j) -= alpha * applyDiffusionOperator(d, i, j); // rhs becomes residual
             localSquareResidual += rhs(i, j) * rhs(i, j);
         }
@@ -72,7 +76,8 @@ double ConjugateGradientSolver::calculateAlpha() {
     // paralleisierbar
     for (int j = d.beginJ() + 1; j < d.endJ() - 1; ++j) {
         for (int i = d.beginI() + 1; i < d.endI() - 1; ++i) {
-            if (grid_->isSolid(i, j)) continue;
+            if (grid_->isSolid(i, j))
+                continue;
             rdDotLocal += rhs(i, j) * d(i, j);
             dAdDotLocal += d(i, j) * applyDiffusionOperator(d, i, j);
         }
@@ -96,7 +101,8 @@ void ConjugateGradientSolver::solve(DataField &p) {
     // initial descent direction equals residual
     for (int j = d.beginJ() + 1; j < d.endJ() - 1; ++j) {
         for (int i = d.beginI() + 1; i < d.endI() - 1; ++i) {
-            if (grid_->isSolid(i, j)) continue;
+            if (grid_->isSolid(i, j))
+                continue;
             d(i, j) = rhs(i, j);
         }
     }

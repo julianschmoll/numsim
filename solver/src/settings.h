@@ -96,13 +96,17 @@ struct Settings {
     /// range of velocity for training
     std::array<double, 2> velocityRange;
 
+    /// Initial displacement of the top wall
     double topWallDispl_ = 0.2;
+
+    /// Initial displacement of the bottom wall
     double bottomWallDispl_ = 0.2;
 
+    /// Start of Burst (velocity of 0 before)
     double startBurst_ = 0;
 
+    /// End of burst (velocity back to 0)
     double endBurst_ = std::numeric_limits<double>::max();
-
 
     /**
      * Parses a text file with settings.

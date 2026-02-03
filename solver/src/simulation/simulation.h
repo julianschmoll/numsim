@@ -1,11 +1,11 @@
 #pragma once
 #include "grid/array2d.h"
+#include "grid/dataField.h"
 #include "outputWriter/outputWriter.h"
 #include "partitioning.h"
 #include "settings.h"
 #include "simulation/discreteOperators.h"
 #include "simulation/pressureSolver/pressureSolver.h"
-#include "grid/dataField.h"
 
 #include <vector>
 
@@ -31,7 +31,19 @@ public:
      */
     void run();
 
+    /**
+     * Initializes the displacement. Should be called before Simulation starts.
+     *
+     * @param displacements Flat vector of displacements for top and bottom structure boundary.
+     */
     void initializeDisplacements(std::vector<double> &displacements);
+
+    /**
+     * Initializes the displacement. Should be called before Simulation starts.
+     *
+     * @param topDisplacements Vector of displacements for top structure boundary.
+     * @param bottomDisplacements Vector of displacements for bottom structure boundary.
+     */
     void initializeDisplacements(const std::vector<double> &topDisplacements, const std::vector<double> &bottomDisplacements);
 
     /**
@@ -51,6 +63,13 @@ public:
      */
     explicit Simulation(const Settings &settings, const std::string &folderName);
 
+    /**
+     * Writes output files.
+     *
+     * @param currentSec Current simulation second.
+     * @param lastSec Last simulation second when output was written.
+     * @param always True if output should be written for every timestep.
+     */
     void writeOutput(const int currentSec, const int lastSec, bool always = true) const;
 
     /**
@@ -63,6 +82,9 @@ public:
      */
     void correctVelocities();
 
+    /**
+     * Calculates forces at top and bottom of the fluid domain.
+     */
     void calculateForces();
 
     /**
@@ -85,8 +107,11 @@ public:
      */
     void advanceFluidSolver(double dt);
 
+    /**
+     * Updates the solid structure in the simulation.
+     */
     void updateSolid();
-    
+
     /**
      * Computes the time step width dt from maximum velocities.
      */
@@ -97,20 +122,47 @@ public:
      */
     void setDisplacements(const std::vector<double> &topDisplacements, const std::vector<double> &bottomDisplacements);
 
+    /**
+     * Test function for debugging.
+     */
     void test();
 
+    /**
+     * Getter function for partitioning pointer to be used somewhere else.
+     * @return Pointer to partitioning
+     */
     std::shared_ptr<Partitioning> getPartitioning() const noexcept;
 
+    /**
+     * Getter function for discrete operators pointer to be used somewhere else.
+     * @return Pointer to discrete operators
+     */
     std::shared_ptr<DiscreteOperators> getDiscreteOperators() const noexcept {
         return discOps_;
     }
 
+    /**
+     * Gets the forces at the top and bottom boundaries.
+     *
+     * @param forces Flat vector to store the forces.
+     */
     void getForces(std::vector<double> &forces);
 
+    /**
+     * Gets the displacements at the top and bottom boundaries.
+     *
+     * @param displacements Flat vector to store the displacements.
+     */
     void setDisplacements(std::vector<double> &displacements);
+
+    /**
+     * Gets the current simulation time.
+     *
+     * @return Current simulation time.
+     */
     double getCurrentTime();
 
-    static void writeLineToFile(const std::string& filePath, const std::string& line);
+    static void writeLineToFile(const std::string &filePath, const std::string &line);
 
 private:
     // Grid width in x and y directions
@@ -131,6 +183,7 @@ private:
     // Time step size used in the simulation loop
     double timeStepWidth_ = 0.1;
 
+    // Current time of the simulation.
     double currentTime_ = 0;
 
     // Old state of u to reload in precice
@@ -142,21 +195,30 @@ private:
     // Old state of p to reload with precice
     DataField pCheckpoint_;
 
+    // Old state of q to reload with precice
     DataField qCheckpoint_;
 
+    // Old state of f to reload with precice
     DataField fCheckpoint_;
 
+    // Old state of g to reload with precice
     DataField gCheckpoint_;
 
+    // Time step width at checkpoint
     double timeStepWidthCheckpoint_ = 0;
 
+    // Structure boundary positions at checkpoint
     std::vector<double> topBoundaryPositionCheckpoint_;
     std::vector<double> bottomBoundaryPositionCheckpoint_;
 
+    // Displacements at checkpoint
     std::vector<double> displacementsTopCheckpoint_;
     std::vector<double> displacementsBottomCheckpoint_;
+
+    // Structure presence at checkpoint
     Array2d<bool> structureCheckpoint_;
 
+    // Time at checkpoint
     double checkpointTime_ = 0;
 
     /**

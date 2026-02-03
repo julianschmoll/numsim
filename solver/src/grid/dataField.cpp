@@ -7,8 +7,7 @@
 #include <cmath>
 #include <mpi.h>
 
-DataField::DataField()
-    : meshWidth_({0, 0}), offset_({0, 0}), fieldID_(EMPTY_ID) {}
+DataField::DataField() : meshWidth_({0, 0}), offset_({0, 0}), fieldID_(EMPTY_ID) {}
 
 DataField::DataField(const std::array<int, 2> size, const std::array<double, 2> meshWidth, const std::array<double, 2> offset, int fieldID)
     : Array2d<double>(size), meshWidth_(meshWidth), offset_(offset), fieldID_(fieldID) {
@@ -20,7 +19,8 @@ DataField::DataField(const std::array<int, 2> size, const std::array<double, 2> 
 }
 
 DataField::DataField(DataField &&other) noexcept
-    : Array2d<double>(std::move(other)), meshWidth_(other.meshWidth_), offset_(other.offset_), fieldID_(other.fieldID_), mpiColType_(other.mpiColType_) {
+    : Array2d<double>(std::move(other)), meshWidth_(other.meshWidth_), offset_(other.offset_), fieldID_(other.fieldID_),
+      mpiColType_(other.mpiColType_) {
     other.mpiColType_ = MPI_DATATYPE_NULL;
 }
 
@@ -41,10 +41,7 @@ DataField &DataField::operator=(DataField &&other) noexcept {
 }
 
 DataField::DataField(const DataField &other)
-    : Array2d<double>(other),
-      meshWidth_(other.meshWidth_),
-      offset_(other.offset_),
-      fieldID_(other.fieldID_) {
+    : Array2d<double>(other), meshWidth_(other.meshWidth_), offset_(other.offset_), fieldID_(other.fieldID_) {
     if (other.mpiColType_ != MPI_DATATYPE_NULL) {
         MPI_Type_dup(other.mpiColType_, &mpiColType_);
     }
@@ -73,7 +70,6 @@ DataField &DataField::operator=(const DataField &other) noexcept {
 
     return *this;
 }
-
 
 DataField::~DataField() {
     if (mpiColType_ != MPI_DATATYPE_NULL) {

@@ -13,16 +13,16 @@
  */
 class StaggeredGrid {
 
-    enum CellType {
-        Fluid = false, Solid = true
-    };
-    
+    /// Cell types for structure representation
+    enum CellType { Fluid = false, Solid = true };
+
     /// number of cells in x, y direction not including boundary
     const std::array<int, 2> nCells_;
 
     /// Mesh width of the grid
     const std::array<double, 2> meshWidth_;
 
+    /// Reference to partitioning information
     const Partitioning &partitioning_;
 
 protected:
@@ -46,17 +46,21 @@ protected:
 
     /// Field for unphysical corrective pressure for solid cell movement correction
     DataField q_;
-    
+
+    /// Forces on the structure boundaries
     DataField fTop_;
     DataField fBottom_;
 
 public:
+    /// Positions of the structure boundaries
     std::vector<double> bottomBoundaryPosition_;
     std::vector<double> topBoundaryPosition_;
-    
+
+    /// Displacements of the structure boundaries
     std::vector<double> displacementsTop_;
     std::vector<double> displacementsBottom_;
 
+    /// Field to represent structure presence in cells
     Array2d<bool> structure_;
 
     /**
@@ -170,17 +174,41 @@ public:
     /// DataField for rhs of the poisson problem.
     DataField &rhs();
 
+    /// DataField for force at top boundary
     DataField &bottomF();
 
+    /// DataField for force at bottom boundary
     DataField &topF();
 
     /// lower edge of cell in vertical physical coordinates
     double globalDomainPosJ(int j);
 
+    /**
+     * Getter for force at index i.
+     * @param i Index to get force from.
+     * @return the force at index i.
+     */
     double &bottomF(int i);
+
+    /**
+     * Getter for bottom force at index i.
+     * @param i Index to get force from.
+     * @return the force at index i.
+     */
     double &topF(int i);
 
+    /**
+     * Getter for displacement at index i.
+     * @param i Index to get displacement from.
+     * @return the displacement at index i.
+     */
     double &bottomDisplacement(int i);
+
+    /**
+     * Getter for displacement at index i.
+     * @param i Index to get displacement from.
+     * @return the displacement at index i.
+     */
     double &topDisplacement(int i);
 
     /**
@@ -197,16 +225,54 @@ public:
      */
     double dy() const;
 
+    /**
+     * Checks if cell at (i,j) is a fluid cell.
+     *
+     * @param i i index of the cell.
+     * @param j j index of the cell.
+     * @return true if cell is fluid, false otherwise.
+     */
     bool isFluid(int i, int j) const;
+
+    /**
+     * Checks if cell at (i,j) is a solid cell.
+     *
+     * @param i i index of the cell.
+     * @param j j index of the cell.
+     * @return true if cell is solid, false otherwise.
+     */
     bool isSolid(int i, int j) const;
 
+    /**
+     * Updates the structure cells based on the current boundary positions.
+     *
+     * @param dt Time step width.
+     * @return true if structure cells were updated, false otherwise.
+     */
     bool updateStructureCells(double dt);
 
+    /**
+     * Initializes the structure field based on initial boundary positions.
+     */
     void initializeStructureField();
 
+    /**
+     * Getter for bottom boundary position at index i.
+     * @param i Index to get position from.
+     * @return the bottom boundary position at index i.
+     */
     double &bottomBoundaryPosition(int i);
 
+    /**
+     * Getter for top boundary position at index i.
+     * @param i Index to get position from.
+     * @return the top boundary position at index i.
+     */
     double &topBoundaryPosition(int i);
 
+    /**
+     * Test function for debugging.
+     * @param settings Configuration settings for the simulation.
+     */
     void test(const Settings &settings);
 };

@@ -1,8 +1,8 @@
 #pragma once
 
 #include "grid/staggeredGrid.h"
-#include "simulation/partitioning.h"
 #include "settings.h"
+#include "simulation/partitioning.h"
 #include <memory>
 
 /**

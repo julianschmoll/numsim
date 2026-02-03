@@ -143,7 +143,6 @@ public:
      */
     double computeDqDy(int i, int j) const;
 
-    
 private:
     double alpha_;
 };
