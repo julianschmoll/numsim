@@ -69,7 +69,7 @@ def add_openfoam_keys(cfg):
 
     # ToDo: This is uggo
     u_ref = u_max if u_max > 0 else 1.0
-    l_ref = cfg.get('characteristicLength', cfg.get('physicalSizeY', 2.0))
+    l_ref = cfg.get('characteristicLength', cfg.get('physicalSizeX', 8.0))
     cfg["nu"] = (u_ref * l_ref) / cfg['re']
 
     if has_outflow_boundary:

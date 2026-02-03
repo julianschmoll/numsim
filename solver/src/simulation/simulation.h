@@ -110,6 +110,8 @@ public:
     void setDisplacements(std::vector<double> &displacements);
     double getCurrentTime();
 
+    static void writeLineToFile(const std::string& filePath, const std::string& line);
+
 private:
     // Grid width in x and y directions
     std::array<double, 2> meshWidth_{};

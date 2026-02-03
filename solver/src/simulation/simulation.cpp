@@ -6,6 +6,7 @@
 #include "settings.h"
 #include "simulation/pressureSolver/conjugateGradientSolver.h"
 #include "simulation/pressureSolver/redBlackSolver.h"
+#include <fstream>
 #include <cassert>
 #include <chrono>
 #include <cmath>
@@ -778,4 +779,20 @@ void Simulation::setDisplacements(std::vector<double> &displacements) {
 
 double Simulation::getCurrentTime() {
     return currentTime_;
+}
+
+
+
+void Simulation::writeLineToFile(const std::string& filePath, const std::string& line)
+{
+    std::ofstream file(filePath, std::ios::app); // std::ios::app = append mode
+
+    if (!file.is_open())
+    {
+        std::cerr << "Failed to open file: " << filePath << std::endl;
+        return;
+    }
+
+    file << line << '\n';
+    file.close();
 }
