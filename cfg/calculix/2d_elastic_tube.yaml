@@ -6,8 +6,6 @@ geometry:
   wall_thickness: .22     # Thickness of the wall (height)
   # This will make mesh vertices align with fluid cells (nCellsX+1)
   n_elements_length: 80   # Elements along the wall length (should match nCells)
-  alpha: 0.0
-  beta: 0.001
 
 dt: 0.01
 t_end: 1
@@ -17,6 +15,8 @@ material:
   youngs_modulus: 300000
   poissons_ratio: 0.3
   density: 1200
+  alpha: 0.0
+  beta: 0.001
 
 # definition where walls are located, we only aim to support
 # walls at top and bottom since the fluid solver can only solve

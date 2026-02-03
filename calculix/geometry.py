@@ -146,8 +146,8 @@ class Geometry:
             f.write("*STEP, NLGEOM, INC=1000000\n")
             f.write("*DYNAMIC\n")
 
-            alpha = self.cfg["geometry"].get("alpha", 0.0)
-            beta = self.cfg["geometry"].get("beta", 0.001)
+            alpha = self.cfg["material"].get("alpha", 0.0)
+            beta = self.cfg["material"].get("beta", 0.001)
             f.write(f"*DAMPING, ALPHA={alpha}, BETA={beta}\n")
 
             dt = self.cfg.get('dt', 0.01)
