@@ -1,7 +1,9 @@
 # Fluid Solver
 
 This repository contains a parallel fluid solver written from scratch using navier stokes equations.
-It also contains a simple yet configurable CNN to predict the flow of training data generated from the parallel solver.
+The solver is parallelized using MPI and supports FSI simulations through preCICE.
+CalculiX can be configured using a simple yaml, the same applies for openFOAM which can be used to test and validate the solver.
+This Repository also contains a simple yet configurable CNN to predict the flow of training data generated from the parallel solver.
 
 ![Example Simulation](resources/example_simulation.gif)
 
@@ -55,9 +57,18 @@ The pdf is automatically generated from a jupyter notebook. For this you need to
 
 The whole Data Generation and Training process can be run with `run_pipeline [-g generation_config] [-t training_config]`.
 
-## Linting
+### Linting
 
 For the C++ code `run_tidy.sh` and `run_format.sh` can be used to run clang-tidy and clang-format respectively.
 For the python code `flake8` and `pylint` are used for linting. Linting can be invoked with `make`. 
 For linting, you need to have `flake8`, `wemake-python-styleguide` and `pylint` installed. 
 This can be done in a virtual environment with pip.
+
+## FSI Simulations
+
+To run FSI simulations, you need to have preCICE installed.
+Then you can build the adapter which is located in the `adapter` subfolder.
+You can couple against any structure solver which accepts forces and provides displacements through preCICE.
+There is an example setup for CalculiX in the `calculix` subfolder. 
+This setup can also be configured through a yaml file.
+To validate the solver, the configurations of the solver can be run though openFOAM with the Python entrypoint located in the `openfoam` subfolder.
