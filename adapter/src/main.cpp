@@ -81,95 +81,83 @@ void printMesh(const std::string &label, const std::vector<precice::VertexID> &i
 }
 
 void run(int ownRankNo, int nRanks, const std::string preciceConfigPath, Settings settings) {
-    precice::string_view fluidMeshNodes = "Fluid-Mesh-Nodes";
-    precice::string_view fluidMeshFaces = "Fluid-Mesh-Faces";
-    precice::string_view displacementDelta = "DisplacementDelta";
-    precice::string_view force = "Force";
+    const precice::string_view fluidMesh = "Fluid-Mesh";
+    const precice::string_view solidMesh = "Solid-Mesh";
+    const precice::string_view displacementDelta = "DisplacementDelta";
+    const precice::string_view force = "Force";
 
     precice::Participant participant("Fluid", preciceConfigPath, ownRankNo, nRanks);
 
-    // ToDo: Pass out folder maybe
     Simulation simulation{settings, "out"};
     auto partitioning = simulation.getPartitioning();
     auto diskOps = simulation.getDiscreteOperators();
     auto physicalSize = settings.physicalSize;
-    int meshDim = participant.getMeshDimensions(fluidMeshNodes);
+    int meshDim = participant.getMeshDimensions(fluidMesh);
 
-    // assert(meshDim == 2 && "Adapter only supports 2D meshes");
+    assert((meshDim == 2 || meshDim == 3) && "Adapter only supports 2D or 3D meshes");
 
     DEBUG(std::cout << "Mesh dimension: " << meshDim << "\n");
 
-    // +1 because of vertices, not faces
     auto verticesWidth = partitioning->nCellsLocal()[0];
-    auto facesWidth = partitioning->nCellsLocal()[0];
-    auto vertexSize = 2 * verticesWidth; // number of vertices at wet surface
-    auto facesSize = 2 * facesWidth;
 
-    DEBUG(std::cout << "Vertex size: " << vertexSize << "\n");
-    DEBUG(std::cout << "Mesh size: " << facesSize << "\n");
+    // number of vertices at wet surface
+    auto vertexCount = 2 * verticesWidth;
 
-    std::vector<double> nodeCoords(vertexSize * meshDim);
-    std::vector<precice::VertexID> nodeIDs(vertexSize);
+    DEBUG(std::cout << "Vertex count: " << vertexCount << "\n");
 
-    std::vector<double> faceCoords(facesSize * meshDim);
-    std::vector<precice::VertexID> faceIDs(facesSize);
+    std::vector<double> vertexCoordinates(vertexCount * meshDim);
+    std::vector<precice::VertexID> vertexIDs(vertexCount);
 
     // Both Meshes have the same layout
     double dx = static_cast<double>(physicalSize[0]) / partitioning->nCellsLocal()[0];
 
     int idx = 0;
     for (int row = 0; row < 2; ++row) {
-        double y_pos = (row == 0) ? 0.0 : static_cast<double>(physicalSize[1]);
+        double xPos = (row == 0) ? 0.0 : static_cast<double>(physicalSize[1]);
         for (int i = 0; i < verticesWidth; ++i) {
-            double x_pos = (static_cast<double>(i) + 0.5) * dx;
+            double yPos = (static_cast<double>(i) + 0.5) * dx;
             for (int d = 0; d < meshDim; ++d) {
-                double v = (d == 0) ? x_pos : (d == 1) ? y_pos : 0.0;
-                nodeCoords[idx] = v;
-                faceCoords[idx] = v;
+                double v = (d == 0) ? yPos : (d == 1) ? xPos : 0.0;
+                vertexCoordinates[idx] = v;
                 idx++;
             }
         }
     }
 
-    participant.setMeshVertices(fluidMeshNodes, nodeCoords, nodeIDs);
-    participant.setMeshVertices(fluidMeshFaces, faceCoords, faceIDs);
+    participant.setMeshVertices(fluidMesh, vertexCoordinates, vertexIDs);
 
-    int displacementsDim = participant.getDataDimensions(fluidMeshNodes, displacementDelta);
-    std::vector displacements(vertexSize * displacementsDim, 0.0);
+    int displacementsDim = participant.getDataDimensions(fluidMesh, displacementDelta);
+    std::vector displacements(vertexCount * displacementsDim, 0.0);
 
-    int forcesDim = participant.getDataDimensions(fluidMeshFaces, force);
-    std::vector forces(facesSize * forcesDim, 0.0);
+    int forcesDim = participant.getDataDimensions(fluidMesh, force);
+    std::vector forces(vertexCount * forcesDim, 0.0);
 
     DEBUG(std::cout << forces.size() << " force entries\n");
 
     participant.initialize();
 
-    int meshSize = participant.getMeshVertexSize("Solid-Mesh");
-    int dim = participant.getMeshDimensions("Solid-Mesh");
+    const int meshSize = participant.getMeshVertexSize(solidMesh);
+    const int solidMeshDim = participant.getMeshDimensions(solidMesh);
 
-    std::vector<double> participantCoords(meshSize * dim);
+    std::vector<double> participantCoords(meshSize * solidMeshDim);
     std::vector<precice::VertexID> participantIDs(meshSize);
 
-    participant.getMeshVertexIDsAndCoordinates("Solid-Mesh", participantIDs, participantCoords);
-    printMesh("Solid-Mesh", participantIDs, participantCoords, 24);
+    participant.getMeshVertexIDsAndCoordinates(solidMesh, participantIDs, participantCoords);
+    DEBUG(std::cout << participantCoords << "\n");
 
     double currentTime = 0.0;
 
-    DEBUG(std::cout << "preCICE expects " << participant.getMeshVertexSize(fluidMeshNodes) << " node vertices, adapter created " << vertexSize
-                    << "\n");
-    assert(participant.getMeshVertexSize(fluidMeshNodes) == vertexSize);
-    DEBUG(std::cout << "preCICE expects " << participant.getMeshVertexSize(fluidMeshFaces) << " face vertices, adapter created " << facesSize
-                    << "\n");
-    assert(participant.getMeshVertexSize(fluidMeshFaces) == facesSize);
+    DEBUG(std::cout << "Expected " << participant.getMeshVertexSize(fluidMesh) << " vertices, created " << vertexCount << ".\n");
+    assert(participant.getMeshVertexSize(fluidMesh) == vertexCount);
 
     // Set initial displacements
     std::cout << "- [adapter] Setting initial displacements...\n";
 
-    int topOffset = static_cast<int>(participantCoords.size() / 2) + 1;
+    const int topOffset = static_cast<int>(participantCoords.size() / 2) + 1;
     double topWallDispl = participantCoords[1];
     double bottomWallDispl = settings.physicalSize[1] - participantCoords[topOffset];
 
-    // +1 again because we have a flat array with x,y,x,y,...
+    // +1 again because we have a flat array and write to y component only
     const int bottomOffset = verticesWidth * meshDim + 1;
     for (int i = 0; i < verticesWidth; ++i) {
         int idxTop = 1 + i * meshDim;
@@ -183,7 +171,7 @@ void run(int ownRankNo, int nRanks, const std::string preciceConfigPath, Setting
 
     simulation.initializeDisplacements(displacements);
 
-    participant.writeData(fluidMeshFaces, force, faceIDs, forces);
+    participant.writeData(fluidMesh, force, vertexIDs, forces);
 
     while (participant.isCouplingOngoing()) {
         if (participant.requiresWritingCheckpoint()) {
@@ -195,14 +183,14 @@ void run(int ownRankNo, int nRanks, const std::string preciceConfigPath, Setting
         double dt = std::min(preciceDt, tsInfo.timeStepWidth);
         simulation.setTimeStepWidth(dt);
 
-        participant.readData(fluidMeshNodes, displacementDelta, nodeIDs, dt, displacements);
+        participant.readData(fluidMesh, displacementDelta, vertexIDs, dt, displacements);
 
         double maxDispl = 0.0;
         for (size_t i = 0; i < displacements.size(); ++i) {
             maxDispl = std::max(maxDispl, std::abs(displacements[i]));
         }
         if (maxDispl > 100.0) {
-            std::cerr << "ERROR: Received invalid displacement magnitude: " << maxDispl << "\n";
+            std::cerr << "- [adapter] ERROR: Received invalid displacement magnitude: " << maxDispl << "\n";
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
 
@@ -214,7 +202,7 @@ void run(int ownRankNo, int nRanks, const std::string preciceConfigPath, Setting
         simulation.getForces(forces);
         participant.stopLastProfilingSection();
 
-        participant.writeData(fluidMeshFaces, force, faceIDs, forces);
+        participant.writeData(fluidMesh, force, vertexIDs, forces);
 
         participant.advance(dt);
 

@@ -12,11 +12,8 @@
     <data:vector name="Force" />
     <data:vector name="DisplacementDelta" />
 
-    <mesh name="Fluid-Mesh-Nodes" dimensions="3">
+    <mesh name="Fluid-Mesh" dimensions="3">
         <use-data name="DisplacementDelta" />
-    </mesh>
-
-    <mesh name="Fluid-Mesh-Faces" dimensions="3">
         <use-data name="Force" />
     </mesh>
 
@@ -27,19 +24,18 @@
 
     <participant name="Fluid">
         <receive-mesh name="Solid-Mesh" from="Solid" safety-factor="2" api-access="true"/>
-        <provide-mesh name="Fluid-Mesh-Nodes" />
-        <provide-mesh name="Fluid-Mesh-Faces" />
-        <write-data name="Force" mesh="Fluid-Mesh-Faces" />
-        <read-data name="DisplacementDelta" mesh="Fluid-Mesh-Nodes" />
-        <mapping:nearest-projection
+        <provide-mesh name="Fluid-Mesh" />
+        <write-data name="Force" mesh="Fluid-Mesh" />
+        <read-data name="DisplacementDelta" mesh="Fluid-Mesh" />
+        <mapping:nearest-neighbor
                 direction="write"
-                from="Fluid-Mesh-Faces"
+                from="Fluid-Mesh"
                 to="Solid-Mesh"
                 constraint="conservative"/>
-        <mapping:nearest-projection
+        <mapping:nearest-neighbor
                 direction="read"
                 from="Solid-Mesh"
-                to="Fluid-Mesh-Nodes"
+                to="Fluid-Mesh"
                 constraint="consistent"/>
     </participant>
 
@@ -47,7 +43,6 @@
         <provide-mesh name="Solid-Mesh" />
         <write-data name="DisplacementDelta" mesh="Solid-Mesh" />
         <read-data name="Force" mesh="Solid-Mesh" />
-        <watch-point mesh="Solid-Mesh" name="Tube-Midpoint" coordinate="0.0;0.005;0.0" />
     </participant>
 
     <m2n:sockets acceptor="Fluid" connector="Solid" exchange-directory="/tmp/precice" />
