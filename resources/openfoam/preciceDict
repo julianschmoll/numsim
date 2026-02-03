@@ -16,7 +16,7 @@ interfaces
 {
   Interface1
   {
-    mesh              Fluid-Mesh-Nodes;
+    mesh              Fluid-Mesh;
     patches           ($coupled_patches);
     locations         faceNodes;
 
@@ -32,7 +32,7 @@ interfaces
 
   Interface2
   {
-    mesh              Fluid-Mesh-Faces;
+    mesh              Fluid-Mesh;
     patches           ($coupled_patches);
     locations         faceCenters;
 
