@@ -101,7 +101,7 @@ void Simulation::run() {
     std::vector<double> topDisplacements(n, 0);
     std::vector<double> bottomDisplacements(n, 0);
     for (size_t i = 0; i < discOps_->bottomBoundaryPosition_.size(); i++) {
-        bottomDisplacements[i] = (i <= n / 2) ? 0.03 * i : 0.03 * (n - i);
+        bottomDisplacements[i] = (i <= n / 2) ? 0.04 * i : 0.04 * (n - i);
     }
     initializeDisplacements(topDisplacements, bottomDisplacements);
 
@@ -624,22 +624,24 @@ void Simulation::setVelocities() {
 
 void Simulation::correctVelocities() {
     auto &u = discOps_->u();
+    auto &f = discOps_->f();
 
     for (int j = u.beginJ() + 1; j < u.endJ() - 1; j++) {
         for (int i = u.beginI() + 1; i < u.endI() - 1; i++) {
             if (discOps_->isSolid(i, j) || discOps_->isSolid(i + 1, j))
                 continue;
-            u(i, j) -= timeStepWidth_ * discOps_->computeDqDx(i, j);
+            u(i, j) = f(i, j) - timeStepWidth_ * discOps_->computeDqDx(i, j);
         }
     }
 
     auto &v = discOps_->v();
+    auto &g = discOps_->g();
 
     for (int j = v.beginJ() + 1; j < v.endJ() - 1; j++) {
         for (int i = v.beginI() + 1; i < v.endI() - 1; i++) {
             if (discOps_->isSolid(i, j) || discOps_->isSolid(i, j + 1))
                 continue;
-            v(i, j) -= timeStepWidth_ * discOps_->computeDqDy(i, j);
+            v(i, j) = g(i, j) - timeStepWidth_ * discOps_->computeDqDy(i, j);
         }
     }
 }
