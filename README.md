@@ -37,7 +37,7 @@ Below is an example FSI simulatino for a 2d elastic tube:
 
 ![FSI Simulation Fluid](resources/fsi/fluid_fsi.gif)
 
-
+More detail about the FSI setup can be found in the [final presentation slides](resources/final_presentation.pdf).
 
 ## Machine Learning
 
