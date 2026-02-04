@@ -22,6 +22,23 @@ Then the program can be run with `mpirun ./numsim_parallel {path to scenario fil
 The output will be in the `out` folder next to the executable.
 It contains `vti` files for each timestep which can be opened with paraview.
 
+## FSI Simulations
+
+To run FSI simulations, you need to have preCICE installed.
+Then you can build the adapter which is located in the `adapter` subfolder.
+You can couple against any structure solver which accepts forces and provides displacements through preCICE.
+There is an example setup for CalculiX in the `calculix` subfolder.
+This setup can also be configured through a yaml file.
+To validate the solver, the configurations of the solver can be run though openFOAM with the Python entrypoint located in the `openfoam` subfolder.
+
+Below is an example FSI simulatino for a 2d elastic tube:
+
+![FSI Simulation](resources/fsi/solid_fsi.gif)
+
+![FSI Simulation Fluid](resources/fsi/fluid_fsi.gif)
+
+
+
 ## Machine Learning
 
 Example prediction:
@@ -63,12 +80,3 @@ For the C++ code `run_tidy.sh` and `run_format.sh` can be used to run clang-tidy
 For the python code `flake8` and `pylint` are used for linting. Linting can be invoked with `make`. 
 For linting, you need to have `flake8`, `wemake-python-styleguide` and `pylint` installed. 
 This can be done in a virtual environment with pip.
-
-## FSI Simulations
-
-To run FSI simulations, you need to have preCICE installed.
-Then you can build the adapter which is located in the `adapter` subfolder.
-You can couple against any structure solver which accepts forces and provides displacements through preCICE.
-There is an example setup for CalculiX in the `calculix` subfolder. 
-This setup can also be configured through a yaml file.
-To validate the solver, the configurations of the solver can be run though openFOAM with the Python entrypoint located in the `openfoam` subfolder.
