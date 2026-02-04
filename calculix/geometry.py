@@ -139,7 +139,7 @@ class Geometry:  # pylint: disable=too-many-instance-attributes
 
         material_config = self.cfg["material"]
 
-        with open(inp_path, "w", encoding="uft-8") as inp_file:
+        with open(inp_path, "w", encoding="utf-8") as inp_file:
             inp_file.write("** HEADING\n")
             inp_file.write(f"*NODE, NSET={mesh_name}\n")
             for node_str in self._all_nodes:
