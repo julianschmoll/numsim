@@ -1,3 +1,4 @@
+"""Entrypoint for solid simulation with calculix and precice."""
 import argparse
 from pathlib import Path
 import logging
@@ -8,23 +9,25 @@ import writer
 
 
 def main(scenario_cfg, precice_cfg_path, cleanup=True):
+    """Entrypoint for solid simulation with calculix and precice.
+
+    Args:
+        scenario_cfg (str or Path): Path to the scenario configuration file.
+        precice_cfg_path (str or Path): Path to the preCICE configuration file.
+        cleanup (bool, optional): Whether to clean up simulation files after run.
+    """
     simulation_folder = Path(__file__).resolve().parent / "out"
     geometry = Geometry(scenario_cfg)
 
-    mesh_name = "Solid-Mesh"
-    interface_name = "Solid-Interface"
-
     inp_path = geometry.write_file(
         simulation_folder / "geo.inp",
-        mesh_name=mesh_name,
-        interface_name=interface_name,
+        mesh_name="Solid-Mesh",
+        interface_name="Solid-Interface",
         )
 
     sim_out = simulation.run(
         inp_path,
         precice_cfg_path,
-        mesh_name=mesh_name,
-        interface_name=interface_name,
     )
     writer.convert_to_vtk(sim_out, "out/solid.vtk")
     if cleanup:

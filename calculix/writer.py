@@ -1,9 +1,20 @@
-from ccx2paraview import Converter
+"""Module for converting calculiX output files to vtk format."""
 from pathlib import Path
 import shutil
 
+from ccx2paraview import Converter
+
 
 def convert_to_vtk(file_to_convert, output_path):
+    """Converts calculiX output files to vtk.
+
+    Args:
+        file_to_convert (str or Path): The path to the file to convert.
+        output_path (str or Path): The desired output path.
+
+    Returns:
+        Output Path of the converted file.
+    """
     file_to_convert = Path(file_to_convert)
 
     output_path = Path(output_path)
@@ -18,19 +29,33 @@ def convert_to_vtk(file_to_convert, output_path):
     # The converter does not let us specify an output filename or path
     output_path = Path(output_path)
     converter_output = (file_to_convert.parent
-                       / f"{file_to_convert.stem}.{cleaned_suffix}")
+                        / f"{file_to_convert.stem}.{cleaned_suffix}")
 
     if converter_output == output_path:
         return output_path
 
+    _move_files(cleaned_suffix, file_to_convert, output_path)
+    return output_path
+
+
+def _move_files(cleaned_suffix, file_to_convert, output_path):
+    """Moves converted files to desired output path.
+
+    Args:
+        cleaned_suffix (str): The file suffix (vtk or vtu).
+        file_to_convert (Path): The original file to convert.
+        output_path (Path): The desired output path.
+
+    """
     if not output_path.parent.exists():
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    vtk_files = sorted(file_to_convert.parent.glob(f"{file_to_convert.stem}*.{cleaned_suffix}"))
+    vtk_files = sorted(file_to_convert.parent.glob(
+        f"{file_to_convert.stem}*.{cleaned_suffix}")
+    )
 
     for idx, vtk_file in enumerate(vtk_files):
         shutil.copy(
             vtk_file,
             output_path.parent / f"{output_path.stem}_{idx:04d}.{cleaned_suffix}"
         )
-    return output_path

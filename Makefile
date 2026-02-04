@@ -1,3 +1,3 @@
 lint:
-	flake8 fluid_ml calculix
-	pylint fluid_ml calculix
+	flake8 fluid_ml calculix openfoam
+	pylint fluid_ml calculix openfoam
